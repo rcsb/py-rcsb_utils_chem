@@ -1,0 +1,4 @@
+# File: HISTORY.txt
+#
+#  1-Oct-2019  - V0.10 Created module with preliminary dependency cache management
+#
