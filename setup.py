@@ -40,8 +40,9 @@ setup(
         "Programming Language :: Python :: 3.7",
     ),
     entry_points={"console_scripts": []},
-    #
-    install_requires=["mmcif >= 0.46", "rcsb.utils.io >= 0.44", "-e https://pypi.anaconda.org/OpenEye/simple OpenEye-toolkits"],
+    #  The following is somewhat flakey --
+    dependency_links=["https://pypi.anaconda.org/OpenEye/simple#egg=OpenEye-toolkits-2019.10.2"],
+    install_requires=["mmcif >= 0.46", "rcsb.utils.io >= 0.47", "OpenEye-toolkits==2019.10.2"],
     packages=find_packages(exclude=["rcsb.mock-data", "rcsb.utils.tests-chem", "rcsb.utils.tests-*", "tests.*"]),
     package_data={
         # If any package contains *.md or *.rst ...  files, include them:
