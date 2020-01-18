@@ -57,6 +57,7 @@ class OeDepictBase(object):
             "labelAtomName": False,
             "labelAtomCIPStereo": False,
             "labelAtomIndex": False,
+            "labelBondCIPStereo": False,
             "labelBondIndex": False,
             "bondDisplayWidth": None,
             "gridRows": 2,
@@ -89,6 +90,9 @@ class OeDepictBase(object):
     def _assignDisplayOptions(self):
         if self._params["labelAtomCIPStereo"]:
             self._opts.SetAtomStereoStyle(oedepict.OEAtomStereoStyle_Display_All)
+
+        if self._params["labelBondCIPStereo"]:
+            self._opts.SetBondStereoStyle(oedepict.OEBondStereoStyle_Display_All)
 
         if self._params["labelAtomIndex"]:
             self._opts.SetAtomPropertyFunctor(oedepict.OEDisplayAtomIdx())

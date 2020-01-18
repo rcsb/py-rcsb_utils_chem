@@ -23,8 +23,6 @@ import time
 from openeye import oechem
 from openeye import oegraphsim
 
-# from rcsb.utils.chem.OeMolFactory import OeMolFactory
-
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +31,19 @@ class OeSearchUtils(object):
     """ Utility methods to manage OE specific search operations.
     """
 
-    def __init__(self, ccP, verbose=False):
+    def __init__(self, oemP, verbose=False):
         self.__verbose = verbose
-        self.__fpDb = ccP.getFingerPrintDb()
-        self.__oeMolDb, self.__oeMolDbTitleD = ccP.getOeMolDatabase()
+        self.__fpDb = oemP.getFingerPrintDb()
+        self.__oeMolDb, self.__oeMolDbTitleD = oemP.getOeMolDatabase()
         self.__ssDb = None
 
-    def searchSubStructure(self, queryMol, idxList=None, reverseFlag=False):
+    def searchSubStructure(self, oeQueryMol, idxList=None, reverseFlag=False):
         """Perform a substructure search for the input query molecule on the binary
         database of molecules.  The search optionally restricted to the input index
         list.   The sense of the search may be optionally reversed.
 
         Args:
-            queryMol (object): query molecule OeGraphMol or OeQmol
+            oeQueryMol (object): query molecule OeGraphMol or OeQmol
             idxList ([type], optional): [description]. Defaults to None.
             reverseFlag (bool, optional): [description]. Defaults to False.
 
@@ -54,7 +52,10 @@ class OeSearchUtils(object):
         """
         mL = []
         try:
-            ss = oechem.OESubSearch(queryMol)
+            logger.info("Query mol type %r", type(oeQueryMol))
+            atomexpr = oechem.OEExprOpts_DefaultAtoms
+            bondexpr = oechem.OEExprOpts_DefaultBonds
+            ss = oechem.OESubSearch(oeQueryMol, atomexpr, bondexpr)
             if not ss.IsValid():
                 logger.error("Unable to initialize substructure search!")
                 return mL
@@ -75,7 +76,7 @@ class OeSearchUtils(object):
         #
         return mL
 
-    def searchFingerPrints(self, queryMol, numResults=10):
+    def searchFingerPrints(self, oeQueryMol, numResults=10):
         try:
             opts = oegraphsim.OEFPDatabaseOptions(numResults, oegraphsim.OESimMeasure_Tanimoto)
             if not oegraphsim.OEAreCompatibleDatabases(self.__oeMolDb, self.__fpDb):
@@ -87,7 +88,7 @@ class OeSearchUtils(object):
             logger.info("Using fingerprint type %s", fptype.GetFPTypeString())
 
             startTime = time.time()
-            scores = self.__fpDb.GetSortedScores(queryMol, opts)
+            scores = self.__fpDb.GetSortedScores(oeQueryMol, opts)
             endTime = time.time()
             logger.info("%5.2f sec to search %d fingerprints %s", endTime - startTime, lenFp, memTypeStr)
 

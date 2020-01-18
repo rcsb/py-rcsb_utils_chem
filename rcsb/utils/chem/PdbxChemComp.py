@@ -4,6 +4,7 @@
 #
 # Update:
 #   2-Oct-2019 jdw adapted from PdbxChemCompPersist()
+#   7-Nov-2019 jdw add alternate charge and formula methods
 ##
 """
 A collection of access and iterator classes supporting chemical component dictionary data.
@@ -13,7 +14,11 @@ __author__ = "John Westbrook"
 __email__ = "john.westbrook@rcsb.org"
 __license__ = "Apache 2.0"
 
+import logging
+
 from rcsb.utils.chem.PdbxChemCompConstants import PdbxChemCompConstants
+
+logger = logging.getLogger(__name__)
 
 
 class PdbxCategoryItBase(object):
@@ -32,6 +37,9 @@ class PdbxCategoryItBase(object):
 
     def __iter__(self):
         return self.forward()
+
+    def __len__(self):
+        return len(self.__rL)
 
     def forward(self):
         # Forward generator
@@ -131,6 +139,20 @@ class PdbxChemCompPersist(object):
 
     def getFormalCharge(self):
         return self.__getAttribute("pdbx_formal_charge")
+
+    def getFormalChargeAsInt(self):
+        tch = self.getFormalCharge()
+        iCharge = int(tch) if tch and tch not in [".", "?"] else 0
+        return iCharge
+
+    def getFormulaWithCharge(self):
+        formula = (self.getFormula()).replace(" ", "")
+        fcharge = self.getFormalChargeAsInt()
+        if fcharge:
+            sign = "+" if fcharge > 0 else "-"
+            mag = str(abs(fcharge)) if abs(fcharge) > 1 else ""
+            formula = formula + sign + mag
+        return formula
 
     def getModificationDate(self):
         return self.__getAttribute("pdbx_modified_date")
@@ -233,11 +255,23 @@ class PdbxChemCompAtomPersist(object):
         return self.__getAttribute("pdbx_aromatic_flag") != "N"
 
     def getCIPStereo(self):
-        return self.__getAttribute("pdbx_stereo_config")
+        tS = self.__getAttribute("pdbx_stereo_config")
+        tS = tS if tS not in [".", "?", "N"] else None
+        if tS and tS not in ["R", "S"]:
+            logger.error("Unexpected CIP stereo type %r in %r", tS, self.__rowData)
+        return tS
 
     def getFormalCharge(self):
         try:
             return int(self.__getAttribute("charge"))
+        except Exception:
+            return 0
+
+    def getFormalChargeAsInt(self):
+        try:
+            tch = self.getFormalCharge()
+            iCharge = int(tch) if tch and tch not in [".", "?"] else 0
+            return iCharge
         except Exception:
             return 0
 
@@ -309,7 +343,11 @@ class PdbxChemCompBondPersist(object):
         return (self.__getAttribute("atom_id_1"), self.__getAttribute("atom_id_2"))
 
     def getType(self):
-        return self.__getAttribute("value_order")
+        tS = self.__getAttribute("value_order")
+        tS = tS if tS not in [".", "?"] else None
+        if tS and tS not in ["SING", "DOUB", "TRIP", "QUAD"]:
+            logger.error("Unexpected bond type %r in %r", tS, self.__rowData)
+        return tS
 
     def getIntegerType(self):
         bT = self.__getAttribute("value_order")
@@ -328,7 +366,11 @@ class PdbxChemCompBondPersist(object):
         return self.__getAttribute("pdbx_aromatic_flag") == "Y"
 
     def getStereo(self):
-        return self.__getAttribute("pdbx_stereo_config")
+        tS = self.__getAttribute("pdbx_stereo_config")
+        tS = tS if tS not in [".", "?", "N"] else None
+        if tS and tS not in ["E", "Z"]:
+            logger.error("Unexpected CIP stereo type %r in %r", tS, self.__rowData)
+        return tS
 
     def hasStereo(self):
         return self.__getAttribute("pdbx_stereo_config") != "N"

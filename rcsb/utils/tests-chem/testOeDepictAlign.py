@@ -180,8 +180,8 @@ class OeDepictAlignTests(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def __getCache(self, coordType="model", useCache=False):
-        oemp = OeMoleculeProvider(dirPath=os.path.join(self.__cachePath, "chem_comp"), coordType=coordType, useCache=useCache)
+    def __getCache(self, coordType="model", useCache=True):
+        oemp = OeMoleculeProvider(dirPath=os.path.join(self.__cachePath, "chem_comp"), screenTypeList=[], coordType=coordType, useCache=useCache)
         ok = oemp.testCache()
         self.assertTrue(ok)
         return oemp.getOeMolD()
@@ -214,7 +214,7 @@ class OeDepictAlignTests(unittest.TestCase):
                 logger.info("Using image path %r", imgPath)
                 aML = oed.alignPair(imagePath=imgPath)
                 self.assertGreater(len(aML), 2)
-                if len(aML) > 0:
+                if aML:
                     for (rCC, rAt, tCC, tAt) in aML:
                         logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
         except Exception as e:
@@ -249,7 +249,7 @@ class OeDepictAlignTests(unittest.TestCase):
                 )
                 aML = oed.alignPair(imagePath=fName)
                 self.assertGreater(len(aML), 2)
-                if len(aML) > 0:
+                if aML:
                     for (rCC, rAt, tCC, tAt) in aML:
                         logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
         except Exception as e:
@@ -277,7 +277,7 @@ class OeDepictAlignTests(unittest.TestCase):
             imagePath = os.path.join(self.__workPath, "list-example-mcs-alignment.pdf")
             aML = oed.alignOneWithListMulti(imagePath=imagePath)
             self.assertGreater(len(aML), 2)
-            if len(aML) > 0:
+            if aML:
                 for (rCC, rAt, tCC, tAt) in aML:
                     logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 
@@ -307,7 +307,7 @@ class OeDepictAlignTests(unittest.TestCase):
             imagePath = os.path.join(self.__workPath, "pair-list-example-mcs-alignment-portrait.pdf")
             aML = oed.alignPairListMulti(imagePath=imagePath)
             self.assertGreater(len(aML), 2)
-            if len(aML) > 0:
+            if aML:
                 for (rCC, rAt, tCC, tAt) in aML:
                     logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
         except Exception as e:
@@ -328,7 +328,7 @@ class OeDepictAlignTests(unittest.TestCase):
             imagePath = os.path.join(self.__workPath, "rna-modified-pair-alignment.pdf")
             aML = oed.alignPairListMulti(imagePath=imagePath)
             self.assertGreater(len(aML), 2)
-            if len(aML) > 0:
+            if aML:
                 for (rCC, rAt, tCC, tAt) in aML:
                     logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
         except Exception as e:
@@ -346,7 +346,7 @@ class OeDepictAlignTests(unittest.TestCase):
                 oed.setFitMol(fitMol, fitId)
                 aML = oed.doAlign()
                 self.assertGreater(len(aML), 2)
-                if len(aML) > 0:
+                if aML:
                     logger.debug("Match length %3d for: %s %s", len(aML), refId, fitId)
                 else:
                     logger.info("Match failed for: %s %s", refId, fitId)
@@ -374,7 +374,7 @@ class OeDepictAlignTests(unittest.TestCase):
             imageFile = os.path.join(self.__workPath, "mcs-align-with-list-multi.pdf")
             aML = oed.alignOneWithListMulti(imagePath=imageFile)
             self.assertGreater(len(aML), 2)
-            if len(aML) > 0:
+            if aML:
                 for (rCC, rAt, tCC, tAt) in aML:
                     logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 
@@ -404,7 +404,7 @@ class OeDepictAlignTests(unittest.TestCase):
             imageFile = os.path.join(self.__workPath, "mcs-align-with-list-single.svg")
             aML = oed.alignOneWithList(imagePath=imageFile)
             self.assertGreater(len(aML), 2)
-            if len(aML) > 0:
+            if aML:
                 for (rCC, rAt, tCC, tAt) in aML:
                     logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 
@@ -431,7 +431,7 @@ class OeDepictAlignTests(unittest.TestCase):
             oed.setPairMolList(pairList, imageDirPath=self.__workPath, imageFilePrefix="single")
             aML = oed.alignOneWithList()
             self.assertGreater(len(aML), 2)
-            if len(aML) > 0:
+            if aML:
                 for (rCC, rAt, tCC, tAt) in aML:
                     logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 
@@ -494,7 +494,7 @@ class OeDepictAlignTests(unittest.TestCase):
             #
             # Write out atom correspondences --
             #
-            if len(aML) > 0:
+            if aML:
                 for (rCC, rAt, tCC, tAt) in aML:
                     logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 
@@ -522,7 +522,7 @@ class OeDepictAlignTests(unittest.TestCase):
             oed.setPairMolList(pairList, imageDirPath=self.__workPath, imageFilePrefix="single")
             aML = oed.alignOneWithList()
             self.assertGreater(len(aML), 2)
-            if len(aML) > 0:
+            if aML:
                 for (rCC, rAt, tCC, tAt) in aML:
                     logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 

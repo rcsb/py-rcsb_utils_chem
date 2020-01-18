@@ -22,9 +22,8 @@ import time
 
 from openeye import oechem
 from openeye import oegraphsim
-
 from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
-
+from rcsb.utils.io.MarshalUtil import MarshalUtil
 
 logger = logging.getLogger(__name__)
 
@@ -33,27 +32,65 @@ class OeIoUtils(object):
     """ Utility methods to manage OE specific IO and format conversion operations.
     """
 
-    def __init__(self, verbose=False):
-        self.__verbose = verbose
+    def __init__(self, **kwargs):
+        self.__dirPath = kwargs.get("dirPath", ".")
+        self.__mU = MarshalUtil(workPath=self.__dirPath)
         #
 
-    def smilesToMol(self, smiles):
+    def getComponentDefinitions(self, ccdFilePath):
+        try:
+            rdCcObjL = self.__mU.doImport(ccdFilePath, fmt="mmcif")
+            logger.info("Read %s with %d definitions", ccdFilePath, len(rdCcObjL))
+        except Exception as e:
+            logger.exception("Loading %s failing with %s", ccdFilePath, str(e))
+        return rdCcObjL
+
+    def chemCompToMol(self, ccdFilePath, coordType="model", quietFlag=False):
+        retMolL = []
+        try:
+            rdCcObjL = self.__mU.doImport(ccdFilePath, fmt="mmcif")
+            logger.info("Read %s with %d definitions", ccdFilePath, len(rdCcObjL))
+            oemf = OeMoleculeFactory()
+            if quietFlag:
+                oemf.setQuiet()
+            for ccObj in rdCcObjL:
+                ccId = oemf.set(ccObj)
+                if ccId:
+                    if coordType:
+                        ok = oemf.build3D(coordType=coordType)
+                    else:
+                        ok = oemf.build2D()
+                    if ok:
+                        oeMol = oemf.getMol()
+                        retMolL.append(oeMol)
+        except Exception as e:
+            logger.exception("Loading %s failing with %s", ccdFilePath, str(e))
+        return retMolL
+
+    def smilesToMol(self, smiles, limitPerceptions=True):
         """Parse the input SMILES string and return a molecule object (OeGraphMol).
 
         Args:
             smiles (str): SMILES string
+            limitPerceptions (bool): flag to limit the perceptions/transformations of input SMILES
 
         Returns:
             object: OeGraphMol() object or None for failure
         """
         try:
             mol = oechem.OEGraphMol()
-            # convert the SMILES string into a molecule
             smiles.strip()
-            if oechem.OESmilesToMol(mol, smiles):
-                return mol
+            if limitPerceptions:
+                # convert the SMILES string into a molecule
+                if oechem.OEParseSmiles(mol, smiles, False, True):
+                    return mol
+                else:
+                    logger.error("Parsing failed for SMILES string %s", smiles)
             else:
-                logger.error("Parsing failed for SMILES string %s", smiles)
+                if oechem.OESmilesToMol(mol, smiles):
+                    return mol
+                else:
+                    logger.error("Parsing failed for SMILES string %s", smiles)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return None
@@ -97,7 +134,7 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return None
 
-    def fileToMols(self, filePath):
+    def fileToMols(self, filePath, use3D=False):
         """Parse the input path returning a list of molecule objects (OeGraphMol).
 
         Args:
@@ -107,15 +144,19 @@ class OeIoUtils(object):
             list : list of OeGraphMol() objects
         """
         mL = []
+        oemf = OeMoleculeFactory()
         try:
             ifs = oechem.oemolistream(filePath)
             for mol in ifs.GetOEGraphMols():
-                mL.append(self.__standardPerceptions(oechem.OEGraphMol(mol)))
+                if use3D:
+                    mL.append(oemf.updateOePerceptions3D(mol, aromaticModel=oechem.OEAroModelOpenEye))
+                else:
+                    mL.append(oemf.updateOePerceptions2D(mol, aromaticModel=oechem.OEAroModelOpenEye))
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return mL
 
-    def stringToMols(self, txt, sType="mol2"):
+    def stringToMols(self, txt, sType="mol2", use3D=False):
         """Parse the input string as input format type (sType) returning a list of
         molecule objects (OeGraphMol)
 
@@ -128,6 +169,7 @@ class OeIoUtils(object):
         """
         #
         mL = []
+        oemf = OeMoleculeFactory()
         try:
             if sType not in ["mol2", "sdf", "smiles"]:
                 logger.error("Unsupported string data format")
@@ -139,7 +181,11 @@ class OeIoUtils(object):
                 logger.error("Unable open string data for molecule reader")
                 return None
             for mol in ifs.GetOEGraphMols():
-                mL.append(self.__standardPerceptions(oechem.OEGraphMol(mol)))
+                if use3D:
+                    mL.append(oemf.updateOePerceptions3D(mol, aromaticModel=oechem.OEAroModelOpenEye))
+                else:
+                    mL.append(oemf.updateOePerceptions2D(mol, aromaticModel=oechem.OEAroModelOpenEye))
+
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return mL
@@ -221,9 +267,11 @@ class OeIoUtils(object):
     def loadOeBinaryDatabaseAndIndex(self, oeMolDbFilePath):
         molDb = None
         try:
-            moldb = oechem.OEMolDatabase()
-            if not moldb.Open(oeMolDbFilePath):
+            molDb = oechem.OEMolDatabase()
+            if not molDb.Open(oeMolDbFilePath):
                 logger.error("Unable to open %r", oeMolDbFilePath)
+            molCount = molDb.NumMols()
+            logger.info("Loaded OE database file containing %d molecules", molCount)
         except Exception as e:
             logger.exception("Loading %r failing with %s", oeMolDbFilePath, str(e))
         return molDb
@@ -302,46 +350,6 @@ class OeIoUtils(object):
         logger.info("Completed operation at %s (%.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
         return ccCount, errCount
 
-    def __standardPerceptions(self, oeMol, dType="2D"):
-        try:
-            if dType == "2D":
-                # run standard perceptions --
-                oechem.OEFindRingAtomsAndBonds(oeMol)
-                oechem.OEPerceiveChiral(oeMol)
-
-                for oeAt in oeMol.GetAtoms():
-                    st = oeAt.GetStringData("StereoInfo")
-                    if st == "R":
-                        oechem.OESetCIPStereo(oeMol, oeAt, oechem.OECIPAtomStereo_R)
-                    elif st == "S":
-                        oechem.OESetCIPStereo(oeMol, oeAt, oechem.OECIPAtomStereo_S)
-
-                for oeBnd in oeMol.GetBonds():
-                    st = oeBnd.GetStringData("StereoInfo")
-                    if st == "E":
-                        oechem.OESetCIPStereo(oeMol, oeBnd, oechem.OECIPBondStereo_E)
-                    elif st == "Z":
-                        oechem.OESetCIPStereo(oeMol, oeBnd, oechem.OECIPBondStereo_Z)
-            elif dType == "3D":
-                # run standard perceptions --
-                #
-                oeMol.SetDimension(3)
-                oechem.OE3DToInternalStereo(oeMol)
-                oechem.OEFindRingAtomsAndBonds(oeMol)
-                # Other aromatic models: OEAroModelMDL or OEAroModelDaylight
-                oechem.OEAssignAromaticFlags(oeMol, oechem.OEAroModelOpenEye)
-                for atom in oeMol.GetAtoms():
-                    oechem.OEPerceiveCIPStereo(oeMol, atom)
-
-                for bond in oeMol.GetBonds():
-                    if bond.GetOrder() == 2:
-                        oechem.OEPerceiveCIPStereo(oeMol, bond)
-                oechem.OEAddExplicitHydrogens(oeMol)
-            #
-        except Exception as e:
-            logger.exception("Failing with %s", str(e))
-        return oeMol
-
     def createOeSubSearchDatabase(self, oebMolFilePath, oeSubSearchFilePath, screenType="SMARTS", numProc=2):
         sort = True
         keepTitle = True
@@ -376,3 +384,64 @@ class OeIoUtils(object):
         except Exception as e:
             logger.exception("Loading %r failing with %s", oeSubSearchFilePath, str(e))
         return ssDb
+
+    def write(self, filePath, oeMol, constantMol=False):
+        """Write an oeMol with format type inferred from the filePath extension (e.g. .mol)
+
+        Args:
+            filePath (str): filepath with a chemical type extension
+            constantMol (bool, optional): copies molecule before performing format specific perceptions
+
+        Returns:
+            bool: True for success or False otherwise
+        """
+        try:
+            ofs = oechem.oemolostream()
+            ofs.open(filePath)
+            logger.info("Writing %s title %s\n", filePath, oeMol.GetTitle())
+            if constantMol:
+                oechem.OEWriteConstMolecule(ofs, oeMol)
+            else:
+                oechem.OEWriteMolecule(ofs, oeMol)
+            return True
+        except Exception as e:
+            logger.exception("Failing for %s with %s", filePath, str(e))
+        return False
+
+    def serializeOe(self, oeMol):
+        """ Create a string representing the content of the current OE molecule.   This
+            serialization uses the OE internal binary format.
+        """
+        try:
+            oms = oechem.oemolostream()
+            oms.SetFormat(oechem.OEFormat_OEB)
+            oms.openstring()
+            oechem.OEWriteMolecule(oms, oeMol)
+            logger.debug("SMILES %s", oechem.OECreateCanSmiString(oeMol))
+            logger.debug("Atoms = %d", oeMol.NumAtoms())
+            return oms.GetString()
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+
+    def deserializeOe(self, oeS):
+        """ Reconstruct an OE molecule from the input string serialization (OE binary).
+
+            The deserialized molecule is used to initialize the internal OE molecule
+            within this object.
+
+            Returns:
+                list:  OE GraphMol list
+        """
+        molList = []
+        try:
+            ims = oechem.oemolistream()
+            ims.SetFormat(oechem.OEFormat_OEB)
+            ims.openstring(oeS)
+            for mol in ims.GetOEGraphMols():
+                logger.debug("SMILES %s", oechem.OECreateCanSmiString(mol))
+                logger.debug("title  %s", mol.GetTitle())
+                logger.debug("atoms  %d", mol.NumAtoms())
+                molList.append(oechem.OEGraphMol(mol))
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return molList

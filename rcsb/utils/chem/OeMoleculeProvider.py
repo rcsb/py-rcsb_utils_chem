@@ -23,6 +23,7 @@ from collections import defaultdict
 from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.PdbxChemComp import PdbxChemCompDescriptorIt
 from rcsb.utils.chem.PdbxChemComp import PdbxChemCompIt
+from rcsb.utils.chem.PdbxChemComp import PdbxChemCompAtomIt
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 
@@ -37,8 +38,8 @@ class OeMoleculeProvider(object):
     """
 
     def __init__(self, **kwargs):
-        ccUrlTarget = kwargs.get("ccUrlTarget", "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz")
-        birdUrlTarget = kwargs.get("birdUrlTarget", "ftp://ftp.wwpdb.org/pub/pdb/data/bird/prd/prdcc-all.cif.gz")
+        self.__ccUrlTarget = kwargs.get("ccUrlTarget", "http://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz")
+        self.__birdUrlTarget = kwargs.get("birdUrlTarget", "http://ftp.wwpdb.org/pub/pdb/data/bird/prd/prdcc-all.cif.gz")
         #
         self.__dirPath = kwargs.get("dirPath", ".")
         useCache = kwargs.get("useCache", True)
@@ -46,9 +47,10 @@ class OeMoleculeProvider(object):
         self.__molLimit = kwargs.get("molLimit", None)
         oeMolFileName = kwargs.get("oeMolFileName", "oe-mol-components.oeb")
         oeMolDbFileName = kwargs.get("oeMolDbFileName", "oe-mol-db-components.oeb")
+        #
         fpTypeList = kwargs.get("fpTypeList", ["TREE"])
-        # screenTypeList = kwargs.get("screenTypeList", ["SMARTS"])
-        screenTypeList = kwargs.get("screenTypeList", [])
+        screenTypeList = kwargs.get("screenTypeList", ["SMARTS"])
+        # screenTypeList = kwargs.get("screenTypeList", [])
         #
         ccIdxFileName = kwargs.get("ccIdxFileName", "cc-idx-components.pic")
         coordType = kwargs.get("coordType", None)
@@ -60,8 +62,8 @@ class OeMoleculeProvider(object):
         #
         self.__mU = MarshalUtil(workPath=self.__dirPath)
         self.__oeMolD = self.__reload(
-            ccUrlTarget,
-            birdUrlTarget,
+            self.__ccUrlTarget,
+            self.__birdUrlTarget,
             self.__dirPath,
             oeMolFileName,
             oeMolDbFileName,
@@ -78,8 +80,8 @@ class OeMoleculeProvider(object):
         self.__oeMolDbTitleD = None
         self.__ccIdxD = None
 
-    def testCache(self):
-        num = self.__molLimit if self.__molLimit else 29000
+    def testCache(self, minCount=29000):
+        num = self.__molLimit if self.__molLimit else minCount
         return self.__oeMolD and len(self.__oeMolD) >= num
 
     def getSubSearchDb(self, screenType="SMARTS", numProc=1):
@@ -112,6 +114,7 @@ class OeMoleculeProvider(object):
             self.__oeMolDb = oeIo.loadOeBinaryDatabaseAndIndex(self.__oeMolDbFilePath)
             self.__oeMolDbTitleD = self.__getOeMolDbTitleIndex()
         #
+
         return self.__oeMolDb, self.__oeMolDbTitleD
 
     def getOeMolD(self):
@@ -201,35 +204,34 @@ class OeMoleculeProvider(object):
         if useCache and fU.exists(oeMolFilePath):
             oeIo = OeIoUtils()
             retD = oeIo.readOeBinaryMolCache(oeMolFilePath)
+            logger.info("Loading OE binary molecule cache length %d", len(retD))
         else:
             ok = ok1 = ok2 = True
             if not (reuseRemote and fU.exists(ccdFilePath)):
                 startTime = time.time()
                 ok1 = fU.get(ccUrlTarget, ccdFilePath)
                 endTime = time.time()
-                logger.info("Fetched url %s for resource file %s (status = %r) (%.4f seconds)", ccUrlTarget, ccdFilePath, ok, endTime - startTime)
+                if ok1:
+                    logger.info("Fetched url %s for resource file %s (status = %r) (%.4f seconds)", ccUrlTarget, ccdFilePath, ok, endTime - startTime)
+                else:
+                    logger.error("Failing fetch of url %s for resource file %s (status = %r) (%.4f seconds)", ccUrlTarget, ccdFilePath, ok, endTime - startTime)
             if not (reuseRemote and fU.exists(birdFilePath)):
                 startTime = time.time()
                 ok2 = fU.get(birdUrlTarget, birdFilePath)
                 endTime = time.time()
-                logger.info("Fetched url %s for resource file %s (status = %r) (%.4f seconds)", birdUrlTarget, birdFilePath, ok, endTime - startTime)
-            if ok1 and ok2:
-                startTime = time.time()
-                logger.info("Reading %s", ccdFilePath)
-                rdCcObjL = self.__mU.doImport(ccdFilePath, fmt="mmcif")
-                endTime = time.time()
-                logger.info("Read %s with %d definitions (%.4f seconds)", ccdFilePath, len(rdCcObjL), endTime - startTime)
-                # -------
-                startTime = time.time()
-                logger.info("Reading %s", birdFilePath)
-                birdCcObjL = self.__mU.doImport(birdFilePath, fmt="mmcif")
-                endTime = time.time()
-                logger.info("Read %s with %d definitions (%.4f seconds)", birdFilePath, len(birdCcObjL), endTime - startTime)
-                rdCcObjL.extend(birdCcObjL)
+                if ok2:
+                    logger.info("Fetched %s for resource file %s (status = %r) (%.4f seconds)", birdUrlTarget, birdFilePath, ok, endTime - startTime)
+                else:
+                    logger.error("Failing fetch for %s for resource file %s (status = %r) (%.4f seconds)", birdUrlTarget, birdFilePath, ok, endTime - startTime)
+
+            if not (ok1 and ok2):
+                logger.error("Cache rebuild failing")
+            else:
+                rdCcObjL = self.__getComponentDefinitions(ccdFilePath, birdFilePath)
                 # Apply molecule limit
                 ccObjL = rdCcObjL[:molLimit] if molLimit else rdCcObjL
                 if molLimit:
-                    logger.info("Using limited molecule subset of %d", molLimit)
+                    logger.info("Using limited molecule subset count %d", molLimit)
                 # -------
                 startTime = time.time()
                 oeIo = OeIoUtils()
@@ -242,28 +244,52 @@ class OeMoleculeProvider(object):
                 startTime = time.time()
                 molCount = oeIo.createOeBinaryDatabaseAndIndex(oeMolFilePath, oeMolDbFilePath)
                 endTime = time.time()
-                logger.info("Returning %d OeMols in OE database format (%.4f seconds)", molCount, endTime - startTime)
+                logger.info("Created and stored %d indexed OeMols in OE database format (%.4f seconds)", molCount, endTime - startTime)
                 # --------
                 for fpType in fpTypeList:
                     startTime = time.time()
                     ok = oeIo.createOeFingerPrintDatabase(oeMolDbFilePath, fpPathD[fpType], fpType=fpType)
                     endTime = time.time()
-                    logger.info("Constructed %s fingerprint database (%.4f seconds)", fpType, endTime - startTime)
+                    logger.info("Created and stored %s fingerprint database (%.4f seconds)", fpType, endTime - startTime)
                 # ---------
                 for screenType in screenTypeList:
                     startTime = time.time()
                     ok = oeIo.createOeSubSearchDatabase(oeMolFilePath, screenPathD[screenType], screenType=screenType, numProc=numProc)
                     endTime = time.time()
-                    logger.info("Constructed sub search database status %r with screenType %s (%.4f seconds)", ok, screenType, endTime - startTime)
+                    logger.info("Constructed substructure search database status %r with screenType %s (%.4f seconds)", ok, screenType, endTime - startTime)
 
                 # ---------
                 startTime = time.time()
                 rD = self.__buildChemCompIndex(ccObjL)
                 ok = self.__mU.doExport(ccIdxFilePath, rD, fmt="pickle")
                 endTime = time.time()
-                logger.info("Storing %s with %d indexed records (%.4f seconds)", ccIdxFilePath, len(rD), endTime - startTime)
+                logger.info("Storing %s with %d raw indexed definitions (%.4f seconds)", ccIdxFilePath, len(rD), endTime - startTime)
         #
+        logger.info("Reload OE binary molecule cache length %d", len(retD))
         return retD
+
+    def getComponentDefinitions(self):
+        fU = FileUtil()
+        fn = fU.getFileName(self.__ccUrlTarget)
+        ccdFilePath = os.path.join(self.__dirPath, fn)
+        fn = fU.getFileName(self.__birdUrlTarget)
+        birdFilePath = os.path.join(self.__dirPath, fn)
+        return self.__getComponentDefinitions(ccdFilePath, birdFilePath)
+
+    def __getComponentDefinitions(self, ccdFilePath, birdFilePath):
+        startTime = time.time()
+        logger.info("Reading %s", ccdFilePath)
+        rdCcObjL = self.__mU.doImport(ccdFilePath, fmt="mmcif")
+        endTime = time.time()
+        logger.info("Read %s with %d CCD definitions (%.4f seconds)", ccdFilePath, len(rdCcObjL), endTime - startTime)
+        # -------
+        startTime = time.time()
+        logger.info("Reading %s", birdFilePath)
+        birdCcObjL = self.__mU.doImport(birdFilePath, fmt="mmcif")
+        endTime = time.time()
+        logger.info("Read %s with %d BIRD definitions (%.4f seconds)", birdFilePath, len(birdCcObjL), endTime - startTime)
+        rdCcObjL.extend(birdCcObjL)
+        return rdCcObjL
 
     def __buildChemCompIndex(self, cL):
         """Internal method return a dictionary of extracted chemical component descriptors and formula.
@@ -298,7 +324,7 @@ class OeMoleculeProvider(object):
                     elif desType == "INCHIKEY":
                         inchiKey = des.getDescriptor()
                 #
-                atIt = PdbxChemCompDescriptorIt(dataContainer)
+                atIt = PdbxChemCompAtomIt(dataContainer)
                 typeCounts = defaultdict(int)
                 for at in atIt:
                     aType = at.getType().upper()

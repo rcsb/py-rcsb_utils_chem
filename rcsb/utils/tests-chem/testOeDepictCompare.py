@@ -101,7 +101,7 @@ class OeDepictCompareTests(unittest.TestCase):
                 imgPath = os.path.join(self.__workPath, "compare-assigned-" + ccId + "-calc-" + ccId + ".svg")
                 # logger.info("Using image path %r", imgPath)
                 aML = oed.alignPair(imagePath=imgPath)
-                if len(aML) > 0:
+                if aML:
                     for (rCC, rAt, tCC, tAt) in aML:
                         logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 
