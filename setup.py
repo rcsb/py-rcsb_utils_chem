@@ -35,14 +35,13 @@ setup(
         "Natural Language :: English",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ),
-    entry_points={"console_scripts": []},
+    entry_points={"console_scripts": ["cactvs_annotate_mol=rcsb.utils.chem.cactvsAnnotateMol:main"]},
     #  The following is somewhat flakey --
     dependency_links=["https://pypi.anaconda.org/OpenEye/simple#egg=OpenEye-toolkits-2019.10.2"],
-    install_requires=["mmcif >= 0.46", "rcsb.utils.io >= 0.47", "OpenEye-toolkits==2019.10.2"],
+    install_requires=["mmcif >= 0.50", "rcsb.utils.io >= 0.50", "OpenEye-toolkits==2019.10.2"],
     packages=find_packages(exclude=["rcsb.mock-data", "rcsb.utils.tests-chem", "rcsb.utils.tests-*", "tests.*"]),
     package_data={
         # If any package contains *.md or *.rst ...  files, include them:

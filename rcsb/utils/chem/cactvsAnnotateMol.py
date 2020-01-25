@@ -9,12 +9,11 @@
 # pylint: skip-file
 import json
 import logging
+import os
 import sys
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s")
 logger = logging.getLogger()
-
-#
 
 
 def annotateCactvs(molFilePath):
@@ -26,17 +25,20 @@ def annotateCactvs(molFilePath):
         # print(type(eh))
         # print(eh.atoms())
         atomL = []
+        iChargeTotal = 0
         for ii, at in enumerate(eh.atoms(), 1):
             aD = {}
-            st = at.A_LABEL_STEREO
+            st = at.A_LABEL_STEREO != "undef"
             aD = {
                 "idx": ii,
                 "label": at.A_LABEL,
                 "type": at.A_SYMBOL,
                 "CIP": at.A_CIP_STEREO if at.A_CIP_STEREO != "undef" else None,
+                "isChiral": st,
                 "isAromatic": at.A_ISAROMATIC,
                 "formalCharge": at.A_FORMAL_CHARGE,
             }
+            iChargeTotal += int(at.A_FORMAL_CHARGE)
             logger.debug("%d %r %r %r %r %r %r", ii, at.A_LABEL, at.A_SYMBOL, at.A_CIP_STEREO, at.A_ISAROMATIC, at.A_FORMAL_CHARGE, at.A_XYZ)
             atomL.append(aD)
         #
@@ -67,16 +69,46 @@ def annotateCactvs(molFilePath):
         canSmi = eh.new("E_SMILES")
         logger.debug("Canonical smiles %s", canSmi)
         dD = {"canSmi": canSmi, "canIsoSmi": canIsoSmi}
-        retD = {"descriptors": dD, "atoms": atomL, "bonds": bondL}
+        #
+        # print(dir(eh))
+        # print(eh.props())
+        #
+        detailD = {"ccId": eh.E_MDL_NAME, "formula": eh.E_FORMULA, "ifCharge": iChargeTotal, "formulaWeight": eh.E_WEIGHT}
+        #
+        retD = {"details": detailD, "descriptors": dD, "atoms": atomL, "bonds": bondL}
     except Exception as e:
         logger.exception("Failing for %s with %s", molFilePath, str(e))
     return retD
 
 
-if __name__ == "__main__":
+def isWritable(filePath):
+    if os.path.exists(filePath):
+        if os.path.isfile(filePath):
+            return os.access(filePath, os.W_OK)
+        else:
+            return False
+    dirPath = os.path.dirname(filePath)
+    if not dirPath:
+        dirPath = "."
+    return os.access(dirPath, os.W_OK)
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.stdout.write("script <inputMolFilePath> <outputAnnotationPath> (%r)\n" % sys.argv)
+        return False
+    if not os.access(sys.argv[0], os.R_OK):
+        sys.stdout.write("script <inputMolFilePath> <outputAnnotationPath> (%r)\n" % sys.argv)
+        return False
     #
-    print(sys.argv)
-    retD = annotateCactvs(sys.argv[0])
-    with open(sys.argv[1], "w") as ofh:
-        json.dump(retD, ofh)
-#
+    if isWritable(sys.argv[1]):
+        retD = annotateCactvs(sys.argv[0])
+        if retD:
+            with open(sys.argv[1], "w") as ofh:
+                json.dump(retD, ofh)
+            return True
+    return False
+
+
+if __name__ == "__main__":
+    main()

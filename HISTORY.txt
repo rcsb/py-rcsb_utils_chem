@@ -2,4 +2,5 @@
 #
  5-Nov-2019 - V0.11 Created module with preliminary dependency cache management
 18-Jan-2020 - V0.12 Preliminary APIs for OpenEye TK, RDKIT, OpenBabel/Pybel, and CACTVS.
+25-Jan-2020 - V0.13 Add CactvsMoleculeFactory() and test methods.
 #
