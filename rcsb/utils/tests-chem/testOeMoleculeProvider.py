@@ -9,7 +9,8 @@
 #
 ##
 """
-Tests for utilities to read and process the dictionary of PDB chemical component definitions.
+Tests for utilities to read and process OE molecule instances and related databases created
+from of PDB chemical component definitions.
 
 """
 
@@ -36,12 +37,9 @@ logger = logging.getLogger()
 
 class OeMoleculeProviderTests(unittest.TestCase):
     def setUp(self):
-        self.__cachePath = os.path.join(TOPDIR, "CACHE")
         self.__startTime = time.time()
         #
-        self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
-        # self.__cachePath = os.path.join(TOPDIR, "CACHE")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
@@ -53,41 +51,151 @@ class OeMoleculeProviderTests(unittest.TestCase):
         endTime = time.time()
         logger.info("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
-    def testBuildMoleculeCacheFiles(self):
+    def testBuildMoleculeCacheFilesAbbrev(self):
+        for molBuildType in ["oe-iso-smiles", "model-xyz", "ideal-xyz"]:
+            self.__testBuildMoleculeCacheFiles(
+                ccUrlTarget=self.__ccUrlTarget,
+                birdUrlTarget=self.__birdUrlTarget,
+                ccFileNamePrefix="cc-abbrev",
+                oeFileNamePrefix="oe-abbrev",
+                molLimit=500,
+                fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"],
+                screenTypeList=["SMARTS"],
+                molBuildType=molBuildType,
+            )
+
+    def testBuildMoleculeCacheFilesSubset(self):
+        """ Test construction of OE resource files for a subset (1K) of full public chemical reference dictionary
+        """
+        for molBuildType in ["oe-iso-smiles", "model-xyz", "ideal-xyz"]:
+            self.__testBuildMoleculeCacheFiles(
+                molBuildType=molBuildType,
+                molLimit=1000,
+                ccFileNamePrefix="cc-1k",
+                oeFileNamePrefix="oe-1k",
+                screenTypeList=["SMARTS"],
+                fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"],
+            )
+        #
+
+    def testBuildMoleculeCacheFilesFiltered(self):
+        """ Test construction of OE resource files for a filtered subset of full public chemical reference dictionary
+        """
+        for molBuildType in ["oe-iso-smiles", "model-xyz", "ideal-xyz"]:
+            self.__testBuildMoleculeCacheFiles(
+                molBuildType=molBuildType,
+                molLimit=1000,
+                ccFileNamePrefix="cc-filtered",
+                oeFileNamePrefix="oe-filtered",
+                screenTypeList=["SMARTS"],
+                fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"],
+            )
+        #
+
+    def testBuildMoleculeCacheFilesFull(self):
+        """ Test construction of OE resource files for the full public chemical reference dictionary
+
+            For 31K cc's the build time is ~3123 secs (4 procs)
+
+        """
+        for molBuildType in ["oe-iso-smiles", "model-xyz", "ideal-xyz"]:
+            self.__testBuildMoleculeCacheFiles(
+                molBuildType=molBuildType, ccFileNamePrefix="cc-full", oeFileNamePrefix="oe-full", fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"]
+            )
+
+    def testBuildMoleculeCacheFilesFullScreened(self):
+        """ Test construction of OE resource files with screened substructure database for the full public chemical reference dictionary
+        """
+        for molBuildType in ["oe-iso-smiles"]:
+            self.__testBuildMoleculeCacheFiles(
+                molBuildType=molBuildType,
+                ccFileNamePrefix="cc-full",
+                oeFileNamePrefix="oe-full",
+                screenTypeList=["SMARTS"],
+                fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"],
+            )
+
+    def __testBuildMoleculeCacheFiles(self, **kwargs):
         """ Test build OE cache files from full component dictionary
         """
-        minCount = 500
-        oemp = OeMoleculeProvider(
-            ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, dirPath=os.path.join(self.__cachePath, "chem_comp"), coordType="model", useCache=False
-        )
-        ok = oemp.testCache(minCount=minCount)
-        self.assertTrue(ok, minCount)
-        logger.info(" ******* Completed initial load ******** ")
+        ccUrlTarget = kwargs.get("ccUrlTarget", None)
+        birdUrlTarget = kwargs.get("birdUrlTarget", None)
+        molLimit = kwargs.get("molLimit", 0)
+        quietFlag = kwargs.get("quietFlag", True)
+        molBuildType = kwargs.get("molBuildType", "ideal-xyz")
+        fpTypeList = kwargs.get("fpTypeList", ["TREE"])
+        screenTypeList = kwargs.get("screenTypeList", [])
+        ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
+        oeFileNamePrefix = kwargs.get("oeFileNamePrefix", "oe")
         #
-        oemp = OeMoleculeProvider(
-            ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, dirPath=os.path.join(self.__cachePath, "chem_comp"), coordType="model", useCache=True
-        )
-        ok = oemp.testCache(minCount=minCount)
+        startTime = time.time()
+        if ccUrlTarget and birdUrlTarget and molLimit:
+            # Using abbreviated reference source files
+            oemp = OeMoleculeProvider(
+                ccUrlTarget=ccUrlTarget,
+                birdUrlTarget=birdUrlTarget,
+                cachePath=self.__cachePath,
+                ccFileNamePrefix=ccFileNamePrefix,
+                oeFileNamePrefix=oeFileNamePrefix,
+                molBuildType=molBuildType,
+                useCache=False,
+                quietFlag=quietFlag,
+                fpTypeList=fpTypeList,
+                screenTypeList=screenTypeList,
+            )
+        else:
+            oemp = OeMoleculeProvider(
+                cachePath=self.__cachePath,
+                ccFileNamePrefix=ccFileNamePrefix,
+                oeFileNamePrefix=oeFileNamePrefix,
+                molBuildType=molBuildType,
+                useCache=False,
+                quietFlag=quietFlag,
+                molLimit=molLimit,
+                fpTypeList=fpTypeList,
+                screenTypeList=screenTypeList,
+            )
+        ok = oemp.testCache()
         self.assertTrue(ok)
+        #
+        endTime = time.time()
+        logger.info(">> Completed load molBuildType %r molLimit %r (%.4f seconds)", molBuildType, molLimit, endTime - startTime)
+        #
+        # ---
+        oemp = OeMoleculeProvider(cachePath=self.__cachePath, ccFileNamePrefix=ccFileNamePrefix, oeFileNamePrefix=oeFileNamePrefix, molBuildType=molBuildType, useCache=True)
+        #
+        deltaMol = 2
+        minMol = minNumFp = molLimit - deltaMol if molLimit else 30000
+        for fpType in fpTypeList:
+            fpDb = oemp.getFingerPrintDb(fpType="TREE")
+            logger.debug("fpType %r length %d", fpType, fpDb.NumFingerPrints())
+            self.assertGreaterEqual(fpDb.NumFingerPrints(), minNumFp)
+        #
         ccId = "004"
         oeMol = oemp.getMol(ccId)
-        logger.info("%s atom count %d", ccId, len(list(oeMol.GetAtoms())))
-        self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 20)
+        logger.debug("%s atom count %d", ccId, len(list(oeMol.GetAtoms())))
+        #
+        if molBuildType in ["oe-iso-smiles"]:
+            self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
+        else:
+            self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 20)
         #
         oeDb, oeDbIdx = oemp.getOeMolDatabase()
-        logger.info("Type db %r idx %r", type(oeDb), type(oeDbIdx))
+        logger.debug("Type db %r length %d type idx %r length %d", type(oeDb), oeDb.NumMols(), type(oeDbIdx), len(oeDbIdx))
+        self.assertGreaterEqual(oeDb.NumMols(), minMol)
+        self.assertGreaterEqual(len(oeDbIdx), minMol)
         #
-        #
-        #
-        ssDb = oemp.getSubSearchDb()
-        logger.info("Type %r", type(ssDb))
-        fpDb = oemp.getFingerPrintDb()
-        logger.info("Type %r", type(fpDb))
+        if molBuildType in ["oe-iso-smiles"] and screenTypeList:
+            ssDb = oemp.getSubSearchDb()
+            self.assertGreaterEqual(ssDb.NumMolecules(), minMol)
 
 
 def buildCacheFiles():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeMoleculeProviderTests("testBuildMoleculeCacheFiles"))
+    suiteSelect.addTest(OeMoleculeProviderTests("testBuildMoleculeCacheFilesAbbrev"))
+    suiteSelect.addTest(OeMoleculeProviderTests("testBuildMoleculeCacheFilesSubset"))
+    suiteSelect.addTest(OeMoleculeProviderTests("testBuildMoleculeCacheFilesFiltered"))
+    suiteSelect.addTest(OeMoleculeProviderTests("testBuildMoleculeCacheFilesFull"))
     return suiteSelect
 
 

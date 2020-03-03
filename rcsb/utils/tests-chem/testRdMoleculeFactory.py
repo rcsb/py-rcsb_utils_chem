@@ -53,7 +53,7 @@ class RdMolecularFactoryTests(unittest.TestCase):
         self.assertGreaterEqual(len(rdCcObjL), 4)
         for rdCcObj in rdCcObjL:
             ccId = rdCcObj.getName()
-            sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
+            _, sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
             if self.__exportFlag:
                 fp = os.path.join(self.__workPath, rdCcObj.getName() + ".sdf")
                 with open(fp, "w") as ofh:

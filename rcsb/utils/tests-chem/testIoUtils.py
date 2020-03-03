@@ -54,14 +54,30 @@ class IoUtilsTests(unittest.TestCase):
         rdCcObjL = ioU.getComponentDefinitions(os.path.join(self.__dataPath, "components-abbrev.cif"))
         self.assertGreaterEqual(len(rdCcObjL), 4)
         for rdCcObj in rdCcObjL:
-            sdfS, _ = ioU.makeSdf(rdCcObj)
+            ok, sdfS, _ = ioU.makeSdf(rdCcObj, molBuildType="ideal-xyz")
+            if not ok:
+                continue
             if self.__exportFlag:
                 fp = os.path.join(self.__workPath, rdCcObj.getName() + ".sdf")
                 with open(fp, "w") as ofh:
                     ofh.write("%s" % sdfS)
             sdfL.append(sdfS)
         #
-        logger.debug("\n%s", "\n".join(sdfL))
+
+    def testSdfBulkGenerator(self):
+        ioU = IoUtils()
+        sdfL = []
+        rdCcObjL = ioU.getComponentDefinitions(os.path.join(self.__dataPath, "components.cif.gz"))
+        self.assertGreaterEqual(len(rdCcObjL), 4)
+        for rdCcObj in rdCcObjL[:500]:
+            ok, sdfS, _ = ioU.makeSdf(rdCcObj, molBuildType="ideal-xyz")
+            if not ok:
+                continue
+            sdfL.append(sdfS)
+        #
+        fp = os.path.join(self.__workPath, "components.sdf")
+        with open(fp, "w") as ofh:
+            ofh.write("%s" % "\n".join(sdfL))
 
 
 def sdfWriterSuite():

@@ -23,6 +23,7 @@ import unittest
 
 from rcsb.utils.chem.IoUtils import IoUtils
 from rcsb.utils.chem.CactvsMoleculeFactory import CactvsMoleculeFactory
+from rcsb.utils.chem.MoleculeAnnotationsCompare import MoleculeAnnotationsCompare
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -32,7 +33,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(mo
 logger = logging.getLogger()
 
 
-class CactvsMolecularFactoryTests(unittest.TestCase):
+class CactvsMoleculeFactoryTests(unittest.TestCase):
     def setUp(self):
         #
         self.__workPath = os.path.join(HERE, "test-output")
@@ -47,6 +48,9 @@ class CactvsMolecularFactoryTests(unittest.TestCase):
         pass
 
     def testFromSdf(self):
+        aroModel = "daylight"
+        retD = {}
+        maC = MoleculeAnnotationsCompare()
         ctvsmf = CactvsMoleculeFactory(self.__cactvsPythonPath, self.__workPath)
         ioU = IoUtils()
         sdfL = []
@@ -54,27 +58,30 @@ class CactvsMolecularFactoryTests(unittest.TestCase):
         self.assertGreaterEqual(len(rdCcObjL), 4)
         for rdCcObj in rdCcObjL:
             ccId = rdCcObj.getName()
-            sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
+            _, sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
             if self.__exportFlag:
                 fp = os.path.join(self.__workPath, rdCcObj.getName() + ".sdf")
                 with open(fp, "w") as ofh:
                     ofh.write("%s" % sdfS)
                 ctvsmf.setFile(ccId, fp, atomIdxD=atomIdxD)
-                ctvsmf.getMoleculeFeatures()
-                #
                 cactvsJsonPath = os.path.join(self.__workPath, rdCcObj.getName() + ".json")
-                ctvsmf.annotate(cactvsJsonPath)
+                ctvsmf.annotate(cactvsJsonPath, aroModel=aroModel)
                 #
-                mD = ctvsmf.getMoleculeFeatures()
+                tstFD = ctvsmf.getMoleculeFeatures(aroModel=aroModel)
+                refFD = maC.getChemCompFeatures(rdCcObj, descriptorProgram="CACTVS")
+                ok, retCmp = maC.compare(refFD, tstFD, tstInfo="cactvs default")
+                if not ok:
+                    retD[ccId] = retCmp
                 #
             sdfL.append(sdfS)
         #
+        logger.info("Components processed %d differences %d", len(rdCcObjL), len(retD))
         # logger.info("\n%s", "\n".join(sdfL))
 
 
 def suiteCactvsBuildTests():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(CactvsMolecularFactoryTests("testFromSdf"))
+    suiteSelect.addTest(CactvsMoleculeFactoryTests("testFromSdf"))
     return suiteSelect
 
 

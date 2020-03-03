@@ -147,8 +147,9 @@ class OeDepictAlignBase(OeDepictBase):
 
         return False
 
-    def setSearchType(self, sType="default"):
+    def setSearchType(self, sType="default", minAtomMatchFraction=0.50):
         self._searchType = sType
+        self._minAtomMatchFraction = minAtomMatchFraction
         return self._searchType
 
     def _setupMCSS(self, refmol):
@@ -161,8 +162,10 @@ class OeDepictAlignBase(OeDepictBase):
             atomexpr = oechem.OEExprOpts_DefaultAtoms
             bondexpr = oechem.OEExprOpts_DefaultBonds
         elif self._searchType == "relaxed":
-            atomexpr = oechem.OEExprOpts_AtomicNumber
-            bondexpr = 0
+            # atomexpr = oechem.OEExprOpts_AtomicNumber
+            atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
+            bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_EqSingleDouble
+            # bondexpr = 0
         elif self._searchType == "exact":
             atomexpr = oechem.OEExprOpts_ExactAtoms
             bondexpr = oechem.OEExprOpts_ExactBonds

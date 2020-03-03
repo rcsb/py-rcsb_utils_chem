@@ -35,7 +35,14 @@ class OeIoUtils(object):
     def __init__(self, **kwargs):
         self.__dirPath = kwargs.get("dirPath", ".")
         self.__mU = MarshalUtil(workPath=self.__dirPath)
+        if kwargs.get("quietFlag", False):
+            self.setQuiet()
         #
+
+    def setQuiet(self):
+        # quiet
+        # oechem.OEThrow.SetLevel(5)
+        oechem.OEThrow.SetLevel(oechem.OEErrorLevel_Quiet)
 
     def getComponentDefinitions(self, ccdFilePath):
         try:
@@ -45,7 +52,7 @@ class OeIoUtils(object):
             logger.exception("Loading %s failing with %s", ccdFilePath, str(e))
         return rdCcObjL
 
-    def chemCompToMol(self, ccdFilePath, coordType="model", quietFlag=False):
+    def chemCompToMol(self, ccdFilePath, molBuildType="model-xyz", quietFlag=False):
         retMolL = []
         try:
             rdCcObjL = self.__mU.doImport(ccdFilePath, fmt="mmcif")
@@ -54,12 +61,9 @@ class OeIoUtils(object):
             if quietFlag:
                 oemf.setQuiet()
             for ccObj in rdCcObjL:
-                ccId = oemf.set(ccObj)
+                ccId = oemf.setChemCompDef(ccObj)
                 if ccId:
-                    if coordType:
-                        ok = oemf.build3D(coordType=coordType)
-                    else:
-                        ok = oemf.build2D()
+                    ok = oemf.build(molBuildType=molBuildType)
                     if ok:
                         oeMol = oemf.getMol()
                         retMolL.append(oeMol)
@@ -82,7 +86,7 @@ class OeIoUtils(object):
             smiles.strip()
             if limitPerceptions:
                 # convert the SMILES string into a molecule
-                if oechem.OEParseSmiles(mol, smiles, False, True):
+                if oechem.OEParseSmiles(mol, smiles, False, False):
                     return mol
                 else:
                     logger.error("Parsing failed for SMILES string %s", smiles)
@@ -95,7 +99,7 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return None
 
-    def inchiToMol(self, inchi):
+    def inchiToMol(self, inchi, limitPerceptions=True):
         """Parse the input InChI string and return a molecule object (OeGraphMol).
 
         Args:
@@ -103,14 +107,21 @@ class OeIoUtils(object):
 
         Returns:
             object: OeGraphMol() object or None for failure
+
         """
         try:
             mol = oechem.OEGraphMol()
             inchi = inchi.strip()
-            if oechem.OEInChIToMol(mol, inchi):
-                return mol
+            if limitPerceptions:
+                if oechem.OEParseInChI(mol, inchi):
+                    return mol
+                else:
+                    logger.error("Parsing failed for InChI string %r", inchi)
             else:
-                logger.error("Parsing failed for InChI string %s", inchi)
+                if oechem.OEInChIToMol(mol, inchi):
+                    return mol
+                else:
+                    logger.error("Parsing failed for InChI string %r", inchi)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return None
@@ -213,7 +224,13 @@ class OeIoUtils(object):
         logger.info("Completed operation at %s (%.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
         return retD
 
-    def createOeFingerPrintDatabase(self, oeMolDbFilePath, oeFpDbFilePath, fpType="TREE"):
+    def createOeFingerPrintDatabase(self, oeMolDbFilePath, oeFpDbFilePath, fpType="TREE", dbType="FAST"):
+        if dbType == "FAST":
+            return self.__createOeFastFingerPrintDatabase(oeMolDbFilePath, oeFpDbFilePath, fpType=fpType)
+        else:
+            return True
+
+    def __createOeFastFingerPrintDatabase(self, oeMolDbFilePath, oeFpDbFilePath, fpType="TREE"):
         """ Create fast search fingerprint database from the input molecular database.
 
         Args:
@@ -246,7 +263,71 @@ class OeIoUtils(object):
         logger.info("Completed operation at %s (%.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
         return ok
 
-    def loadOeFingerPrintDatabase(self, oeFpDbFilePath, inMemory=True, fpType="TREE"):
+    def loadOeFingerPrintDatabase(self, oeMolDbFilePath, oeFpDbFilePath, inMemory=False, fpType="TREE", fpDbType="FAST"):
+        if fpDbType == "FAST":
+            return self.__loadOeFastFingerPrintDatabase(oeFpDbFilePath, inMemory=inMemory, fpType=fpType)
+        else:
+            return self.__loadOeFingerPrintDatabase(oeMolDbFilePath, fpType=fpType)
+
+    def __loadOeFingerPrintDatabase(self, oeMolDbFilePath, fpType="TREE"):
+        """ Create conventional search fingerprint database from the input molecular database.
+
+        Args:
+            oeMolDbFilePath (str): path to the input molecular database
+            oeFpDbFilePath (str): path to the output fingerprint database
+            fpType (str):  finger print type
+
+        Returns:
+            bool: True for success or False otherwise
+
+        Supports:
+            OEFPType_Circular
+            OEFPType_Path
+            OEFPType_Tree
+            OEFPType_MACCS166
+            OEFPType_Lingo
+        """
+        fpDb = None
+        ok = False
+        try:
+            startTime = time.time()
+            fpD = {
+                "TREE": oegraphsim.OEFPType_Tree,
+                "CIRCULAR": oegraphsim.OEFPType_Circular,
+                "PATH": oegraphsim.OEFPType_Path,
+                "MACCS": oegraphsim.OEFPType_MACCS166,
+                "LINGO": oegraphsim.OEFPType_Lingo,
+            }
+            fpType = fpType if fpType and fpType in fpD else "TREE"
+            tag = "FP_" + fpType
+            oeFpType = fpD[fpType] if fpType in fpD else oegraphsim.OEFPType_Tree
+            oeMolDb = self.loadOeBinaryDatabaseAndIndex(oeMolDbFilePath)
+            #
+            fpDb = oegraphsim.OEFPDatabase(oeFpType)
+            numMols = oeMolDb.GetMaxMolIdx()
+            logger.info("fpType %r tag %r oeFpType %r", fpType, tag, oeFpType)
+            oeMol = oechem.OEGraphMol()
+            for idx in range(0, numMols):
+                if oeMolDb.GetMolecule(oeMol, idx):
+                    if oeMol.HasData(tag):
+                        tfp = oeMol.GetData(tag)
+                        fpDb.AddFP(tfp)
+                    else:
+                        fpDb.AddFP(oeMol)
+                else:
+                    logger.info("Missing molecule at index %r", idx)
+
+            numFp = fpDb.NumFingerPrints()
+            ok = numMols == numFp
+            logger.info("Number of molecule definitions %d fingerprints %d", numMols, numFp)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            fpDb = None
+        endTime = time.time()
+        logger.info("Completed with status %r operation at %s (%.4f seconds)", ok, time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
+        return fpDb
+
+    def __loadOeFastFingerPrintDatabase(self, oeFpDbFilePath, inMemory=False, fpType="TREE"):
         #
         _ = fpType
         startTime = time.time()
@@ -254,6 +335,8 @@ class OeIoUtils(object):
             memType = oegraphsim.OEFastFPDatabaseMemoryType_InMemory
         else:
             memType = oegraphsim.OEFastFPDatabaseMemoryType_MemoryMapped
+        if not self.__mU.exists(oeFpDbFilePath):
+            logger.error("Missing fingerprint database file %r", oeFpDbFilePath)
         fpDb = oegraphsim.OEFastFPDatabase(oeFpDbFilePath, memType)
         if not fpDb.IsValid():
             logger.error("Cannot open fingerprint database %r", oeFpDbFilePath)
@@ -261,7 +344,7 @@ class OeIoUtils(object):
         lenFp = fpDb.NumFingerPrints()
         memTypeStr = fpDb.GetMemoryTypeString()
         endTime = time.time()
-        logger.info("Loaded fingerprint data length %d loaded %s (%.4f seconds)", lenFp, memTypeStr, endTime - startTime)
+        logger.info("Read fingerprint database length %d loaded %s (%.4f seconds)", lenFp, memTypeStr, endTime - startTime)
         return fpDb
 
     def loadOeBinaryDatabaseAndIndex(self, oeMolDbFilePath):
@@ -306,16 +389,17 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return molCount
 
-    def buildOeBinaryMolCache(self, filePath, ccObjL, coordType="model", quietFlag=False):
+    def buildOeBinaryMolCache(self, filePath, ccObjD, molBuildType="model-xyz", quietFlag=False, fpTypeList=None, limitPerceptions=True):
         """Build cache of OEGraphMol() objects from the input chemical component definition list.
 
         Args:
-            ccObjL (list): Chemical component dataContainer object list
+            ccObjD (dict): Chemical component dataContainer object dictionary
 
         Returns:
           (int, int) : chemical component count processed successes and failures
         """
         try:
+            failIdList = []
             ccCount = 0
             errCount = 0
             startTime = time.time()
@@ -325,21 +409,22 @@ class OeIoUtils(object):
                 oemf = OeMoleculeFactory()
                 if quietFlag:
                     oemf.setQuiet()
-                for ccObj in ccObjL:
-                    ccId = oemf.set(ccObj)
-                    if ccId:
-                        if coordType:
-                            ok = oemf.build3D(coordType=coordType)
-                        else:
-                            ok = oemf.build2D()
-
+                for ccId, ccObj in ccObjD.items():
+                    tId = oemf.setChemCompDef(ccObj)
+                    if tId and tId == ccId:
+                        ok = oemf.build(molBuildType=molBuildType, limitPerceptions=limitPerceptions)
+                        if ok and fpTypeList:
+                            fpOk = oemf.addFingerPrints(fpTypeList)
+                            if not fpOk:
+                                logger.info("Fingerprint generation fails for %r", ccId)
                         if ok:
                             oeMol = oemf.getMol()
                             oechem.OEWriteMolecule(ofs, oeMol)
                             ccCount += 1
-                    else:
-                        # incomplete component (e.g. missing atoms or bonds)
+                    if not ok or not tId:
+                        # build failed incomplete component (e.g. missing atoms or bonds)
                         errCount += 1
+                        failIdList.append(ccId)
             else:
                 logger.error("Unable to open cache database %s", filePath)
                 errCount += 1
@@ -348,7 +433,7 @@ class OeIoUtils(object):
         #
         endTime = time.time()
         logger.info("Completed operation at %s (%.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
-        return ccCount, errCount
+        return ccCount, errCount, failIdList
 
     def createOeSubSearchDatabase(self, oebMolFilePath, oeSubSearchFilePath, screenType="SMARTS", numProc=2):
         sort = True
@@ -381,6 +466,7 @@ class OeIoUtils(object):
             tracer = oechem.OEConsoleProgressTracer()
             if not ssDb.Open(oeSubSearchFilePath, tracer):
                 logger.error("Unable to open %r", oeSubSearchFilePath)
+            logger.info("Opened %r with %r molecules", oeSubSearchFilePath, ssDb.NumMolecules())
         except Exception as e:
             logger.exception("Loading %r failing with %s", oeSubSearchFilePath, str(e))
         return ssDb

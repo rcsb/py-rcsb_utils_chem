@@ -42,12 +42,13 @@ class IoUtils(object):
             logger.exception("Loading %s failing with %s", ccdFilePath, str(e))
         return rdCcObjL
 
-    def makeSdf(self, dataContainer, coordType="model", useAromatic=False):
+    def makeSdf(self, dataContainer, molBuildType="model-xyz", useAromatic=False):
         sdf = ""
         atomIdxD = {}
+        ok = True
         try:
             if not (dataContainer.exists("chem_comp") and dataContainer.exists("chem_comp_atom") and dataContainer.exists("chem_comp_bond")):
-                return sdf
+                return False, sdf, atomIdxD
             ccIt = PdbxChemCompIt(dataContainer)
             for cc in ccIt:
                 ccId = cc.getId()
@@ -93,12 +94,14 @@ class IoUtils(object):
                 if isotope != 0:
                     isotopeL.append("%4s%4d" % (iAtom, isotope))
                 cTup = None
-                if (coordType == "model") and ccAt.hasModelCoordinates():
+                if (molBuildType == "model-xyz") and ccAt.hasModelCoordinates():
                     cTup = ccAt.getModelCoordinates()
-                elif (coordType == "ideal") and ccAt.hasIdealCoordinates():
+                elif (molBuildType == "ideal-xyz") and ccAt.hasIdealCoordinates():
                     cTup = ccAt.getIdealCoordinates()
                 else:
-                    pass
+                    logger.warning("%s has no %s records", dataContainer.getName(), molBuildType)
+                    ok = False
+                    cTup = (0.0, 0.0, 0.0)
                 iAtom += 1
                 #
                 aS = "%10.4f%10.4f%10.4f %-3s%2d%3d%3d%3d%3d" % (cTup[0], cTup[1], cTup[2], atType, 0, chargeMap[fc], 0, 0, 0)
@@ -129,4 +132,6 @@ class IoUtils(object):
             sdf = "\n".join(oL)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
-        return sdf, atomIdxD
+            ok = False
+
+        return ok, sdf, atomIdxD

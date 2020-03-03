@@ -46,15 +46,15 @@ class CactvsMoleculeFactory(object):
         self.__workPath = workPath if workPath else "."
         #
 
-    def annotate(self, jsonPath):
-        ok = self.__runCactvsPython(self.__molFilePath, jsonPath)
+    def annotate(self, jsonPath, aroModel="cactvs"):
+        ok = self.__runCactvsPython(self.__molFilePath, jsonPath, aroModel=aroModel)
         return ok
 
-    def __runCactvsPython(self, molFilePath, jsonPath):
+    def __runCactvsPython(self, molFilePath, jsonPath, aroModel="cactvs"):
         fp = resource_filename(Requirement.parse("rcsb.utils.chem"), "rcsb/utils/chem/cactvsAnnotateMol.py")
         logger.info("script path is %r", fp)
         exU = ExecUtils()
-        ok = exU.run(self.__cactvsPythonInterpreterPath, [fp, molFilePath, jsonPath])
+        ok = exU.run(self.__cactvsPythonInterpreterPath, [fp, molFilePath, jsonPath, aroModel])
         return ok
 
     def setFile(self, ccId, filePath, molFormat="mol", atomIdxD=None):
@@ -69,7 +69,7 @@ class CactvsMoleculeFactory(object):
             logger.exception("Failing for %s with %s", ccId, str(e))
         return False
 
-    def getMoleculeFeatures(self):
+    def getMoleculeFeatures(self, aroModel="cactvs"):
         """Get the essential features of the constructed obMol for the input component.
 
          OBConversion object, use SetInAndOutFormat(InCode, OutCode).
@@ -77,7 +77,7 @@ class CactvsMoleculeFactory(object):
 
         """
         jsonFilePath = os.path.join(self.__workPath, self.__ccId + "-cactvs.json")
-        self.annotate(jsonFilePath)
+        self.annotate(jsonFilePath, aroModel=aroModel)
         #
         mU = MarshalUtil()
         ctvsMol = mU.doImport(jsonFilePath, fmt="json")

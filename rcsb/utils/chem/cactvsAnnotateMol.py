@@ -16,10 +16,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(mo
 logger = logging.getLogger()
 
 
-def annotateCactvs(molFilePath):
+def annotateCactvs(molFilePath, aroModel="cactvs"):
     retD = {}
     try:
-        cactvs["aromaticity_model"] = "daylight"
+        cactvs["aromaticity_model"] = aroModel if aroModel in ["cactvs", "daylight", "tripos"] else "cactvs"
+        logger.info("aroModel is %r", aroModel)
         #
         eh = Molfile(molFilePath).read()
         # print(type(eh))
@@ -102,7 +103,7 @@ def main():
         return False
     #
     if isWritable(sys.argv[1]):
-        retD = annotateCactvs(sys.argv[0])
+        retD = annotateCactvs(sys.argv[0], aroModel=sys.argv[2])
         if retD:
             with open(sys.argv[1], "w") as ofh:
                 json.dump(retD, ofh)

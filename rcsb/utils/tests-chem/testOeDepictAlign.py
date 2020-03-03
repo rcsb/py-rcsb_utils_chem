@@ -175,13 +175,13 @@ class OeDepictAlignTests(unittest.TestCase):
             ("3TD", "U"),
         ]
         #
-        self.__oeMolD = self.__getCache(coordType="model", useCache=True)
+        self.__oeMolD = self.__getCache(molBuildType="model-xyz", useCache=True)
 
     def tearDown(self):
         pass
 
-    def __getCache(self, coordType="model", useCache=True):
-        oemp = OeMoleculeProvider(dirPath=os.path.join(self.__cachePath, "chem_comp"), screenTypeList=[], coordType=coordType, useCache=useCache)
+    def __getCache(self, molBuildType="model-xyz", useCache=True):
+        oemp = OeMoleculeProvider(cachePath=self.__cachePath, molBuildType=molBuildType, useCache=useCache)
         ok = oemp.testCache()
         self.assertTrue(ok)
         return oemp.getOeMolD()

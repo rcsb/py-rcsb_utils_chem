@@ -20,14 +20,12 @@ __license__ = "Apache 2.0"
 import logging
 import os
 import unittest
-from collections import defaultdict
 
-from openeye import oechem
+from rcsb.utils.chem.ChemCompMoleculeProvider import ChemCompMoleculeProvider
+from rcsb.utils.chem.MoleculeAnnotationsCompare import MoleculeAnnotationsCompare
 from rcsb.utils.chem.OeDepictAlign import OeDepictMCSAlignPage
-from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
-from rcsb.utils.chem.OeMoleculeProvider import OeMoleculeProvider
-from rcsb.utils.chem.PdbxChemComp import PdbxChemCompDescriptorIt, PdbxChemCompIt
+from rcsb.utils.chem.PdbxChemComp import PdbxChemCompIt
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -46,99 +44,121 @@ class OeMolecularFactoryTests(unittest.TestCase):
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
         self.__molLimit = 50
-        #
 
     def tearDown(self):
         pass
+
+    def __getChemCompDefs(self, molLimit=500):
+        ccMolD = {}
+        try:
+            useCache = True
+            ccFileNamePrefix = "cc-abbrev"
+            ccmP = ChemCompMoleculeProvider(
+                ccUrlTarget=self.__ccUrlTarget,
+                birdUrlTarget=self.__birdUrlTarget,
+                cachePath=self.__cachePath,
+                useCache=useCache,
+                ccFileNamePrefix=ccFileNamePrefix,
+                molLimit=molLimit,
+            )
+            ok = ccmP.testCache(minCount=molLimit)
+            self.assertTrue(ok)
+            ccMolD = ccmP.getMolD()
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return ccMolD
+
+    def testSelfConsistency(self):
+        """Compare constructed molecule with underlying chemical definitions -
+        """
+        try:
+            failL = []
+            ccMolD = self.__getChemCompDefs()
+            #
+            # molBuildTypeL = ["model-xyz", "ideal-xyz", None]
+            # molBuildTypeL = [None]
+            #
+            oefm = OeMoleculeFactory()
+            macmp = MoleculeAnnotationsCompare()
+
+            limitPerceptions = False
+            # buildTypeRef = "oe-iso-smiles"
+            buildTypeRef = "model-xyz"
+            filterHydrogens = False
+            if buildTypeRef in ["oe-iso-smiles", "oe-smiles", "cactvs-smiles", "cactvs-iso-smiles", "acdlabs-smiles", "inchi"]:
+                filterHydrogens = True
+            #
+            for ccId, ccObj in ccMolD.items():
+                # ----
+                tId = oefm.setChemCompDef(ccObj)
+                self.assertEqual(tId, ccId)
+                ok = oefm.build(molBuildType=buildTypeRef, limitPerceptions=limitPerceptions, normalize=False)
+                if not ok:
+                    logger.info("Build using %r failed for %s", buildTypeRef, ccId)
+                    continue
+                #
+                doTautomers = False
+                if doTautomers:
+                    tautomerMolL = oefm.getTautomerList()
+                    logger.info("%s number reasonable tautomers %d", ccId, len(tautomerMolL))
+                #
+                refFD = macmp.getChemCompFeatures(ccObj, descriptorProgram="OPENEYE", filterHydrogens=filterHydrogens)
+                tstFD = oefm.getOeMoleculeFeatures(filterHydrogens=filterHydrogens)
+                # logger.info("tstFD %r", tstFD)
+                ok, retCmp = macmp.compare(refFD, tstFD, tstInfo="Openeye ISO SMILES")
+                if not ok:
+                    logger.info("Comparison failed build type %r and %r", buildTypeRef, ccId)
+                    logger.debug(
+                        "diff -> atomatic atoms %r stereo atoms %r bond types %r aromatic bonds %r",
+                        retCmp.difAromaticAtoms,
+                        retCmp.difStereoAtoms,
+                        retCmp.difTypeBonds,
+                        retCmp.difAromaticBonds,
+                    )
+                    failL.append(ccId)
+                #
+            logger.info("Failures (%d) %r: ", len(failL), failL)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
 
     def testRoundTrip(self):
         """Round trip smiles comparisons -
         """
         try:
-            useAbbrev = True
+            ccMolD = self.__getChemCompDefs()
             # useCache = True
-            quietFlag = False
-            molLimit = 100
-            # coordTypeL = ["model", "ideal", None]
-            # coordTypeL = [None]
-            oeIo = OeIoUtils()
-            if useAbbrev:
-                rdCcObjL = oeIo.getComponentDefinitions(os.path.join(self.__dataPath, "components-abbrev.cif"))
+            # quietFlag = False
+            # molBuildTypeL = ["model-xyz", "ideal-xyz", None]
+            # molBuildTypeL = [None]
+            buildTypeRef = "oe-iso-smiles"
+            oemf1 = OeMoleculeFactory()
+            oemf2 = OeMoleculeFactory()
             #
-            # oemp = OeMoleculeProvider(dirPath=os.path.join(self.__cachePath, "chem_comp"), coordType=coordType, useCache=useCache, molLimit=self.__molLimit)
-            # ok = oemp.testCache()
-            # self.assertTrue(ok)
-            # rdCcObjL = oemp.getComponentDefinitions()
-            #
-            self.assertGreater(len(rdCcObjL), 4)
-            ccObjL = rdCcObjL[:molLimit] if molLimit else rdCcObjL
-            for ccObj in ccObjL:
-                ccIt = PdbxChemCompIt(ccObj)
-                for cc in ccIt:
-                    formula = cc.getFormulaWithCharge()
-                    ccId = cc.getId()
-                    ccName = cc.getName()
-                    ifCharge = cc.getFormalChargeAsInt()
-                    isAmbiguous = cc.getAmbiguousFlag() in ["Y", "y"]
-                    isCurrent = cc.getReleaseStatus() in ["REL"]
-                logger.debug("%s name %r formula %rcharge %d", ccId, ccName, formula, ifCharge)
-                desIt = PdbxChemCompDescriptorIt(ccObj)
-                isoSmiles = smiles = inchi = inchiKey = None
-                for des in desIt:
-                    desType = des.getType().upper()
-                    desProg = des.getProgram().upper()
-                    desText = des.getDescriptor().strip()
-                    if "OPEN" in desProg and desType == "SMILES_CANONICAL":
-                        isoSmiles = desText
-                    elif "CACTVS" in desProg and desType == "SMILES_CANONICAL":
-                        isoSmilesCactvs = desText
-                    elif "OPEN" in desProg and desType == "SMILES":
-                        smiles = desText
-                    elif desType == "INCHI":
-                        inchi = desText
-                    elif desType == "INCHIKEY":
-                        inchiKey = desText
-                    logger.debug("%s type %r prog %r text %r", ccId, desType, desProg, desText)
-                #
-
-                oemf1 = OeMoleculeFactory()
-                if quietFlag:
-                    oemf1.setQuiet()
-                #
-                if not isoSmiles:
-                    logger.info("%s No OE ISOSMILES ambiguous %r current %r", ccId, isAmbiguous, isCurrent)
-                    continue
-                #
-                if not isoSmilesCactvs:
-                    logger.info("%s No CACTVS ISOSMILES ambiguous %r current %r", ccId, isAmbiguous, isCurrent)
-                    continue
+            for ccId, ccObj in ccMolD.items():
+                # ----
+                ccIt = iter(PdbxChemCompIt(ccObj))
+                cc = next(ccIt)
+                formula = cc.getFormulaWithCharge()
+                # ccId = cc.getId()
+                ccName = cc.getName()
+                ifCharge = cc.getFormalChargeAsInt()
+                isAmbiguous = cc.getAmbiguousFlag() in ["Y", "y"]
+                isCurrent = cc.getReleaseStatus() in ["REL"]
+                logger.debug("%s name %r formula %r charge %d", ccId, ccName, formula, ifCharge)
+                # ----
+                ccId = oemf1.setChemCompDef(ccObj)
+                ok = oemf1.build(molBuildType=buildTypeRef, limitPerceptions=True)
+                if not ok:
+                    logger.info("Build using %r failed for %s (ambiguous flag %r current %r)", buildTypeRef, ccId, isAmbiguous, isCurrent)
                 #
                 isDiff = False
-                genMol = oeIo.smilesToMol(isoSmiles, limitPerceptions=True)
-                oemf1.setOeMol(genMol, ccId)
-                #
-                genIsoSmi = oemf1.getIsoSMILES()
-                if genIsoSmi != isoSmiles:
-                    isDiff = True
-                    logger.info("%s ISOSMILES differ \n -- INP: %s\n -- OUT: %s", ccId, isoSmiles, genIsoSmi)
-
-                genSmi = oemf1.getCanSMILES()
-                if genSmi != smiles:
-                    logger.info("%s SMILES differ \n -- INP: %s\n -- OUT: %s", ccId, smiles, genSmi)
-
-                genKey = oemf1.getInChIKey()
-                if inchiKey != genKey:
-                    logger.info("%s InChIKeys differ \n -- INP: %s\n -- OUT: %s", ccId, inchiKey, genKey)
-                    # logger.info("%s InChiKeys differ", ccId)
-
-                genInChI = oemf1.getInChI()
-                if inchi != genInChI:
-                    logger.info("%s InChI differ \n -- INP: %s\n -- OUT: %s", ccId, inchi, genInChI)
                 #
                 if isDiff:
-                    regenMol = oeIo.smilesToMol(genIsoSmi, limitPerceptions=True)
+                    genIsoSmi = oemf1.getCanSMILES()
                     oemf2 = OeMoleculeFactory()
-                    oemf2.setOeMol(regenMol, ccId)
+                    oemf2.setDescriptor(genIsoSmi, "oe-iso-smiles", ccId)
+                    oemf2.build(molBuildType="oe-iso-smiles", limitPerceptions=True)
                     regenIsoSmi = oemf2.getIsoSMILES()
                     if genIsoSmi != regenIsoSmi:
                         logger.info("%s  regenerated ISOSMILES differ \n -- INP: %s\n -- OUT: %s", ccId, genIsoSmi, regenIsoSmi)
@@ -154,8 +174,8 @@ class OeMolecularFactoryTests(unittest.TestCase):
                         highLightNotMatchColorRef="pink",
                         bondDisplayWidth=0.5,
                     )
-                    oed.setRefMol(genMol, ccId)
-                    oed.setFitMol(regenMol, ccId)
+                    oed.setRefMol(oemf1.getGraphMol(), ccId)
+                    oed.setFitMol(oemf2.getGraphMol(), ccId)
                     imgPath = os.path.join(self.__workPath, "compare-assigned-" + ccId + "-calc-" + ccId + ".svg")
                     logger.info("Using image path %r", imgPath)
                     aML = oed.alignPair(imagePath=imgPath)
@@ -171,140 +191,36 @@ class OeMolecularFactoryTests(unittest.TestCase):
 
     def testBuilders(self):
         try:
+            ccMolD = self.__getChemCompDefs()
             quietFlag = False
-            molLimit = 40000
-            coordTypeL = ["model", "ideal", None]
-            coordTypeL = [None]
-            oeIo = OeIoUtils()
-            rdCcObjL = oeIo.getComponentDefinitions(os.path.join(self.__dataPath, "components-abbrev.cif"))
-            #
-            self.assertGreater(len(rdCcObjL), 4)
-            ccObjL = rdCcObjL[:molLimit] if molLimit else rdCcObjL
-            logger.info("Processing %d components", len(ccObjL))
-            for coordType in coordTypeL:
-                logger.debug("Processing %d of %d components with coordType %r", len(ccObjL), len(rdCcObjL), coordType)
-                #
+            molBuildTypeL = ["model-xyz", "ideal-xyz", None]
+            molBuildTypeL = [None]
+            for molBuildType in molBuildTypeL:
                 oemf = OeMoleculeFactory()
                 if quietFlag:
                     oemf.setQuiet()
                 #
                 eCount = 0
-                for ii, ccObj in enumerate(ccObjL, 1):
-                    ccId = oemf.set(ccObj)
-                    logger.debug("Building %s using coordType %r", ccId, coordType)
+                for tId, ccObj in ccMolD.items():
+                    ccId = oemf.setChemCompDef(ccObj)
+                    self.assertEqual(tId, ccId)
+                    logger.debug("Building %s using molBuildType %r", ccId, molBuildType)
                     if ccId:
-                        if coordType:
-                            ok = oemf.build3D(coordType=coordType)
-                        else:
-                            ok = oemf.build2D()
-                        logger.debug("Comparing built component %s using coordType %r", ccId, coordType)
-                        ok = oemf.compare()
+                        ok = oemf.build(molBuildType=molBuildType)
+                        logger.debug("Comparing built component %s using molBuildType %r", ccId, molBuildType)
+                        # ok = oemf.compare()
+                        ok = True
                         if not ok:
-                            logger.info("Failing on %s coordType %r component number %d", ccId, coordType, ii)
+                            logger.info("Failing on %s molBuildType %r", ccId, molBuildType)
                             eCount += 1
                         # self.assertTrue(ok)
                     else:
                         logger.error("Cannot process %r", ccObj.getName())
-                logger.info("Processing %d components coordType %r errors %d", len(ccObjL), coordType, eCount)
+                logger.info("Processed %d components molBuildType %r errors %d", len(ccMolD), molBuildType, eCount)
                 #
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
-
-    def testCompareDescriptors(self):
-
-        molLimit = self.__molLimit
-        # for coordType in ["model", "ideal", None]:
-        for coordType in [None]:
-            logger.info("Rebuilding cache using coordType %r (molLimit=%r)", coordType, molLimit)
-            self.__testReproduceDescriptors(coordType, useCache=False, molLimit=molLimit)
-
-    def __testReproduceDescriptors(self, coordType, useCache=True, molLimit=None):
-        try:
-            oed = OeDepictMCSAlignPage()
-            oed.setDisplayOptions(
-                labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, highlightStyleFit="ballAndStickInverse", bondDisplayWidth=0.5
-            )
-            #
-            oeIo = OeIoUtils()
-            oemp = OeMoleculeProvider(
-                ccUrlTarget=self.__ccUrlTarget,
-                birdUrlTarget=self.__birdUrlTarget,
-                dirPath=os.path.join(self.__cachePath, "chem_comp"),
-                coordType=coordType,
-                useCache=useCache,
-                molLimit=molLimit,
-            )
-            ok = oemp.testCache()
-            self.assertTrue(ok)
-            oeMolD = oemp.getOeMolD()
-            ccIdxD = oemp.getChemCompIdx()
-            oemf = OeMoleculeFactory()
-            countD = defaultdict(int)
-            for ccId, oeMol in oeMolD.items():
-                countD["total components"] += 1
-                if ccId not in ccIdxD:
-                    logger.info("Missing ccIndex entry for %s", ccId)
-                    continue
-                ccdD = ccIdxD[ccId]
-                if ccdD["AMBIGUOUS"]:
-                    countD["ambiguous component"] += 1
-                    continue
-                #
-                countD["total molecules"] += 1
-                oemf.setOeMol(oeMol, ccId)
-
-                nativeCanIsoSmiles = oechem.OECreateIsoSmiString(oeMol)
-                canIsoSmiles = oechem.OEMolToSmiles(oeMol)
-                isoSmiles = oemf.getIsoSMILES()
-                canSmiles = oemf.getCanSMILES()
-                # check interal consistency
-                if nativeCanIsoSmiles != isoSmiles:
-                    logger.error("%s stored and calculated OE smiles differ %s %s", ccId, nativeCanIsoSmiles, isoSmiles)
-                if canIsoSmiles != isoSmiles:
-                    logger.error("%s calculated OE ISO and canonical smiles differ %s %s", ccId, isoSmiles, canIsoSmiles)
-
-                # compare with archived values
-                if isoSmiles != ccdD["OE_ISO_SMILES"]:
-                    logger.debug("%s ISO SMILES differ \nccd: %r  \nOE:  %r", ccId, ccdD["OE_ISO_SMILES"], isoSmiles)
-                    countD["iso_smiles_diff"] += 1
-                    tMol = oeIo.smilesToMol(ccdD["OE_ISO_SMILES"])
-                    #
-                    oed.setRefMol(tMol, ccId)
-                    oed.setFitMol(oeMol, ccId)
-                    imgPath = os.path.join(self.__workPath, "compare-assigned-" + ccId + "-calc-" + ccId + ".svg")
-                    logger.info("Using image path %r", imgPath)
-                    aML = oed.alignPair(imagePath=imgPath)
-                    if aML:
-                        for (rCC, rAt, tCC, tAt) in aML:
-                            logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
-
-                # ----------
-                if canSmiles != ccdD["OE_SMILES"]:
-                    logger.debug("%s CAN SMILES differ \nccd: %r  \nOE:  %r", ccId, ccdD["OE_SMILES"], canSmiles)
-                    countD["can_smiles_diff"] += 1
-                    tMol = oeIo.smilesToMol(ccdD["OE_SMILES"])
-
-                formula = oemf.getFormula()
-                if formula.upper() != ccdD["FORMULA"].upper():
-                    logger.debug("%s formulas differ \nccd: %r  \nOE:  %r", ccId, ccdD["FORMULA"], formula)
-                    countD["formula_diff"] += 1
-                # ---------
-                inchiKey = oemf.getInChIKey()
-                if inchiKey != ccdD["INCHI_KEY"]:
-                    logger.debug("%s InChI keys differ \nccd: %r  \nOE:  %r", ccId, ccdD["INCHI_KEY"], inchiKey)
-                    countD["inchi_key_diff"] += 1
-                #
-                inchi = oemf.getInChI()
-                if inchi != ccdD["INCHI"]:
-                    logger.debug("%s InChIs differ \nccd: %r  \nOE:  %r", ccId, ccdD["INCHI"], inchi)
-                    countD["inchi_diff"] += 1
-            #
-            #
-            for ky, vl in countD.items():
-                logger.info("%-12s %6d", ky, vl)
-        except Exception as e:
-            logger.exception("Failing with %s", str(e))
 
 
 def suiteCompareDescriptorsTests():

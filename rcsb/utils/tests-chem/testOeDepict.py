@@ -47,13 +47,13 @@ class OeDepictTests(unittest.TestCase):
         self.__ccIdList = ["atp", "gtp", "A", "C", "G", "DG", "HYP"]
         self.__ccIdListLong = ["HYP", "A00", "A01", "A02", "A03", "A04", "A05", "A07", "A09", "A0A", "A0D", "A0H", "A0P", "A11", "A12", "A13", "A14"]
 
-        self.__oeMolD = self.__getCache(coordType="model", useCache=True)
+        self.__oeMolD = self.__getCache(molBuildType="model-xyz", useCache=True)
 
     def tearDown(self):
         pass
 
-    def __getCache(self, coordType="model", useCache=True):
-        oemp = OeMoleculeProvider(dirPath=os.path.join(self.__cachePath, "chem_comp"), screenTypeList=[], coordType=coordType, useCache=useCache)
+    def __getCache(self, molBuildType="model-xyz", useCache=True):
+        oemp = OeMoleculeProvider(cachePath=self.__cachePath, molBuildType=molBuildType, useCache=useCache)
         ok = oemp.testCache()
         self.assertTrue(ok)
         return oemp.getOeMolD()

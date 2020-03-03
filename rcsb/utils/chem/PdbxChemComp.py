@@ -145,9 +145,9 @@ class PdbxChemCompPersist(object):
         iCharge = int(tch) if tch and tch not in [".", "?"] else 0
         return iCharge
 
-    def getFormulaWithCharge(self):
+    def getFormulaWithCharge(self, ifCharge=None):
         formula = (self.getFormula()).replace(" ", "")
-        fcharge = self.getFormalChargeAsInt()
+        fcharge = ifCharge if ifCharge else self.getFormalChargeAsInt()
         if fcharge:
             sign = "+" if fcharge > 0 else "-"
             mag = str(abs(fcharge)) if abs(fcharge) > 1 else ""
@@ -313,8 +313,8 @@ class PdbxChemCompAtomPersist(object):
         except Exception:
             return (None, None, None)
 
-    def dump(self, ofh):
-        ofh.write("PdbxChemCompAtomPersist(dump) %r\n" % self.__rowData)
+    def dump(self):
+        logger.info(" --rowData: %r", self.__rowData)
 
 
 class PdbxChemCompBondPersist(object):
@@ -375,8 +375,8 @@ class PdbxChemCompBondPersist(object):
     def hasStereo(self):
         return self.__getAttribute("pdbx_stereo_config") != "N"
 
-    def dump(self, ofh):
-        ofh.write("PdbxChemCompBondPersist(dump) %r\n" % self.__rowData)
+    def dump(self):
+        logger.info(" -- rowData: %r", self.__rowData)
 
 
 class PdbxChemCompIdentifierPersist(object):
@@ -413,8 +413,8 @@ class PdbxChemCompIdentifierPersist(object):
     def getProgramVersion(self):
         return self.__getAttribute("program_version")
 
-    def dump(self, ofh):
-        ofh.write("PdbxChemCompIdentifierPersist(dump) %r\n" % self.__rowData)
+    def dump(self):
+        logger.info("-- rowData: %r", self.__rowData)
 
 
 class PdbxChemCompDescriptorPersist(object):
@@ -425,6 +425,15 @@ class PdbxChemCompDescriptorPersist(object):
     def __init__(self, rowData, attributeNameList):
         self.__rowData = rowData
         self.__attributeNameList = attributeNameList
+        self.__buildTypeD = {
+            ("SMILES_CANONICAL", "OPENEYE OETOOLKITS"): "oe-iso-smiles",
+            ("SMILES", "OPENEYE OETOOLKITS"): "oe-smiles",
+            ("SMILES", "ACDLABS"): "acdlabs-smiles",
+            ("SMILES", "CACTVS"): "cactvs-smiles",
+            ("SMILES_CANONICAL", "CACTVS"): "cactvs-iso-smiles",
+            ("INCHI", "INCHI"): "inchi",
+            ("INCHIKEY", "INCHI"): "inchikey",
+        }
 
     def __getAttribute(self, name):
         try:
@@ -451,8 +460,18 @@ class PdbxChemCompDescriptorPersist(object):
     def getProgramVersion(self):
         return self.__getAttribute("program_version")
 
-    def dump(self, ofh):
-        ofh.write("PdbxChemCompDescriptorPersist(dump) %r\n" % self.__rowData)
+    def getMolBuildType(self):
+        bT = None
+        try:
+            dType = self.getType()
+            dProg = self.getProgram()
+            bT = self.__buildTypeD[(dType.upper(), dProg.upper())]
+        except Exception as e:
+            logger.error("Unknown descriptor build type %r %r %r", dType, dProg, str(e))
+        return bT
+
+    def dump(self):
+        logger.info(" -- rowData: %r", self.__rowData)
 
 
 class PdbxChemCompAuditPersist(object):

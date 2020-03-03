@@ -53,7 +53,7 @@ class ObMolecularFactoryTests(unittest.TestCase):
         self.assertGreaterEqual(len(rdCcObjL), 4)
         for rdCcObj in rdCcObjL:
             ccId = rdCcObj.getName()
-            sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
+            _, sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
             if self.__exportFlag:
                 fp = os.path.join(self.__workPath, rdCcObj.getName() + ".sdf")
                 with open(fp, "w") as ofh:
@@ -76,7 +76,7 @@ class ObMolecularFactoryTests(unittest.TestCase):
         self.assertGreaterEqual(len(rdCcObjL), 4)
         for rdCcObj in rdCcObjL:
             ccId = rdCcObj.getName()
-            sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
+            _, sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
             obmf.setString(ccId, sdfS, molFormat="mol", atomIdxD=atomIdxD)
             obD = obmf.getMoleculeFeatures()
             logger.info("dictionary %r", obD)
