@@ -68,6 +68,24 @@ class OeMolecularFactoryTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
         return ccMolD
 
+    def testBuildRelated(self):
+        """Compare constructed molecule with underlying chemical definitions -
+        """
+        try:
+            ccMolD = self.__getChemCompDefs()
+            oemf = OeMoleculeFactory()
+            for ccId, ccObj in list(ccMolD.items())[:10]:
+                # ----
+                tId = oemf.setChemCompDef(ccObj)
+                self.assertEqual(tId, ccId)
+                smiD = oemf.buildRelated(limitPerceptions=False)
+                logger.info("%s related molecular forms %d", ccId, len(smiD))
+
+                # ----
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
     def testSelfConsistency(self):
         """Compare constructed molecule with underlying chemical definitions -
         """
@@ -78,7 +96,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
             # molBuildTypeL = ["model-xyz", "ideal-xyz", None]
             # molBuildTypeL = [None]
             #
-            oefm = OeMoleculeFactory()
+            oemf = OeMoleculeFactory()
             macmp = MoleculeAnnotationsCompare()
 
             limitPerceptions = False
@@ -90,20 +108,20 @@ class OeMolecularFactoryTests(unittest.TestCase):
             #
             for ccId, ccObj in ccMolD.items():
                 # ----
-                tId = oefm.setChemCompDef(ccObj)
+                tId = oemf.setChemCompDef(ccObj)
                 self.assertEqual(tId, ccId)
-                ok = oefm.build(molBuildType=buildTypeRef, limitPerceptions=limitPerceptions, normalize=False)
+                ok = oemf.build(molBuildType=buildTypeRef, limitPerceptions=limitPerceptions, normalize=False)
                 if not ok:
                     logger.info("Build using %r failed for %s", buildTypeRef, ccId)
                     continue
                 #
                 doTautomers = False
                 if doTautomers:
-                    tautomerMolL = oefm.getTautomerList()
+                    tautomerMolL = oemf.getTautomerList()
                     logger.info("%s number reasonable tautomers %d", ccId, len(tautomerMolL))
                 #
                 refFD = macmp.getChemCompFeatures(ccObj, descriptorProgram="OPENEYE", filterHydrogens=filterHydrogens)
-                tstFD = oefm.getOeMoleculeFeatures(filterHydrogens=filterHydrogens)
+                tstFD = oemf.getOeMoleculeFeatures(filterHydrogens=filterHydrogens)
                 # logger.info("tstFD %r", tstFD)
                 ok, retCmp = macmp.compare(refFD, tstFD, tstInfo="Openeye ISO SMILES")
                 if not ok:
