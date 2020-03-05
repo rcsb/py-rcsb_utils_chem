@@ -198,7 +198,7 @@ class OeSearchMoleculeProvider(object):
             startTime = time.time()
             molCount = oeIo.createOeBinaryDatabaseAndIndex(oeSearchMolFilePath, oeMolDbFilePath)
             endTime = time.time()
-            logger.info("Created and stored %d indexed OeMols in OE database format (%.4f seconds)", molCount, endTime - startTime)
+            logger.info("Created and stored %d indexed oeMols in OE database format (%.4f seconds)", molCount, endTime - startTime)
 
         # --------
         if fpDbType == "FAST":
