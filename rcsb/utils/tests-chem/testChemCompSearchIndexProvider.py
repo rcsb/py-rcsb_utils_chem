@@ -9,7 +9,8 @@
 #
 ##
 """
-Tests for utilities to read and process the dictionary of PDB chemical component definitions.
+Tests for utilities to generate a search index for reasonable tautomer and protomer
+configurations for core PDB chemical component definitions.
 
 """
 
@@ -57,21 +58,22 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
 
     def testChemCompSearchIndexCacheFilesAbbrevMp(self):
         """ Test search index constructure for an abbreviated chemical component resource file (multi).
+            Creates index length - 2837  411s on numproc 4 on macbookpro .383 GB resident mem
         """
         self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-abbrev", molLimit=None, numProc=4)
 
     def testChemCompSearchIndexCacheFilesFull(self):
-        """ Test construction of full chemical component resource files.
+        """ Test search index construction of full chemical component resource files.
         """
         self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-full")
 
     def testChemCompSearchIndexCacheFilesFiltered(self):
-        """ Test construction of a filtered subset of chemical component definitions.
+        """ Test search index construction of a filtered subset of chemical component definitions.
         """
         self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-filtered")
 
     def __testBuildSearchIndexCacheFiles(self, **kwargs):
-        """ Test build chemical component cache files from the input component dictionaries
+        """ Test build search index chemical component cache files from the input component dictionaries
         """
         molLimit = kwargs.get("molLimit", None)
         useCache = kwargs.get("useCache", True)

@@ -1,5 +1,5 @@
 ##
-# File:    OeSearchUtilsTests.py
+# File:    OeSearchIndexUtilsTests.py
 # Author:  J. Westbrook
 # Date:    1-Oct-2019
 # Version: 0.001
@@ -9,7 +9,7 @@
 #
 ##
 """
-Tests for various search modes for core PDB chemical component definitions.
+Tests for search modes using source molecular definitions coming from a search index.
 
 """
 
@@ -24,11 +24,11 @@ import time
 import unittest
 
 from rcsb.utils.chem import __version__
-from rcsb.utils.chem.ChemCompIndexProvider import ChemCompIndexProvider
+from rcsb.utils.chem.ChemCompSearchIndexProvider import ChemCompSearchIndexProvider
 from rcsb.utils.chem.OeDepictAlign import OeDepictMCSAlignPage
 from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
-from rcsb.utils.chem.OeMoleculeProvider import OeMoleculeProvider
+from rcsb.utils.chem.OeSearchMoleculeProvider import OeSearchMoleculeProvider
 from rcsb.utils.chem.OeSearchUtils import OeSearchUtils
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -39,7 +39,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-class OeSearchUtilsTests(unittest.TestCase):
+class OeSearchIndexUtilsTests(unittest.TestCase):
     def setUp(self):
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
@@ -52,15 +52,17 @@ class OeSearchUtilsTests(unittest.TestCase):
         self.__numProc = 1
         self.__minCount = 500
         self.__startTime = time.time()
+        self.__numMols = 10
         self.__myKwargs = {
             "cachePath": self.__cachePath,
             "useCache": True,
             "fpTypeList": self.__fpTypeList,
-            "ccFileNamePrefix": "cc-full",
-            "oeFileNamePrefix": "oe-full",
+            "ccFileNamePrefix": "cc-abbrev",
+            "oeFileNamePrefix": "oe-abbrev",
             # "molBuildType": "oe-iso-smiles",
             "molBuildType": "model-xyz",
             "limitPerceptions": False,
+            "minCount": 500,
         }
         #
         logger.debug("Running tests on version %s", __version__)
@@ -76,25 +78,42 @@ class OeSearchUtilsTests(unittest.TestCase):
                 return True
         return False
 
-    def testSubStructureSearch(self):
-        oemp = OeMoleculeProvider(**self.__myKwargs)
-        ok = oemp.testCache()
-        ccmP = ChemCompIndexProvider(**self.__myKwargs)
-        ccIdxD = ccmP.getIndex()
-        ok = ccmP.testCache(minCount=self.__minCount)
+    def __getSearchDataProviders(self, **kwargs):
+        minCount = kwargs.get("minCount", 500)
+        oesmP = OeSearchMoleculeProvider(**kwargs)
+        ok = oesmP.testCache()
+        ccsiP = ChemCompSearchIndexProvider(**kwargs)
+        ok = ccsiP.testCache(minCount=minCount)
         self.assertTrue(ok)
-        oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
-        numMols = 10
-        for ccId, _ in list(ccIdxD.items())[:numMols]:
-            # ----
-            startTime = time.time()
-            oeMol = oemp.getMol(ccId)
-            retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="simple")
-            logger.info("%s match length %d in (%.4f seconds)", ccId, len(mL), time.time() - startTime)
-            self.assertTrue(retStatus)
-            self.assertTrue(self.__resultContains(ccId, mL))
-            # self.assertGreaterEqual(len(mL), 1)
-            # ----
+        ccSearchIdxD = ccsiP.getIndex()
+        return oesmP, ccSearchIdxD
+
+    def testExhaustiveSubStructureSearch(self):
+        """Exhaustive substructure search.
+        """
+        return self.__exhaustiveSubStructureSearch(self.__numMols, **self.__myKwargs)
+
+    def __exhaustiveSubStructureSearch(self, numMols, **kwargs):
+        """Exhaustive substructure search.
+        """
+        try:
+            oesmP, ccSearchIdxD = self.__getSearchDataProviders(**kwargs)
+            oesU = OeSearchUtils(oesmP, fpTypeList=[])
+            ccSearchIdList = sorted(ccSearchIdxD.keys())[:numMols] if numMols else sorted(ccSearchIdxD.keys())
+
+            for ccSearchId in ccSearchIdList:
+                # ----
+                startTime = time.time()
+                oeMol = oesmP.getMol(ccSearchId)
+                retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="simple")
+                logger.info("%s match length %d in (%.4f seconds)", ccSearchId, len(mL), time.time() - startTime)
+                self.assertTrue(retStatus)
+                self.assertTrue(self.__resultContains(ccSearchId, mL))
+                #
+                # ----
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
 
     def testFingerPrintSearch(self):
         oemp = OeMoleculeProvider(**self.__myKwargs)
@@ -396,16 +415,16 @@ class OeSearchUtilsTests(unittest.TestCase):
 
 def rawSubStructureSearch():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeSearchUtilsTests("testSubStructureSearch"))
-    suiteSelect.addTest(OeSearchUtilsTests("testSubStructureSearchWithFingerPrint"))
-    suiteSelect.addTest(OeSearchUtilsTests("testSubStructureSearchScreened"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearch"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchWithFingerPrint"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchScreened"))
     return suiteSelect
 
 
 def fingerprintSearch():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeSearchUtilsTests("testFingerPrintSearch"))
-    suiteSelect.addTest(OeSearchUtilsTests("testFingerPrintScores"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintSearch"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintScores"))
     return suiteSelect
 
 

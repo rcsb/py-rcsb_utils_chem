@@ -5,7 +5,7 @@
 # Version: 0.001
 #
 # Update:
-#
+#  5-Mar-2020 jdw all cases including filtered subsets working with naming prefixes.
 #
 ##
 """
@@ -76,6 +76,7 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
 
     def testBuildMoleculeCacheFilesFull(self):
         """ Test construction and reload of full chemical component resource files.
+            Running 138 sec sp macbookpro 6.6G resident mem
         """
         self.__testBuildMoleculeCacheFiles(useCache=False, logSizes=True)
         logger.info("Reloading cache file")
@@ -84,30 +85,35 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
     def __testBuildMoleculeCacheFiles(self, **kwargs):
         """ Test build chemical component cache files from the input component dictionaries
         """
-        ccUrlTarget = kwargs.get("ccUrlTarget", None)
-        birdUrlTarget = kwargs.get("birdUrlTarget", None)
-        molLimit = kwargs.get("molLimit", None)
-        useCache = kwargs.get("useCache", True)
-        logSizes = kwargs.get("logSizes", False)
-        filterIdD = kwargs.get("filterIdD", None)
-        ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
-        #
-        if ccUrlTarget and birdUrlTarget:
-            ccmP = ChemCompMoleculeProvider(
-                ccUrlTarget=ccUrlTarget,
-                birdUrlTarget=birdUrlTarget,
-                ccFileNamePrefix=ccFileNamePrefix,
-                cachePath=self.__cachePath,
-                useCache=useCache,
-                molLimit=molLimit,
-                filterIdD=filterIdD,
-            )
-            ok = ccmP.testCache(minCount=molLimit, logSizes=logSizes)
-            self.assertTrue(ok)
-        else:
-            ccmP = ChemCompMoleculeProvider(cachePath=self.__cachePath, useCache=useCache, ccFileNamePrefix=ccFileNamePrefix, molLimit=molLimit, filterIdD=filterIdD)
-            ok = ccmP.testCache(minCount=molLimit, logSizes=logSizes)
-            self.assertTrue(ok)
+        try:
+            ccUrlTarget = kwargs.get("ccUrlTarget", None)
+            birdUrlTarget = kwargs.get("birdUrlTarget", None)
+            molLimit = kwargs.get("molLimit", None)
+            minCount = kwargs.get("minCount", 500)
+            useCache = kwargs.get("useCache", True)
+            logSizes = kwargs.get("logSizes", False)
+            filterIdD = kwargs.get("filterIdD", None)
+            ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
+            #
+            if ccUrlTarget and birdUrlTarget:
+                ccmP = ChemCompMoleculeProvider(
+                    ccUrlTarget=ccUrlTarget,
+                    birdUrlTarget=birdUrlTarget,
+                    ccFileNamePrefix=ccFileNamePrefix,
+                    cachePath=self.__cachePath,
+                    useCache=useCache,
+                    molLimit=molLimit,
+                    filterIdD=filterIdD,
+                )
+                ok = ccmP.testCache(minCount=molLimit, logSizes=logSizes)
+                self.assertTrue(ok)
+            else:
+                ccmP = ChemCompMoleculeProvider(cachePath=self.__cachePath, useCache=useCache, ccFileNamePrefix=ccFileNamePrefix, molLimit=molLimit, filterIdD=filterIdD)
+                ok = ccmP.testCache(minCount=minCount, logSizes=logSizes)
+                self.assertTrue(ok)
+        except Exception as e:
+            logger.info("Failing with %s", str(e))
+            self.fail()
 
 
 def buildCacheFiles():
