@@ -51,9 +51,14 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
         logger.info("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
     def testChemCompSearchIndexCacheFilesAbbrev(self):
-        """ Test construction of full chemical component resource files.
+        """ Test search index constructure for an abbreviated chemical component resource file.
         """
-        self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-abbrev")
+        self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-abbrev", molLimit=50)
+
+    def testChemCompSearchIndexCacheFilesAbbrevMp(self):
+        """ Test search index constructure for an abbreviated chemical component resource file (multi).
+        """
+        self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-abbrev", molLimit=None, numProc=4)
 
     def testChemCompSearchIndexCacheFilesFull(self):
         """ Test construction of full chemical component resource files.
@@ -71,8 +76,20 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
         molLimit = kwargs.get("molLimit", None)
         useCache = kwargs.get("useCache", True)
         logSizes = kwargs.get("logSizes", False)
+        limitPerceptions = kwargs.get("limitPerceptions", True)
+        numProc = kwargs.get("numProc", 1)
+        maxChunkSize = kwargs.get("maxChunkSize", 5)
+        molLimit = kwargs.get("molLimit", None)
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
-        ccsiP = ChemCompSearchIndexProvider(cachePath=self.__cachePath, useCache=useCache, molLimit=molLimit, ccFileNamePrefix=ccFileNamePrefix)
+        ccsiP = ChemCompSearchIndexProvider(
+            cachePath=self.__cachePath,
+            useCache=useCache,
+            molLimit=molLimit,
+            ccFileNamePrefix=ccFileNamePrefix,
+            limitPerceptions=limitPerceptions,
+            numProc=numProc,
+            maxChunkSize=maxChunkSize,
+        )
         ok = ccsiP.testCache(minCount=molLimit, logSizes=logSizes)
         self.assertTrue(ok)
         logger.info(" ******* Completed operation ******** ")

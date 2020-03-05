@@ -79,7 +79,7 @@ class ChemCompMoleculeProvider(SingletonClass):
         startTime = time.time()
         ccDataFilePath = os.path.join(dirPath, "%s-data.pic" % self.__ccFileNamePrefix)
         _, fExt = os.path.splitext(ccDataFilePath)
-        ccDataFormat = "json" if fExt == "json" else "pickle"
+        ccDataFormat = "json" if fExt == ".json" else "pickle"
         #
         if useCache and self.__mU.exists(ccDataFilePath):
             rdCcObjD = self.__mU.doImport(ccDataFilePath, fmt=ccDataFormat)

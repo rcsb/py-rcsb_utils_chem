@@ -289,7 +289,7 @@ class OeMoleculeFactory(object):
         if self.__oeMol:
             if addExplicitHydrogens:
                 if not oechem.OEAddExplicitHydrogens(self.__oeMol):
-                    logger.error("%s explict hydrogen addition fails", self.__ccId)
+                    logger.warning("%s explict hydrogen addition fails", self.__ccId)
             # calculate from current oeMol
             try:
                 eD = {}
@@ -391,11 +391,13 @@ class OeMoleculeFactory(object):
         as a nested dictionary of conventionally identified SMILES descriptors.
 
         Returns:
-            dict: {'buildType': {'smiles|iso-smiles': ..., 'inchi-key': ...}}
+            dict: {'ccId|<buildType>': {'smiles': ..., 'inchi-key': ...}}
         """
         retD = {}
         if not self.__isDefinitionSet:
             return retD
+
+        uniqSmilesD = {}
         try:
             for buildType in ["model-xyz", "oe-iso-smiles", "cactvs-iso-smiles", "inchi"]:
                 ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
@@ -406,8 +408,9 @@ class OeMoleculeFactory(object):
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
-                    if smiles and inchiKey:
-                        retD[name] = {"build-type": buildType, "iso-smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
+                    if smiles and inchiKey and smiles not in uniqSmilesD:
+                        uniqSmilesD[smiles] = True
+                        retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
             for buildType in ["oe-smiles", "acdlabs-smiles", "cactvs-smiles"]:
                 ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
                 if ok:
@@ -417,13 +420,16 @@ class OeMoleculeFactory(object):
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
-                    if smiles and inchiKey:
-                        retD[name] = {"build-type": buildType, "iso-smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
+                    if smiles and inchiKey and smiles not in uniqSmilesD:
+                        uniqSmilesD[smiles] = True
+                        retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
             # --- do charge and tautomer normalizatio on the model-xyz build
             ok = self.build(molBuildType="model-xyz", setTitle=True, limitPerceptions=limitPerceptions)
             if ok:
-                upMol = self.getUniqueProtomer()
-                if upMol:
+                upMol = self.getUniqueProtomerMol()
+                if not upMol:
+                    logger.warning("%s protomer and tautomer generation failed", self.__ccId)
+                else:
                     name = self.__ccId + "|unique-protomer"
                     self.__oeMol = upMol
                     smiles = self.getIsoSMILES()
@@ -431,9 +437,19 @@ class OeMoleculeFactory(object):
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
-                    if smiles and inchiKey:
-                        retD[name] = {"build-type": "unique-protomer", "iso-smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
-                    tautomerList = self.getTautomerList()
+                    if smiles and inchiKey and smiles not in uniqSmilesD:
+                        uniqSmilesD[smiles] = True
+                        retD[name] = {
+                            "name": name,
+                            "build-type": "unique-protomer",
+                            "smiles": smiles,
+                            "inchi-key": inchiKey,
+                            "formula": formula,
+                            "fcharge": fCharge,
+                            "elementCounts": eleD,
+                        }
+                    tautomerList = self.getTautomerMolList()
+                    logger.debug("%s tautomer count %d", self.__ccId, len(tautomerList))
                     for ii, tMol in enumerate(tautomerList, 1):
                         if tMol:
                             label = "tautomer_%d" % ii
@@ -444,8 +460,17 @@ class OeMoleculeFactory(object):
                             formula = self.getFormula()
                             fCharge = self.getFormalCharge()
                             eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
-                            if smiles and inchiKey:
-                                retD[name] = {"build-type": label, "iso-smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
+                            if smiles and inchiKey and smiles not in uniqSmilesD:
+                                uniqSmilesD[smiles] = True
+                                retD[name] = {
+                                    "name": name,
+                                    "build-type": label,
+                                    "smiles": smiles,
+                                    "inchi-key": inchiKey,
+                                    "formula": formula,
+                                    "fcharge": fCharge,
+                                    "elementCounts": eleD,
+                                }
 
         except Exception as e:
             logger.info("Failing for %r with %s", self.__ccId, str(e))
@@ -463,7 +488,8 @@ class OeMoleculeFactory(object):
                 oeMol = self.__buildFromDescriptor(self.__ccId, molBuildType, limitPerceptions=limitPerceptions, fallBackBuildType=fallBackBuildType)
             #
             if normalize:
-                self.__oeMol = self.getUniqueProtomer(oeMol)
+                nMol = self.getUniqueProtomerMol(oeMol)
+                self.__oeMol = nMol if nMol else oeMol
             else:
                 self.__oeMol = oeMol
             return oeMol is not None
@@ -492,10 +518,9 @@ class OeMoleculeFactory(object):
             #
             ccId = self.__ccId
             #
-
             descr = self.__getDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
             if not descr:
-                logger.error("%r molBuildType %r missing descriptor", ccId, molBuildType)
+                logger.warning("%r molBuildType %r missing descriptor", ccId, molBuildType)
                 return None
             #
             oeMol = oechem.OEGraphMol()
@@ -505,25 +530,25 @@ class OeMoleculeFactory(object):
                 if limitPerceptions:
                     # convert the descriptor string into a molecule
                     if not oechem.OEParseSmiles(oeMol, smiles, False, False):
-                        logger.error("%r parsing input failed for %r string %s", ccId, molBuildType, smiles)
+                        logger.warning("%r parsing input failed for %r string %s", ccId, molBuildType, smiles)
                         ok = False
                         if self.__isDefinitionSet and rebuildOnFailure:
                             # Try again with a descriptor rebuild
                             smiles = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
                             ok = oechem.OEParseSmiles(oeMol, smiles, False, False)
                             if not ok:
-                                logger.error("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
+                                logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
                 else:
                     logger.debug("Building with %s", smiles)
                     if not oechem.OESmilesToMol(oeMol, smiles):
-                        logger.error("%r parsing input failed for %r string %s", ccId, molBuildType, smiles)
+                        logger.warning("%r converting input failed for %r string %s", ccId, molBuildType, smiles)
                         ok = False
                         if self.__isDefinitionSet and rebuildOnFailure:
                             # Try again with a descriptor rebuild
                             smiles = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
                             ok = oechem.OESmilesToMol(oeMol, smiles)
                             if not ok:
-                                logger.error("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
+                                logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
 
             elif molBuildType in ["inchi"]:
                 inchi = descr
@@ -531,24 +556,24 @@ class OeMoleculeFactory(object):
                 if limitPerceptions:
                     # convert the InChI string into a molecule
                     if not oechem.OEParseInChI(oeMol, inchi):
-                        logger.error("%r parsing input failed for InChI string %s", ccId, smiles)
+                        logger.warning("%r parsing input failed for InChI string %s", ccId, smiles)
                         ok = False
                         if self.__isDefinitionSet and rebuildOnFailure:
                             # Try again with a descriptor rebuild
                             inchi = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
                             ok = oechem.OEParseInChI(oeMol, inchi)
                             if not ok:
-                                logger.error("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
+                                logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
                 else:
                     if not oechem.OEInChIToMol(oeMol, inchi):
-                        logger.error("%r parsing input failed for InChI string %s", ccId, inchi)
+                        logger.warning("%r converting input failed for InChI string %s", ccId, inchi)
                         ok = False
                         if self.__isDefinitionSet and rebuildOnFailure:
                             # Try again with a descriptor rebuild
                             inchi = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
                             ok = oechem.OEInChIToMol(oeMol, inchi)
                             if not ok:
-                                logger.error("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
+                                logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
             okT = True
             if ok:
                 if setTitle:
@@ -574,7 +599,7 @@ class OeMoleculeFactory(object):
 
     def __getDescriptor(self, ccId, molBuildType, fallBackBuildType="model-xyz"):
         if molBuildType not in ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]:
-            logger.error("%s Unexpected molBuildType %r", ccId, molBuildType)
+            logger.error("%s unexpected molBuildType %r", ccId, molBuildType)
             return None
         ret = None
         if not self.__isDefinitionSet:
@@ -794,23 +819,24 @@ class OeMoleculeFactory(object):
         return None
 
     #
-    def getTautomerList(self, oeMol=None):
+    def getTautomerMolList(self, oeMol=None, maxTautomerAtoms=200):
         tautomerMolL = []
         tautomerOptions = oequacpac.OETautomerOptions()
-        tautomerOptions.SetMaxTautomericAtoms(140)
+        tautomerOptions.SetMaxTautomericAtoms(maxTautomerAtoms)
+        logger.debug("Tautomer option max atoms = %r", tautomerOptions.GetMaxTautomericAtoms())
         pKaNorm = True
         inMol = oeMol if oeMol else self.__oeMol
         for tautomer in oequacpac.OEGetReasonableTautomers(inMol, tautomerOptions, pKaNorm):
             tautomerMolL.append(tautomer)
         return tautomerMolL
 
-    def getUniqueProtomer(self, oeMol=None):
+    def getUniqueProtomerMol(self, oeMol=None):
         inMol = oeMol if oeMol else self.__oeMol
         mol = oechem.OEGraphMol()
-        oequacpac.OEGetUniqueProtomer(mol, inMol)
-        return mol
+        ok = oequacpac.OEGetUniqueProtomer(mol, inMol)
+        return mol if ok else None
 
-    def getNeutralProtomer(self, oeMol=None):
+    def getNeutralProtomerMol(self, oeMol=None):
         inMol = oeMol if oeMol else oechem.OEGraphMol(self.__oeMol)
-        oequacpac.OESetNeutralpHModel(inMol)
-        return inMol
+        ok = oequacpac.OESetNeutralpHModel(inMol)
+        return inMol if ok else None

@@ -435,6 +435,51 @@ class OeIoUtils(object):
         logger.info("Completed operation at %s (%.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
         return ccCount, errCount, failIdList
 
+    def buildOeBinaryMolCacheFromIndex(self, filePath, ccIdxD, quietFlag=False, fpTypeList=None, limitPerceptions=True):
+        """Build cache of OEGraphMol() objects from the input chemical component search index.
+
+        Args:
+            ccIdxD (dict): Chemical component search index
+
+        Returns:
+          (int, int) : chemical component count processed successes and failures
+        """
+        try:
+            failIdList = []
+            ccCount = 0
+            errCount = 0
+            startTime = time.time()
+            ofs = oechem.oemolostream()
+            ofs.SetFormat(oechem.OEFormat_OEB)
+            if ofs.open(filePath):
+                oemf = OeMoleculeFactory()
+                if quietFlag:
+                    oemf.setQuiet()
+                for searchCcId, ccIdx in ccIdxD.items():
+                    oemf.setDescriptor(ccIdx["smiles"], "oe-iso-smiles", searchCcId)
+                    ok = oemf.build(molBuildType="oe-iso-smiles", limitPerceptions=limitPerceptions)
+                    if ok and fpTypeList:
+                        fpOk = oemf.addFingerPrints(fpTypeList)
+                        if not fpOk:
+                            logger.info("Fingerprint generation fails for %r", searchCcId)
+                    if ok:
+                        oeMol = oemf.getMol()
+                        oechem.OEWriteMolecule(ofs, oeMol)
+                        ccCount += 1
+                    if not ok:
+                        # build failed incomplete component (e.g. missing atoms or bonds)
+                        errCount += 1
+                        failIdList.append(searchCcId)
+            else:
+                logger.error("Unable to open cache database %s", filePath)
+                errCount += 1
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        #
+        endTime = time.time()
+        logger.info("Completed operation at %s (%.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
+        return ccCount, errCount, failIdList
+
     def createOeSubSearchDatabase(self, oebMolFilePath, oeSubSearchFilePath, screenType="SMARTS", numProc=2):
         sort = True
         keepTitle = True

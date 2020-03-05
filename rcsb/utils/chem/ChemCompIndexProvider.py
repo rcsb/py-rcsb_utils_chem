@@ -77,7 +77,7 @@ class ChemCompIndexProvider(SingletonClass):
         #
         if useCache and self.__mU.exists(ccIdxFilePath):
             _, fExt = os.path.splitext(ccIdxFilePath)
-            ccIdxFormat = "json" if fExt == "json" else "pickle"
+            ccIdxFormat = "json" if fExt == ".json" else "pickle"
             rdCcIdxD = self.__mU.doImport(ccIdxFilePath, fmt=ccIdxFormat)
             ccIdxD = {k: rdCcIdxD[k] for k in sorted(rdCcIdxD.keys())[:molLimit]} if molLimit else rdCcIdxD
         else:
@@ -96,7 +96,7 @@ class ChemCompIndexProvider(SingletonClass):
             # Serialized chemical component data index file
             startTime = time.time()
             _, fExt = os.path.splitext(filePath)
-            fileFormat = "json" if fExt == "json" else "pickle"
+            fileFormat = "json" if fExt == ".json" else "pickle"
             idxD = self.__buildChemCompIndex(ccObjD)
             ok = self.__mU.doExport(filePath, idxD, fmt=fileFormat)
             endTime = time.time()
