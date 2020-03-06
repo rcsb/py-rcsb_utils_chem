@@ -44,6 +44,7 @@ class OeMoleculeFactory(object):
 
     def __init__(self, verbose=False):
         self.__verbose = verbose
+        self.__oeErrorLevel = oechem.OEErrorLevel_Info
         self.__ccId = None
         self.__oeMol = None
         #
@@ -65,8 +66,8 @@ class OeMoleculeFactory(object):
     def setQuiet(self):
         """Suppress OE warnings and processing errors
         """
-        # oechem.OEThrow.SetLevel(5)
         oechem.OEThrow.SetLevel(oechem.OEErrorLevel_Quiet)
+        self.__oeErrorLevel = oechem.OEErrorLevel_Quiet
 
     def setDebug(self, flag):
         self.__verbose = flag
@@ -402,7 +403,8 @@ class OeMoleculeFactory(object):
             for buildType in ["model-xyz", "oe-iso-smiles", "cactvs-iso-smiles", "inchi"]:
                 ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
                 if ok:
-                    name = self.__ccId + "|" + "ref" if buildType == "model-xyz" else self.__ccId + "|" + buildType
+                    # name = self.__ccId + "|" + "ref" if buildType == "model-xyz" else self.__ccId + "|" + buildType
+                    name = self.__ccId if buildType == "model-xyz" else self.__ccId + "|" + buildType
                     smiles = self.getIsoSMILES()
                     inchiKey = self.getInChIKey()
                     formula = self.getFormula()
@@ -423,10 +425,11 @@ class OeMoleculeFactory(object):
                     if smiles and inchiKey and smiles not in uniqSmilesD:
                         uniqSmilesD[smiles] = True
                         retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
-            # --- do charge and tautomer normalizatio on the model-xyz build
+            # --- do charge and tautomer normalization on the model-xyz build
             ok = self.build(molBuildType="model-xyz", setTitle=True, limitPerceptions=limitPerceptions)
             if ok:
-                upMol = self.getUniqueProtomerMol()
+                logger.info("%s begin protomer search", self.__ccId)
+                upMol = self.getUniqueProtomerMolExtended(maxTautomerAtoms=100, maxSearchTime=0.10)
                 if not upMol:
                     logger.warning("%s protomer and tautomer generation failed", self.__ccId)
                 else:
@@ -448,6 +451,7 @@ class OeMoleculeFactory(object):
                             "fcharge": fCharge,
                             "elementCounts": eleD,
                         }
+                    logger.info("%s begin tautomer search", self.__ccId)
                     tautomerList = self.getTautomerMolList()
                     logger.debug("%s tautomer count %d", self.__ccId, len(tautomerList))
                     for ii, tMol in enumerate(tautomerList, 1):
@@ -819,15 +823,30 @@ class OeMoleculeFactory(object):
         return None
 
     #
-    def getTautomerMolList(self, oeMol=None, maxTautomerAtoms=200):
+    def getTautomerMolList(self, oeMol=None, maxTautomerAtoms=200, maxSearchTime=60):
         tautomerMolL = []
         tautomerOptions = oequacpac.OETautomerOptions()
         tautomerOptions.SetMaxTautomericAtoms(maxTautomerAtoms)
+        tautomerOptions.SetMaxSearchTime(maxSearchTime)
         logger.debug("Tautomer option max atoms = %r", tautomerOptions.GetMaxTautomericAtoms())
         pKaNorm = True
         inMol = oeMol if oeMol else self.__oeMol
+        #
+        errfs = oechem.oeosstream()
+        oechem.OEThrow.SetLevel(oechem.OEErrorLevel_Info)
+        oechem.OEThrow.SetOutputStream(errfs)
+        oechem.OEThrow.Clear()
+        #
         for tautomer in oequacpac.OEGetReasonableTautomers(inMol, tautomerOptions, pKaNorm):
-            tautomerMolL.append(tautomer)
+            if "Warning:" in str(errfs.str()):
+                logger.info("%s caught OE warning - skipping - %r", self.__ccId, errfs.str()[:-1])
+            else:
+                tautomerMolL.append(tautomer)
+            oechem.OEThrow.Clear()
+        # Restore stream error state
+        oechem.OEThrow.SetOutputStream(oechem.oeerr)
+        oechem.OEThrow.SetLevel(self.__oeErrorLevel)
+        #
         return tautomerMolL
 
     def getUniqueProtomerMol(self, oeMol=None):
@@ -840,3 +859,44 @@ class OeMoleculeFactory(object):
         inMol = oeMol if oeMol else oechem.OEGraphMol(self.__oeMol)
         ok = oequacpac.OESetNeutralpHModel(inMol)
         return inMol if ok else None
+
+    def getUniqueProtomerMolExtended(self, oeMol=None, maxTautomerAtoms=200, maxSearchTime=60):
+        try:
+            inMol = oeMol if oeMol else oechem.OEGraphMol(self.__oeMol)
+            oequacpac.OEHypervalentNormalization(inMol)
+            oequacpac.OERemoveFormalCharge(inMol)
+            oechem.OESuppressHydrogens(inMol)
+            opts = oequacpac.OETautomerOptions()
+            #
+            maxZone = 31
+            opts.SetMaxZoneSize(maxZone)
+            maxAtoms = maxTautomerAtoms
+            opts.SetMaxTautomericAtoms(maxAtoms)
+            opts.SetRankTautomers(False)
+            opts.SetMaxTautomersGenerated(8192)
+            opts.SetMaxTautomersToReturn(1)
+            # opts.SetMaxSearchTime(0) #can't use time in canonical process
+            opts.SetMaxSearchTime(maxSearchTime)
+            opts.SetSaveStereo(False)
+            opts.SetRacemicType(oequacpac.OERacemicType_EverSampled)
+            #
+            errfs = oechem.oeosstream()
+            oechem.OEThrow.SetLevel(oechem.OEErrorLevel_Info)
+            oechem.OEThrow.SetOutputStream(errfs)
+            oechem.OEThrow.Clear()
+            #
+            tautomerMolL = []
+            for tautomer in oequacpac.OEEnumerateTautomers(inMol, opts):
+                if "Warning:" in str(errfs.str()):
+                    logger.info("%s caught OE warning - skipping - %r", self.__ccId, errfs.str()[:-1])
+                else:
+                    tautomerMolL.append(tautomer)
+                oechem.OEThrow.Clear()
+            # Restore stream error state
+            oechem.OEThrow.SetOutputStream(oechem.oeerr)
+            oechem.OEThrow.SetLevel(self.__oeErrorLevel)
+        except Exception as e:
+            logger.exception("Failing %r with %s", self.__ccId, str(e))
+        #
+        outMol = tautomerMolL[0] if tautomerMolL else None
+        return outMol if outMol and outMol != inMol else None

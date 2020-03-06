@@ -64,10 +64,10 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
         """
         self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-abbrev", molLimit=None, numProc=4)
 
-    def testChemCompSearchIndexCacheFilesFull(self):
+    def testChemCompSearchIndexCacheFilesFullMp(self):
         """ Test search index construction of full chemical component resource files.
         """
-        self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-full")
+        self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-full", numProc=12)
 
     def testChemCompSearchIndexCacheFilesFiltered(self):
         """ Test search index construction of a filtered subset of chemical component definitions.
@@ -85,6 +85,7 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
         maxChunkSize = kwargs.get("maxChunkSize", 5)
         molLimit = kwargs.get("molLimit", None)
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
+        quietFlag = kwargs.get("quietFlag", True)
         ccsiP = ChemCompSearchIndexProvider(
             cachePath=self.__cachePath,
             useCache=useCache,
@@ -93,6 +94,7 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
             limitPerceptions=limitPerceptions,
             numProc=numProc,
             maxChunkSize=maxChunkSize,
+            quietFlag=quietFlag,
         )
         ok = ccsiP.testCache(minCount=molLimit, logSizes=logSizes)
         self.assertTrue(ok)
@@ -102,9 +104,9 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
 
 def buildCacheFiles():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesFull"))
-    suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesFiltered"))
-    suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesAbbrev"))
+    suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesFullMp"))
+    # suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesFiltered"))
+    # suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesAbbrev"))
     return suiteSelect
 
 

@@ -23,7 +23,9 @@ from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 from rcsb.utils.io.IoUtil import getObjSize
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 from rcsb.utils.io.SingletonClass import SingletonClass
-from rcsb.utils.multiproc.MultiProcUtil import MultiProcUtil
+from rcsb.utils.multiproc.MultiProcPoolUtil import MultiProcPoolUtil
+
+# from rcsb.utils.multiproc.MultiProcUtil import MultiProcUtil
 
 
 logger = logging.getLogger(__name__)
@@ -46,13 +48,14 @@ class ChemCompSearchIndexWorker(object):
         _ = workingDir
         # fetchLimit = optionsD.get("fetchLimit", None)
         limitPerceptions = optionsD.get("limitPerceptions", True)
+        quietFlag = optionsD.get("quietFlag", False)
         successList = []
         failList = []
         retList = []
         diagList = []
         #
         try:
-            retList, failList = self.__buildChemCompSearchIndex(procName, dataList, limitPerceptions=limitPerceptions)
+            retList, failList = self.__buildChemCompSearchIndex(procName, dataList, limitPerceptions=limitPerceptions, quietFlag=quietFlag)
             successList = sorted(set(dataList) - set(failList))
             logger.info("%s built %d search candidates from %d definitions with failures %d", procName, len(retList), len(dataList), len(failList))
         except Exception as e:
@@ -60,7 +63,7 @@ class ChemCompSearchIndexWorker(object):
         #
         return successList, retList, diagList
 
-    def __buildChemCompSearchIndex(self, procName, ccIdList, limitPerceptions=True):
+    def __buildChemCompSearchIndex(self, procName, ccIdList, limitPerceptions=True, quietFlag=False):
         """Internal method return a dictionary of extracted chemical component descriptors and formula.
         """
         rL = []
@@ -74,7 +77,8 @@ class ChemCompSearchIndexWorker(object):
                 dataContainer = self.__ccObjD[ccId]
                 # ----
                 oemf = OeMoleculeFactory()
-                oemf.setQuiet()
+                if quietFlag:
+                    oemf.setQuiet()
                 tId = oemf.setChemCompDef(dataContainer)
                 if tId != ccId:
                     logger.error("%s %s chemical component definition import error", procName, ccId)
@@ -137,6 +141,7 @@ class ChemCompSearchIndexProvider(SingletonClass):
         maxChunkSize = kwargs.get("maxChunkSize", 20)
         limitPerceptions = kwargs.get("limitPerceptions", True)
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
+        quietFlag = kwargs.get("quietFlag", False)
         searchIdxFilePath = os.path.join(self.__dirPath, "%s-search-idx-components.json" % ccFileNamePrefix)
         #
         if useCache and self.__mU.exists(searchIdxFilePath):
@@ -149,12 +154,12 @@ class ChemCompSearchIndexProvider(SingletonClass):
             ccmP = ChemCompMoleculeProvider(cachePath=self.__cachePath, useCache=True, molLimit=molLimit, **cmpKwargs)
             ok = ccmP.testCache(minCount=molLimit, logSizes=True)
             if ok:
-                searchIdxD = self.__updateChemCompSearchIndex(ccmP.getMolD(), searchIdxFilePath, molLimit, limitPerceptions, numProc, maxChunkSize)
+                searchIdxD = self.__updateChemCompSearchIndex(ccmP.getMolD(), searchIdxFilePath, molLimit, limitPerceptions, numProc, maxChunkSize, quietFlag)
                 logger.info("Storing %s with data for %d search candidates (status=%r) ", searchIdxFilePath, len(searchIdxD), ok)
         #
         return searchIdxD
 
-    def __updateChemCompSearchIndex(self, ccObjD, filePath, molLimit, limitPerceptions, numProc, maxChunkSize):
+    def __updateChemCompSearchIndex(self, ccObjD, filePath, molLimit, limitPerceptions, numProc, maxChunkSize, quietFlag):
         searchIdxD = {}
         try:
             # Serialized index of chemical component search targets
@@ -164,7 +169,9 @@ class ChemCompSearchIndexProvider(SingletonClass):
             if numProc <= 1:
                 searchIdxD = self.__buildChemCompSearchIndex(ccObjD, limitPerceptions=limitPerceptions, molLimit=molLimit)
             else:
-                searchIdxD = self.__buildChemCompSearchIndexMulti(ccObjD, limitPerceptions=limitPerceptions, molLimit=molLimit, numProc=numProc, maxChunkSize=maxChunkSize)
+                searchIdxD = self.__buildChemCompSearchIndexMulti(
+                    ccObjD, limitPerceptions=limitPerceptions, molLimit=molLimit, numProc=numProc, maxChunkSize=maxChunkSize, quietFlag=quietFlag
+                )
 
             ok = self.__mU.doExport(filePath, searchIdxD, fmt=fileFormat)
             endTime = time.time()
@@ -197,14 +204,14 @@ class ChemCompSearchIndexProvider(SingletonClass):
 
         return rD
 
-    def __buildChemCompSearchIndexMulti(self, ccObjD, limitPerceptions=True, molLimit=None, numProc=2, maxChunkSize=20):
+    def __buildChemCompSearchIndexMulti(self, ccObjD, limitPerceptions=True, molLimit=None, numProc=2, maxChunkSize=20, quietFlag=False):
         #
         ccIdList = sorted(ccObjD.keys())[:molLimit] if molLimit else sorted(ccObjD.keys())
         logger.info("Input definition length %d numProc %d limitPerceptions %r", len(ccIdList), numProc, limitPerceptions)
         #
         rWorker = ChemCompSearchIndexWorker(ccObjD)
-        mpu = MultiProcUtil(verbose=True)
-        optD = {"maxChunkSize": maxChunkSize, "limitPerceptions": limitPerceptions}
+        mpu = MultiProcPoolUtil(verbose=True)
+        optD = {"maxChunkSize": maxChunkSize, "limitPerceptions": limitPerceptions, "quietFlag": quietFlag}
         mpu.setOptions(optD)
         mpu.set(workerObj=rWorker, workerMethod="buildRelatedList")
         ok, failList, resultList, _ = mpu.runMulti(dataList=ccIdList, numProc=numProc, numResults=1, chunkSize=maxChunkSize)
