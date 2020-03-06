@@ -23,9 +23,9 @@ from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 from rcsb.utils.io.IoUtil import getObjSize
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 from rcsb.utils.io.SingletonClass import SingletonClass
-from rcsb.utils.multiproc.MultiProcPoolUtil import MultiProcPoolUtil
+from rcsb.utils.multiproc.MultiProcUtil import MultiProcUtil
 
-# from rcsb.utils.multiproc.MultiProcUtil import MultiProcUtil
+# from rcsb.utils.multiproc.MultiProcPoolUtil import MultiProcPoolUtil
 
 
 logger = logging.getLogger(__name__)
@@ -210,7 +210,8 @@ class ChemCompSearchIndexProvider(SingletonClass):
         logger.info("Input definition length %d numProc %d limitPerceptions %r", len(ccIdList), numProc, limitPerceptions)
         #
         rWorker = ChemCompSearchIndexWorker(ccObjD)
-        mpu = MultiProcPoolUtil(verbose=True)
+        # mpu = MultiProcPoolUtil(verbose=True)
+        mpu = MultiProcUtil(verbose=True)
         optD = {"maxChunkSize": maxChunkSize, "limitPerceptions": limitPerceptions, "quietFlag": quietFlag}
         mpu.setOptions(optD)
         mpu.set(workerObj=rWorker, workerMethod="buildRelatedList")
