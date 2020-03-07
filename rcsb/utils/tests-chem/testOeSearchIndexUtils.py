@@ -179,12 +179,12 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(fpTypeCuttoffList), numMols, time.time() - startTime)
         # ----
 
-    def testFingerprintScoresAbbrev(self):
+    def testFingerPrintScoresAbbrev(self):
         """Fingerprint scores. (abbreviated)
         """
         return self.__fingerPrintScores(self.__numMols, **self.__myKwargs)
 
-    def testFingerprintScoresFull(self):
+    def testFingerPrintScoresFull(self):
         """Fingerprint scores. (full)
         """
         numMols = 200000
