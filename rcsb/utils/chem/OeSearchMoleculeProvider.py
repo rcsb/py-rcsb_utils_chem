@@ -94,7 +94,7 @@ class OeSearchMoleculeProvider(object):
             logger.exception("Failing with %s", str(e))
         return oeMolDbTitleD
 
-    def getOeSearchMolDatabase(self):
+    def getOeMolDatabase(self):
         if not self.__oeMolDb:
             oeIo = OeIoUtils()
             self.__oeMolDb = oeIo.loadOeBinaryDatabaseAndIndex(os.path.join(self.__dirPath, self.__getOeMolDbFileName()))
@@ -166,7 +166,7 @@ class OeSearchMoleculeProvider(object):
         quietFlag = kwargs.get("quietFlag", True)
         logSizes = kwargs.get("logSizes", False)
         fpDbType = "STANDARD"
-        buildScreenedDb = False
+        buildScreenedDb = True
         #
         ccCount = 0
         oeCount = 0

@@ -57,10 +57,15 @@ class OeSearchMoleculeProviderTests(unittest.TestCase):
             birdUrlTarget=self.__birdUrlTarget,
             ccFileNamePrefix="cc-abbrev",
             oeFileNamePrefix="oe-abbrev",
-            molLimit=500,
+            molLimit=None,
             fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"],
-            # screenTypeList=["SMARTS"],
+            screenTypeList=["SMARTS"],
             numProc=2,
+        )
+
+    def testSearchBuildMoleculeCacheFilesFull(self):
+        self.__testBuildSearchMoleculeCacheFiles(
+            ccFileNamePrefix="cc-full", oeFileNamePrefix="oe-full", molLimit=None, fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"], screenTypeList=[], numProc=2,
         )
 
     def __testBuildSearchMoleculeCacheFiles(self, **kwargs):
@@ -113,19 +118,19 @@ class OeSearchMoleculeProviderTests(unittest.TestCase):
         oesmp = OeSearchMoleculeProvider(cachePath=self.__cachePath, ccFileNamePrefix=ccFileNamePrefix, oeFileNamePrefix=oeFileNamePrefix, useCache=True)
         #
         deltaMol = 2
-        minMol = minNumFp = molLimit - deltaMol if molLimit else 30000
+        minMol = minNumFp = molLimit - deltaMol if molLimit else 500
         for fpType in fpTypeList:
             fpDb = oesmp.getFingerPrintDb(fpType="TREE")
             logger.debug("fpType %r length %d", fpType, fpDb.NumFingerPrints())
             self.assertGreaterEqual(fpDb.NumFingerPrints(), minNumFp)
         #
-        ccId = "004|ref"
+        ccId = "004"
         oeMol = oesmp.getMol(ccId)
         logger.debug("%s atom count %d", ccId, len(list(oeMol.GetAtoms())))
         #
         self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
         #
-        oeDb, oeDbIdx = oesmp.getOeSearchMolDatabase()
+        oeDb, oeDbIdx = oesmp.getOeMolDatabase()
         logger.debug("Type db %r length %d type idx %r length %d", type(oeDb), oeDb.NumMols(), type(oeDbIdx), len(oeDbIdx))
         self.assertGreaterEqual(oeDb.NumMols(), minMol)
         self.assertGreaterEqual(len(oeDbIdx), minMol)

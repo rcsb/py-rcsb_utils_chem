@@ -35,14 +35,16 @@ class OeIoUtils(object):
     def __init__(self, **kwargs):
         self.__dirPath = kwargs.get("dirPath", ".")
         self.__mU = MarshalUtil(workPath=self.__dirPath)
+        self.__oeErrorLevel = oechem.OEErrorLevel_Info
         if kwargs.get("quietFlag", False):
             self.setQuiet()
         #
 
     def setQuiet(self):
-        # quiet
-        # oechem.OEThrow.SetLevel(5)
+        """Suppress OE warnings and processing errors
+        """
         oechem.OEThrow.SetLevel(oechem.OEErrorLevel_Quiet)
+        self.__oeErrorLevel = oechem.OEErrorLevel_Quiet
 
     def getComponentDefinitions(self, ccdFilePath):
         try:
@@ -71,7 +73,28 @@ class OeIoUtils(object):
             logger.exception("Loading %s failing with %s", ccdFilePath, str(e))
         return retMolL
 
-    def smilesToMol(self, smiles, limitPerceptions=True):
+    def descriptorToMol(self, descr, descrType, limitPerceptions=True, messageTag=None):
+        """Parse the input descriptor string and return a molecule object (OeGraphMol/OeQMol).
+
+        Args:
+            descr (str): descriptor
+            descrType (str): descriptor type
+            limitPerceptions (bool): flag to limit the perceptions/transformations of input descriptor
+            messageTag (srt, optional): prefix string for error messages. Defaults to None.
+
+        Returns:
+            object: OeGraphMol()/OeQmol() object or None for failure
+        """
+        if "SMILES" in descrType.upper():
+            return self.smilesToMol(descr, limitPerceptions=limitPerceptions, messageTag=messageTag)
+        elif "INCHI" in descrType.upper():
+            return self.inchiToMol(descr, limitPerceptions=limitPerceptions, messageTag=messageTag)
+        elif "SMARTS" in descrType.upper():
+            return self.smartsToQmol(descr, messageTag=messageTag)
+        else:
+            return None
+
+    def smilesToMol(self, smiles, limitPerceptions=True, messageTag=None):
         """Parse the input SMILES string and return a molecule object (OeGraphMol).
 
         Args:
@@ -82,6 +105,7 @@ class OeIoUtils(object):
             object: OeGraphMol() object or None for failure
         """
         try:
+            label = messageTag if messageTag else ""
             mol = oechem.OEGraphMol()
             smiles.strip()
             if limitPerceptions:
@@ -89,17 +113,19 @@ class OeIoUtils(object):
                 if oechem.OEParseSmiles(mol, smiles, False, False):
                     return mol
                 else:
-                    logger.error("Parsing failed for SMILES string %s", smiles)
+                    logger.debug("%s parsing failed for input SMILES string %s", label, smiles)
+                    logger.error("%s parsing failed for input SMILES string", label)
             else:
                 if oechem.OESmilesToMol(mol, smiles):
                     return mol
                 else:
-                    logger.error("Parsing failed for SMILES string %s", smiles)
+                    logger.debug("%s converting failed for input SMILES string %s", label, smiles)
+                    logger.error("%s converting failed for input SMILES string", label)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return None
 
-    def inchiToMol(self, inchi, limitPerceptions=True):
+    def inchiToMol(self, inchi, limitPerceptions=True, messageTag=None):
         """Parse the input InChI string and return a molecule object (OeGraphMol).
 
         Args:
@@ -110,23 +136,50 @@ class OeIoUtils(object):
 
         """
         try:
+            label = messageTag if messageTag else ""
             mol = oechem.OEGraphMol()
             inchi = inchi.strip()
             if limitPerceptions:
                 if oechem.OEParseInChI(mol, inchi):
                     return mol
                 else:
-                    logger.error("Parsing failed for InChI string %r", inchi)
+                    logger.debug("%s parsing failed for InChI string %r", label, inchi)
+                    logger.error("%s parsing failed for InChI string", label)
             else:
                 if oechem.OEInChIToMol(mol, inchi):
                     return mol
                 else:
-                    logger.error("Parsing failed for InChI string %r", inchi)
+                    logger.debug("%s converting failed for InChI string %r", label, inchi)
+                    logger.error("%s converting failed for InChI string", label)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return None
 
-    def smartsToQmol(self, smarts):
+    def descriptorToQMol(self, descr, descrType, limitPerceptions=True, messageTag=None):
+        """Parse the input descriptor string and return a query molecule object (OeQMol).
+
+        Args:
+            descr (str): descriptor
+            descrType (str): descriptor type
+            limitPerceptions (bool): flag to limit the perceptions/transformations of input descriptor
+            messageTag (srt, optional): prefix string for error messages. Defaults to None.
+
+        Returns:
+            object: OeQmol() object or None for failure
+
+        """
+        oeQMol = None
+        try:
+            label = messageTag if messageTag else ""
+            tMol = self.descriptorToMol(descr, descrType, limitPerceptions=limitPerceptions, messageTag=messageTag)
+            if tMol:
+                oeQMol = oechem.OEQMol(tMol)
+
+        except Exception as e:
+            logger.error("%s Failing for with %s", label, str(e))
+        return oeQMol if oeQMol else None
+
+    def smartsToQmol(self, smarts, messageTag=None):
         """Parse the input SMARTS query string and return a query molecule object (OeQMol).
 
         Args:
@@ -136,11 +189,13 @@ class OeIoUtils(object):
             object : OeQMol() object or None for failure
         """
         try:
+            label = messageTag if messageTag else ""
             qmol = oechem.OEQMol()
             if oechem.OEParseSmarts(qmol, smarts):
                 return qmol
             else:
-                logger.error("Parsing failed for SMARTS string %s", smarts)
+                logger.debug("%s parsing failed for SMARTS string %s", label, smarts)
+                logger.error("%s parsing failed for SMARTS string", label)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return None
@@ -305,7 +360,7 @@ class OeIoUtils(object):
             #
             fpDb = oegraphsim.OEFPDatabase(oeFpType)
             numMols = oeMolDb.GetMaxMolIdx()
-            logger.info("fpType %r tag %r oeFpType %r", fpType, tag, oeFpType)
+            logger.debug("fpType %r tag %r oeFpType %r", fpType, tag, oeFpType)
             oeMol = oechem.OEGraphMol()
             for idx in range(0, numMols):
                 if oeMolDb.GetMolecule(oeMol, idx):
@@ -319,12 +374,12 @@ class OeIoUtils(object):
 
             numFp = fpDb.NumFingerPrints()
             ok = numMols == numFp
-            logger.info("Number of molecule definitions %d fingerprints %d", numMols, numFp)
+            logger.info("Loaded molecules  %d fingerprints %d (%.4f seconds)", numMols, numFp, time.time() - startTime)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             fpDb = None
         endTime = time.time()
-        logger.info("Completed with status %r operation at %s (%.4f seconds)", ok, time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
+        logger.debug("Completed with status %r operation at %s (%.4f seconds)", ok, time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
         return fpDb
 
     def __loadOeFastFingerPrintDatabase(self, oeFpDbFilePath, inMemory=False, fpType="TREE"):

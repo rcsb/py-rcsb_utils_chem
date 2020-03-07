@@ -41,7 +41,7 @@ class OeSearchUtils(object):
         self.__oeMolDb, self.__oeMolDbTitleD = oemP.getOeMolDatabase()
         self.__idxTitleD = {v: k for k, v in self.__oeMolDbTitleD.items()}
         if screenType:
-            self.__ssDb = oemP.getSubSearchDb(screenType="SMARTS", numProc=numProc, forceRefresh=True)
+            self.__ssDb = oemP.getSubSearchDb(screenType=screenType, numProc=numProc, forceRefresh=True)
         endTime = time.time()
         logger.info("Loaded %d definitions (%.4f seconds)", self.__oeMolDb.NumMols(), endTime - startTime)
         logger.debug("self.__oeMolDbTitleD %s", list(self.__oeMolDbTitleD.items())[:5])
@@ -180,15 +180,13 @@ class OeSearchUtils(object):
         retStatus = True
         hL = []
         try:
-            # op = "search"
-            # if op == "count":
-            #    logger.info("Number of hits: %d", self.__ssDb.NumMatches(qmol))
             query = oechem.OESubSearchQuery(qmol, maxMatches)
             result = oechem.OESubSearchResult()
             status = self.__ssDb.Search(result, query)
-            if status.upper() != "FINISHED":
+            statusText = oechem.OESubSearchStatusToName(status)
+            if statusText.upper() != "FINISHED":
                 retStatus = False
-                logger.info("Search failing with status = %r", oechem.OESubSearchStatusToName(status))
+                logger.info("Search failing with status = %r", statusText)
                 return retStatus, hL
             #
             if self.__verbose:

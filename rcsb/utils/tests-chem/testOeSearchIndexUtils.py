@@ -24,10 +24,9 @@ import time
 import unittest
 
 from rcsb.utils.chem import __version__
-from rcsb.utils.chem.ChemCompSearchIndexProvider import ChemCompSearchIndexProvider
+from rcsb.utils.chem.ChemCompIndexProvider import ChemCompIndexProvider
 from rcsb.utils.chem.OeDepictAlign import OeDepictMCSAlignPage
 from rcsb.utils.chem.OeIoUtils import OeIoUtils
-from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 from rcsb.utils.chem.OeSearchMoleculeProvider import OeSearchMoleculeProvider
 from rcsb.utils.chem.OeSearchUtils import OeSearchUtils
 
@@ -46,23 +45,29 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
-        self.__fpTypeList = ["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"]
-        self.__fpTypeCuttoffList = [("TREE", 0.6), ("PATH", 0.6), ("MACCS", 0.9), ("CIRCULAR", 0.6), ("LINGO", 0.9)]
+        # self.__fpTypeList = ["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"]
+        fpTypeCuttoffList = [("TREE", 0.6), ("PATH", 0.6), ("MACCS", 0.9), ("CIRCULAR", 0.6), ("LINGO", 0.9)]
         self.__screenType = "SMARTS"
         self.__numProc = 1
         self.__minCount = 500
         self.__startTime = time.time()
-        self.__numMols = 10
+        #
+        # self.__buildTypeList = ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]
+        self.__buildTypeList = ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]
+        self.__numMols = 3000
         self.__myKwargs = {
             "cachePath": self.__cachePath,
             "useCache": True,
-            "fpTypeList": self.__fpTypeList,
+            # "fpTypeList": self.__fpTypeList,
             "ccFileNamePrefix": "cc-abbrev",
             "oeFileNamePrefix": "oe-abbrev",
             # "molBuildType": "oe-iso-smiles",
-            "molBuildType": "model-xyz",
+            # "molBuildType": "model-xyz",
             "limitPerceptions": False,
             "minCount": 500,
+            "maxFpResults": 50,
+            "fpTypeCuttoffList": fpTypeCuttoffList,
+            "buildTypeList": self.__buildTypeList,
         }
         #
         logger.debug("Running tests on version %s", __version__)
@@ -74,7 +79,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
 
     def __resultContains(self, ccId, matchResultList):
         for matchResult in matchResultList:
-            if matchResult.ccId == ccId:
+            if ccId in matchResult.ccId:
                 return True
         return False
 
@@ -82,13 +87,13 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         minCount = kwargs.get("minCount", 500)
         oesmP = OeSearchMoleculeProvider(**kwargs)
         ok = oesmP.testCache()
-        ccsiP = ChemCompSearchIndexProvider(**kwargs)
-        ok = ccsiP.testCache(minCount=minCount)
+        ccIdxP = ChemCompIndexProvider(**kwargs)
+        ok = ccIdxP.testCache(minCount=minCount)
         self.assertTrue(ok)
-        ccSearchIdxD = ccsiP.getIndex()
-        return oesmP, ccSearchIdxD
+        ccIdxD = ccIdxP.getIndex()
+        return oesmP, ccIdxD
 
-    def testExhaustiveSubStructureSearch(self):
+    def testSubStructureSearchExhaustive(self):
         """Exhaustive substructure search.
         """
         return self.__exhaustiveSubStructureSearch(self.__numMols, **self.__myKwargs)
@@ -97,97 +102,117 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         """Exhaustive substructure search.
         """
         try:
-            oesmP, ccSearchIdxD = self.__getSearchDataProviders(**kwargs)
+            limitPerceptions = kwargs.get("limitPerceptions", False)
+            buildTypeList = kwargs.get("buildTypeList", ["oe-iso-smiles"])
+            oesmP, ccIdxD = self.__getSearchDataProviders(**kwargs)
             oesU = OeSearchUtils(oesmP, fpTypeList=[])
-            ccSearchIdList = sorted(ccSearchIdxD.keys())[:numMols] if numMols else sorted(ccSearchIdxD.keys())
-
-            for ccSearchId in ccSearchIdList:
-                # ----
-                startTime = time.time()
-                oeMol = oesmP.getMol(ccSearchId)
-                retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="simple")
-                logger.info("%s match length %d in (%.4f seconds)", ccSearchId, len(mL), time.time() - startTime)
-                self.assertTrue(retStatus)
-                self.assertTrue(self.__resultContains(ccSearchId, mL))
-                #
+            oeioU = OeIoUtils()
+            #
+            for ccId, ccD in list(ccIdxD.items())[:numMols]:
+                for buildType in buildTypeList:
+                    if buildType in ccD:
+                        oeMol = oeioU.descriptorToMol(ccD[buildType], buildType, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildType)
+                        if not oeMol:
+                            continue
+                        # ----
+                        startTime = time.time()
+                        retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="simple")
+                        logger.info("%s match length %d build type %s in (%.4f seconds)", ccId, len(mL), buildType, time.time() - startTime)
+                        self.assertTrue(retStatus)
+                        self.assertTrue(self.__resultContains(ccId, mL))
                 # ----
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
 
-    def testFingerPrintSearch(self):
-        oemp = OeMoleculeProvider(**self.__myKwargs)
-        # This will reload the oe binary cache.
-        oeMol = oemp.getMol("004")
-        self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
+    def testFingerprintSearch(self):
+        """Fingerprint search.
+        """
+        return self.__fingerPrintSearch(self.__numMols, **self.__myKwargs)
+
+    def __fingerPrintSearch(self, numMols, **kwargs):
+        maxFpResults = kwargs.get("maxFpResults", 50)
+        limitPerceptions = kwargs.get("limitPerceptions", False)
+        fpTypeCuttoffList = kwargs.get("fpTypeCuttoffList", [("TREE", 0.6)])
+        buildTypeList = kwargs.get("buildTypeList", ["oe-iso-smiles"])
         #
-        ok = oemp.testCache()
-        ccmP = ChemCompIndexProvider(**self.__myKwargs)
-        ccIdxD = ccmP.getIndex()
-        ok = ccmP.testCache(minCount=self.__minCount)
-        self.assertTrue(ok)
-        minScore = 0.50
-        maxResults = 50
-        numMols = 100
-        oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
+        oesmP, ccIdxD = self.__getSearchDataProviders(**kwargs)
+        oesU = OeSearchUtils(oesmP, fpTypeList=[tup[0] for tup in fpTypeCuttoffList])
+        oeioU = OeIoUtils()
+        # This will reload the oe binary cache.
+        oeMol = oesmP.getMol("004")
+        self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
+        missedFpD = {}
+        missedBuildD = {}
         # ----
         startTime = time.time()
-        for ccId, _ in list(ccIdxD.items())[:numMols]:
-            for fpType in self.__fpTypeList:
-                oeMol = oemp.getMol(ccId)
-                retStatus, mL = oesU.searchFingerPrints(oeMol, fpType=fpType, minFpScore=minScore, maxFpResults=maxResults)
-                self.assertTrue(retStatus)
-                self.assertTrue(self.__resultContains(ccId, mL))
-                # self.assertGreaterEqual(len(mL), 1)
-        logger.info("%s fingerprints search on %d in (%.4f seconds)", len(self.__fpTypeList), numMols, time.time() - startTime)
+        for ccId, ccD in ccIdxD.items():
+            for buildType in buildTypeList:
+                if buildType in ccD:
+                    oeMol = oeioU.descriptorToMol(ccD[buildType], buildType, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildType)
+                    if not oeMol:
+                        continue
+                    selfHit = False
+                    for fpType, minFpScore in fpTypeCuttoffList:
+                        retStatus, mL = oesU.searchFingerPrints(oeMol, fpType=fpType, minFpScore=minFpScore, maxFpResults=maxFpResults)
+                        self.assertTrue(retStatus)
+                        #
+                        matchedSelf = self.__resultContains(ccId, mL)
+                        selfHit = selfHit or matchedSelf
+                        if not matchedSelf:
+                            missedFpD.setdefault(ccId, []).append((buildType, fpType, len(mL)))
+                    #
+                    if not selfHit:
+                        missedBuildD.setdefault(ccId, []).append(buildType)
+        # ------
+        for ccId, bTL in missedBuildD.items():
+            logger.info("%s missed all fptypes:  buildtype list %r", ccId, bTL)
+
+        if ccId in missedFpD:
+            logger.info("%s unmatched by fpTypes %r", ccId, missedFpD[ccId])
+
+        # ----
+        logger.info("%s fingerprints search on %d in (%.4f seconds)", len(fpTypeCuttoffList), numMols, time.time() - startTime)
         # ----
 
-    def testFingerPrintScores(self):
-        oemp = OeMoleculeProvider(**self.__myKwargs)
+    def testFingerprintScores(self):
+        """Fingerprint scores.
+        """
+        return self.__fingerPrintScores(self.__numMols, **self.__myKwargs)
+
+    def __fingerPrintScores(self, numMols, **kwargs):
+        maxFpResults = kwargs.get("maxResults", 50)
+        limitPerceptions = kwargs.get("limitPerceptions", False)
+        fpTypeCuttoffList = kwargs.get("fpTypeCuttoffList", [("TREE", 0.6)])
+        buildTypeList = kwargs.get("buildTypeList", ["oe-iso-smiles"])
+        doDisplay = kwargs.get("doDisplay", False)
         #
-        ok = oemp.testCache()
-        ccmP = ChemCompIndexProvider(**self.__myKwargs)
-        ccIdxD = ccmP.getIndex()
-        ok = ccmP.testCache(minCount=self.__minCount)
-        self.assertTrue(ok)
-        limitPerceptions = False
-        maxResults = 100
-        numMols = 20
+        oesmP, ccIdxD = self.__getSearchDataProviders(**kwargs)
+        oesU = OeSearchUtils(oesmP, fpTypeList=[tup[0] for tup in fpTypeCuttoffList])
         oeioU = OeIoUtils()
-        oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
+        # This will reload the oe binary cache.
+        oeMol = oesmP.getMol("004")
+        self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
+        #
         missedFpD = {}
         missedBuildD = {}
         # ----
         startTime = time.time()
         for ccId, ccD in list(ccIdxD.items())[:numMols]:
-            for buildType in ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]:
+            for buildType in buildTypeList:
                 if buildType in ccD:
-                    logger.debug("Search %s %r", ccId, ccD[buildType])
-                    if buildType in ["inchi"]:
-                        # oeMol = oeioU.inchiToMol(ccD[buildType], limitPerceptions=limitPerceptions)
-                        #
-                        oemf = OeMoleculeFactory()
-                        oemf.setDescriptor(ccD["inchi"], "inchi", ccId)
-                        ok = oemf.build(molBuildType="inchi", limitPerceptions=limitPerceptions)
-                        if not ok:
-                            logger.info("%s build failed with InChI %r", ccId, ccD["inchi"])
-                        else:
-                            oeMol = oemf.getMol()
-                            if oemf.getInChI() != ccD["inchi"]:
-                                logger.info("%s regenerated InChI differs\n%r\n%s", ccId, ccD["inchi"], oemf.getInChI())
-                        #
-                    else:
-                        oeMol = oeioU.smilesToMol(ccD[buildType], limitPerceptions=limitPerceptions)
+                    oeMol = oeioU.descriptorToMol(ccD[buildType], buildType, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildType)
                     if not oeMol:
+                        logger.debug("%s build failed for %s - skipping", ccId, buildType)
                         continue
                     maxHits = 0
-                    minHits = maxResults
+                    minHits = maxFpResults
                     selfHit = False
                     #
-                    for fpType, minFpScore in self.__fpTypeCuttoffList:
-                        retStatus, mL = oesU.getFingerPrintScores(oeMol, fpType, minFpScore, maxResults)
+                    for fpType, minFpScore in fpTypeCuttoffList:
+                        retStatus, mL = oesU.getFingerPrintScores(oeMol, fpType, minFpScore, maxFpResults)
                         self.assertTrue(retStatus)
-                        logger.info("%s fpType %r hits %d", ccId, fpType, len(mL))
+                        logger.debug("%s fpType %r hits %d", ccId, fpType, len(mL))
                         maxHits = max(maxHits, len(mL))
                         minHits = min(minHits, len(mL))
                         matchedSelf = self.__resultContains(ccId, mL)
@@ -198,69 +223,64 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                     if not selfHit:
                         missedBuildD.setdefault(ccId, []).append(buildType)
 
-                    logger.info("%s buildType %r min hits %d max hits %d", ccId, buildType, minHits, maxHits)
+                    logger.debug("%s buildType %r min hits %d max hits %d", ccId, buildType, minHits, maxHits)
                 else:
-                    logger.info("%s missing descriptor %r", ccId, buildType)
+                    logger.debug("%s missing descriptor %r", ccId, buildType)
 
-        #
+        # ------
         for ccId, bTL in missedBuildD.items():
-            logger.info("%s missed build type list %r", ccId, bTL)
+            logger.info("%s missed all fptypes:  buildtype list %r", ccId, bTL)
 
         if ccId in missedFpD:
-            logger.info("%s unmatched fpTypes %r", ccId, missedFpD[ccId])
+            logger.info("%s unmatched by fpTypes %r", ccId, missedFpD[ccId])
 
         #
-        if False:
+        if doDisplay:
             for ccId, bTL in missedBuildD.items():
                 idxD = ccIdxD[ccId]
                 if "oe-iso-smiles" in idxD:
                     for bT in bTL:
                         self.__displayAlignedDescriptorPair(ccId, idxD["oe-iso-smiles"], "oe-iso-smiles", idxD[bT], bT, title=None, limitPerceptions=True)
 
-        logger.info("%s fingerprints search on %d in (%.4f seconds)", len(self.__fpTypeList), numMols, time.time() - startTime)
+        logger.info("%s fingerprints search on %d in (%.4f seconds)", len(fpTypeCuttoffList), numMols, time.time() - startTime)
         # ----                                  ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
 
-    def testSssWithFingerPrintFromDescriptor(self):
-        oemp = OeMoleculeProvider(**self.__myKwargs)
-        ok = oemp.testCache()
-        ccmP = ChemCompIndexProvider(**self.__myKwargs)
-        ccIdxD = ccmP.getIndex()
-        ok = ccmP.testCache(minCount=self.__minCount)
-        self.assertTrue(ok)
-        limitPerceptions = False
-        # minFpScore = 0.5
-        maxFpResults = 50
-        matchOpts = "simple"
-        numMols = 20
+    def testSubStructureSearchWithFingerPrint(self):
+        """Substructure search with fingerprint prefilter.
+        """
+        return self.__sssWithFingerPrintFromDescriptor(self.__numMols, **self.__myKwargs)
+
+    def __sssWithFingerPrintFromDescriptor(self, numMols, **kwargs):
+        maxFpResults = kwargs.get("maxResults", 50)
+        limitPerceptions = kwargs.get("limitPerceptions", False)
+        fpTypeCuttoffList = kwargs.get("fpTypeCuttoffList", [("TREE", 0.6)])
+        buildTypeList = kwargs.get("buildTypeList", ["oe-iso-smiles"])
+        doDisplay = kwargs.get("doDisplay", False)
+        #
+        oesmP, ccIdxD = self.__getSearchDataProviders(**kwargs)
+        oesU = OeSearchUtils(oesmP, fpTypeList=[tup[0] for tup in fpTypeCuttoffList])
         oeioU = OeIoUtils()
-        oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
+        # This will reload the oe binary cache.
+        oeMol = oesmP.getMol("004")
+        self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
+
+        matchOpts = "simple"
         missTupL = []
         missedD = {}
         missedFpD = {}
         # ----
         startTime = time.time()
         for ccId, ccD in list(ccIdxD.items())[:numMols]:
-            for buildType in ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]:
+            for buildType in buildTypeList:
                 if buildType in ccD:
-                    logger.debug("Search %s %r", ccId, ccD[buildType])
-                    if buildType in ["inchi"]:
-                        oemf = OeMoleculeFactory()
-                        oemf.setDescriptor(ccD["inchi"], "inchi", ccId)
-                        ok = oemf.build(molBuildType="inchi", limitPerceptions=limitPerceptions)
-                        if not ok:
-                            logger.info("%s build failed with InChI %r", ccId, ccD["inchi"])
-                        else:
-                            oeMol = oemf.getMol()
-                            if oemf.getInChI() != ccD["inchi"]:
-                                logger.info("%s regenerated InChI differs\n%r\n%s", ccId, ccD["inchi"], oemf.getInChI())
-                    else:
-                        oeMol = oeioU.smilesToMol(ccD[buildType], limitPerceptions=limitPerceptions)
+                    oeMol = oeioU.descriptorToMol(ccD[buildType], buildType, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildType)
                     if not oeMol:
+                        logger.debug("%s build failed for %s - skipping", ccId, buildType)
                         continue
                     maxHits = 0
                     minHits = maxFpResults
                     selfHit = False
-                    for fpType, minFpScore in self.__fpTypeCuttoffList:
+                    for fpType, minFpScore in fpTypeCuttoffList:
                         retStatus, mL = oesU.searchSubStructureWithFingerPrint(oeMol, fpType, minFpScore, maxFpResults, matchOpts=matchOpts)
                         self.assertTrue(retStatus)
                         logger.debug("%s fpType %r hits %d", ccId, fpType, len(mL))
@@ -282,7 +302,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             if ccId in missedFpD:
                 logger.info("%s unmatched for fpTypes %r", ccId, missedFpD[ccId])
         # ----
-        if False:
+        if doDisplay:
             mD = {}
             for missTup in missTupL:
                 mD.setdefault(missTup[0], []).append(missTup[1])
@@ -293,108 +313,73 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                     for buildType in buildTypeL:
                         self.__displayAlignedDescriptorPair(ccId, idxD["oe-iso-smiles"], "oe-iso-smiles", idxD[buildType], buildType, title=None, limitPerceptions=True)
 
-        logger.info("%s fingerprints search on %d in (%.4f seconds)", len(self.__fpTypeList), numMols, time.time() - startTime)
+        logger.info("%s fingerprints search on %d in (%.4f seconds)", len(fpTypeCuttoffList), numMols, time.time() - startTime)
         # ----                                  ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
 
-    def testSubStructureSearchWithFingerPrint(self):
-        oemp = OeMoleculeProvider(**self.__myKwargs)
-        #
-        ok = oemp.testCache()
-        ccmP = ChemCompIndexProvider(**self.__myKwargs)
-        ccIdxD = ccmP.getIndex()
-        ok = ccmP.testCache(minCount=self.__minCount)
-        self.assertTrue(ok)
-        minFpScore = 0.40
-        maxFpResults = 50
-        numMols = 100
-        matchOpts = "simple"
-        oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
-        # ----
-        startTime = time.time()
-        for ccId, _ in list(ccIdxD.items())[:numMols]:
-            for fpType in self.__fpTypeList:
-                oeMol = oemp.getMol(ccId)
-                retStatus, mL = oesU.searchSubStructureWithFingerPrint(oeMol, fpType, minFpScore, maxFpResults, matchOpts=matchOpts)
-                self.assertTrue(retStatus)
-                self.assertTrue(self.__resultContains(ccId, mL))
-
-        logger.info("%s fingerprints search on %d in (%.4f seconds)", len(self.__fpTypeList), numMols, time.time() - startTime)
-        # ----
-
     def testSubStructureSearchScreened(self):
-        oeioU = OeIoUtils()
-        oemp = OeMoleculeProvider(**self.__myKwargs)
-        ok = oemp.testCache()
-        ccmP = ChemCompIndexProvider(**self.__myKwargs)
-        ccIdxD = ccmP.getIndex()
-        ok = ccmP.testCache(minCount=self.__minCount)
-        self.assertTrue(ok)
-        oesU = OeSearchUtils(oemp, screenType=self.__screenType, numProc=self.__numProc)
-        numMols = 100
-        missL = []
-        for ccId, ccD in list(ccIdxD.items())[:numMols]:
-            # ----
-            startTime = time.time()
-            if "oe-smiles" not in ccD:
-                continue
-            logger.info("Search %s %r", ccId, ccD["oe-smiles"])
-            oeQMol = oeioU.smartsToQmol(ccD["oe-smiles"])
-            retStatus, mL = oesU.searchSubStructureScreened(oeQMol, maxMatches=100)
-            if retStatus:
-                logger.info("%s (status=%r) match length %d in (%.4f seconds)", ccId, retStatus, len(mL), time.time() - startTime)
-            if not self.__resultContains(ccId, mL):
-                missL.append(ccId)
-            #
-            # self.assertGreaterEqual(len(mL), 1)
-            # ----
-        logger.info("Missed searches (%d) %r", len(missL), missL)
-
-    def testSubStructureSearchScreenedFiltered(self):
+        """Screened substructure search.
+        """
+        numMols = 3000
         myKwargs = {
             "cachePath": self.__cachePath,
             "useCache": True,
-            "fpTypeList": self.__fpTypeList,
+            "ccFileNamePrefix": "cc-abbrev",
+            "oeFileNamePrefix": "oe-abbrev",
+            "limitPerceptions": False,
+            "buildTypeList": ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles"],
+            "screenTypeList": ["SMARTS"],
+        }
+        return self.__subStructureSearchScreened(numMols, **myKwargs)
+
+    def testSubStructureSearchScreenedFiltered(self):
+        """Screened substructure search.
+        """
+        myKwargs = {
+            "cachePath": self.__cachePath,
+            "useCache": True,
             "ccFileNamePrefix": "cc-filtered",
             "oeFileNamePrefix": "oe-filtered",
-            "molBuildType": "oe-iso-smiles",
             "limitPerceptions": False,
+            "buildTypeList": ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles"],
+            "screenTypeList": ["SMARTS"],
         }
-        oeioU = OeIoUtils()
-        oemp = OeMoleculeProvider(**myKwargs)
-        ok = oemp.testCache()
-        ccmP = ChemCompIndexProvider(**myKwargs)
-        ccIdxD = ccmP.getIndex()
-        ok = ccmP.testCache(minCount=self.__minCount)
-        self.assertTrue(ok)
-        oesU = OeSearchUtils(oemp, screenType=self.__screenType, numProc=self.__numProc)
         numMols = 5000
-        missL = []
-        for ccId, ccD in list(ccIdxD.items())[:numMols]:
-            # ----
-            startTime = time.time()
-            if "oe-smiles" not in ccD:
-                continue
-            logger.info("Search %s %r", ccId, ccD["oe-smiles"])
-            oeQMol = oeioU.smartsToQmol(ccD["oe-smiles"])
-            mL = oesU.searchSubStructureScreened(oeQMol, maxMatches=100)
-            logger.info("%s match length %d in (%.4f seconds)", ccId, len(mL), time.time() - startTime)
-            if ccId not in mL:
-                missL.append(ccId)
+        return self.__subStructureSearchScreened(numMols, **myKwargs)
 
-            # self.assertGreaterEqual(len(mL), 1)
-            # ----
-        logger.info("Missed searches (%d) %r", len(missL), missL)
+    def __subStructureSearchScreened(self, numMols, **kwargs):
+        #
+        buildTypeList = kwargs.get("buildTypeList", ["oe-iso-smiles"])
+        screenTypeList = kwargs.get("screenTypeList", ["SMARTS"])
+        oesmP, ccIdxD = self.__getSearchDataProviders(**kwargs)
+        for screenType in screenTypeList:
+            oesU = OeSearchUtils(oesmP, screenType=screenType, numProc=self.__numProc)
+            oeioU = OeIoUtils()
+            #
+            missL = []
+            for ccId, ccD in list(ccIdxD.items())[:numMols]:
+                for buildType in buildTypeList:
+                    if buildType in ccD:
+                        if screenType == "SMARTS":
+                            oeQMol = oeioU.descriptorToMol(ccD[buildType], "SMARTS", messageTag=ccId + ":" + buildType)
+                        else:
+                            oeQMol = oeioU.descriptorToQMol(ccD[buildType], "SMARTS", messageTag=ccId + ":" + buildType)
+                        if not oeQMol:
+                            logger.debug("%s build failed for %s - skipping", ccId, buildType)
+                            continue
+                        # ----
+                        startTime = time.time()
+                        retStatus, mL = oesU.searchSubStructureScreened(oeQMol, maxMatches=100)
+                        if retStatus:
+                            logger.debug("%s - %s - %s (status=%r) match length %d in (%.4f seconds)", ccId, buildType, screenType, retStatus, len(mL), time.time() - startTime)
+                        if not self.__resultContains(ccId, mL):
+                            missL.append((ccId, buildType, screenType))
+                        # ----
+            logger.info("Screen %r missed searches (%d) %r", screenType, len(missL), missL)
 
     def __displayAlignedDescriptorPair(self, ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
-        oemfRef = OeMoleculeFactory()
-        oemfRef.setDescriptor(descrRef, buildTypeRef, ccId)
-        oemfRef.build(molBuildType=buildTypeRef, limitPerceptions=limitPerceptions)
-        oeMolRef = oemfRef.getMol()
-        #
-        oemfFit = OeMoleculeFactory()
-        oemfFit.setDescriptor(descrFit, buildTypeFit, ccId)
-        oemfFit.build(molBuildType=buildTypeFit, limitPerceptions=limitPerceptions)
-        oeMolFit = oemfFit.getMol()
+        oeioU = OeIoUtils()
+        oeMolRef = oeioU.descriptorToMol(descrRef, buildTypeRef, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildTypeRef)
+        oeMolFit = oeioU.descriptorToMol(descrFit, buildTypeFit, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildTypeFit)
         #
         oed = OeDepictMCSAlignPage()
         oed.setSearchType(sType="relaxed", minAtomMatchFraction=0.50)
@@ -413,11 +398,12 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                 logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 
 
-def rawSubStructureSearch():
+def subStructureSearch():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearch"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchExhaustive"))
     suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchWithFingerPrint"))
     suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchScreened"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchScreenedFiltered"))
     return suiteSelect
 
 
@@ -430,5 +416,5 @@ def fingerprintSearch():
 
 if __name__ == "__main__":
 
-    mySuite = rawSubStructureSearch()
+    mySuite = subStructureSearch()
     unittest.TextTestRunner(verbosity=2).run(mySuite)

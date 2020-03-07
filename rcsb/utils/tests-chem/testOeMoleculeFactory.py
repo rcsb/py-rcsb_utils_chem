@@ -117,7 +117,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
                 #
                 doTautomers = False
                 if doTautomers:
-                    tautomerMolL = oemf.getTautomerList()
+                    tautomerMolL = oemf.getTautomerMolList()
                     logger.info("%s number reasonable tautomers %d", ccId, len(tautomerMolL))
                 #
                 refFD = macmp.getChemCompFeatures(ccObj, descriptorProgram="OPENEYE", filterHydrogens=filterHydrogens)

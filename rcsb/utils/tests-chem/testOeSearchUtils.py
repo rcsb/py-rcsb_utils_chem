@@ -357,9 +357,9 @@ class OeSearchUtilsTests(unittest.TestCase):
                 continue
             logger.info("Search %s %r", ccId, ccD["oe-smiles"])
             oeQMol = oeioU.smartsToQmol(ccD["oe-smiles"])
-            mL = oesU.searchSubStructureScreened(oeQMol, maxMatches=100)
-            logger.info("%s match length %d in (%.4f seconds)", ccId, len(mL), time.time() - startTime)
-            if ccId not in mL:
+            retStatus, mL = oesU.searchSubStructureScreened(oeQMol, maxMatches=100)
+            logger.info("%s (status=%r)match length %d in (%.4f seconds)", ccId, retStatus, len(mL), time.time() - startTime)
+            if not self.__resultContains(ccId, mL):
                 missL.append(ccId)
 
             # self.assertGreaterEqual(len(mL), 1)
