@@ -232,6 +232,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                     minHits = maxFpResults
                     selfHit = False
                     #
+                    startTime1 = time.time()
                     for fpType, minFpScore in fpTypeCuttoffList:
                         retStatus, mL = oesU.getFingerPrintScores(oeMol, fpType, minFpScore, maxFpResults)
                         self.assertTrue(retStatus)
@@ -246,7 +247,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                     if not selfHit:
                         missedBuildD.setdefault(ccId, []).append(buildType)
 
-                    logger.debug("%s buildType %r min hits %d max hits %d", ccId, buildType, minHits, maxHits)
+                    logger.info("%s buildType %r min hits %d max hits %d (%.4f seconds)", ccId, buildType, minHits, maxHits, time.time() - startTime1)
                 else:
                     logger.debug("%s missing descriptor %r", ccId, buildType)
 
@@ -276,7 +277,19 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
     def testSubStructureSearchWithFpFull(self):
         """Substructure search with fingerprint prefilter. (full)
         """
-        return self.__sssWithFingerPrintFromDescriptor(self.__numMols, **self.__myKwargs)
+        numMols = 200000
+        myKwargs = {
+            "cachePath": self.__cachePath,
+            "useCache": True,
+            "ccFileNamePrefix": "cc-full",
+            "oeFileNamePrefix": "oe-full",
+            "limitPerceptions": False,
+            "minCount": 500,
+            "maxFpResults": 50,
+            "fpTypeCuttoffList": self.__fpTypeCuttoffList,
+            "buildTypeList": self.__buildTypeList,
+        }
+        return self.__sssWithFingerPrintFromDescriptor(numMols, **myKwargs)
 
     def __sssWithFingerPrintFromDescriptor(self, numMols, **kwargs):
         maxFpResults = kwargs.get("maxResults", 50)
@@ -303,6 +316,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         for ccId, ccD in list(ccIdxD.items())[:numMols]:
             for buildType in buildTypeList:
                 if buildType in ccD:
+                    startTime1 = time.time()
                     oeMol = oeioU.descriptorToMol(ccD[buildType], buildType, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildType)
                     if not oeMol:
                         logger.debug("%s build failed for %s - skipping", ccId, buildType)
@@ -323,9 +337,9 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                     if not selfHit:
                         missedD.setdefault(ccId, []).append(buildType)
 
-                    logger.info("%s (%r) buildType %r min hits %d max hits %d", ccId, selfHit, buildType, minHits, maxHits)
+                    logger.debug("%s (%r) buildType %r min hits %d max hits %d (%.4f seconds)", ccId, selfHit, buildType, minHits, maxHits, time.time() - startTime1)
                 else:
-                    logger.info("%s missing descriptor %r", ccId, buildType)
+                    logger.debug("%s missing descriptor %r", ccId, buildType)
         #
         for ccId, missL in missedD.items():
             logger.info("%s missed list %r", ccId, missL)
