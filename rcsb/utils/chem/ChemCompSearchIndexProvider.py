@@ -85,7 +85,7 @@ class ChemCompSearchIndexWorker(object):
                     fL.append(ccId)
                     continue
                 relD = oemf.buildRelated(limitPerceptions=limitPerceptions)
-                logger.info("%s %s related molecular forms %d", procName, ccId, len(relD))
+                logger.debug("%s %s related molecular forms %d", procName, ccId, len(relD))
                 if relD:
                     rL.extend([relD[v] for v in relD])
                 else:

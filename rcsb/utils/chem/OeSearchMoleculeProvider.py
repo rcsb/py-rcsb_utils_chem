@@ -96,6 +96,7 @@ class OeSearchMoleculeProvider(object):
 
     def getOeMolDatabase(self):
         if not self.__oeMolDb:
+
             oeIo = OeIoUtils()
             self.__oeMolDb = oeIo.loadOeBinaryDatabaseAndIndex(os.path.join(self.__dirPath, self.__getOeMolDbFileName()))
             self.__oeMolDbTitleD = self.__getOeMolDbTitleIndex()
@@ -104,9 +105,10 @@ class OeSearchMoleculeProvider(object):
     def getOeMolD(self):
         try:
             if not self.__oeMolD:
+                startTime = time.time()
                 oeIo = OeIoUtils()
                 self.__oeMolD = oeIo.readOeBinaryMolCache(os.path.join(self.__dirPath, self.__getOeSearchMolFileName()))
-                logger.info("Loading OE binary molecule cache length %d", len(self.__oeMolD))
+                logger.info("Loading OE binary molecule cache length %d (%.4f seconds)", len(self.__oeMolD), time.time() - startTime)
             return self.__oeMolD
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -115,9 +117,10 @@ class OeSearchMoleculeProvider(object):
     def getMol(self, searchCcId):
         try:
             if not self.__oeMolD:
+                startTime = time.time()
                 oeIo = OeIoUtils()
                 self.__oeMolD = oeIo.readOeBinaryMolCache(os.path.join(self.__dirPath, self.__getOeSearchMolFileName()))
-                logger.info("Loading OE binary molecule cache length %d", len(self.__oeMolD))
+                logger.info("Loading OE binary molecule cache length %d (%.4f seconds)", len(self.__oeMolD), time.time() - startTime)
             return self.__oeMolD[searchCcId]
         except Exception as e:
             logger.exception("Get molecule %r failing with %s", searchCcId, str(e))

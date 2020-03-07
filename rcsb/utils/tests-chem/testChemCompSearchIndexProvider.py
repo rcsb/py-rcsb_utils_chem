@@ -66,6 +66,8 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
 
     def testChemCompSearchIndexCacheFilesFullMp(self):
         """ Test search index construction of full chemical component resource files.
+
+            461 s (numproc=12 json format) 7.1 GB resident mem linux len=121079
         """
         self.__testBuildSearchIndexCacheFiles(logSizes=True, useCache=False, ccFileNamePrefix="cc-full", numProc=12)
 
@@ -104,9 +106,9 @@ class ChemCompSearchIndexProviderTests(unittest.TestCase):
 
 def buildCacheFiles():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesFullMp"))
     # suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesFiltered"))
-    # suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesAbbrev"))
+    suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesAbbrev"))
+    suiteSelect.addTest(ChemCompSearchIndexProviderTests("testChemCompSearchIndexCacheFilesFullMp"))
     return suiteSelect
 
 

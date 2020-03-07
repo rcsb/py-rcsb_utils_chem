@@ -20,6 +20,8 @@ __license__ = "Apache 2.0"
 
 import logging
 import os
+import platform
+import resource
 import time
 import unittest
 
@@ -46,7 +48,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
         # self.__fpTypeList = ["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"]
-        fpTypeCuttoffList = [("TREE", 0.6), ("PATH", 0.6), ("MACCS", 0.9), ("CIRCULAR", 0.6), ("LINGO", 0.9)]
+        self.__fpTypeCuttoffList = [("TREE", 0.6), ("PATH", 0.6), ("MACCS", 0.9), ("CIRCULAR", 0.6), ("LINGO", 0.9)]
         self.__screenType = "SMARTS"
         self.__numProc = 1
         self.__minCount = 500
@@ -58,15 +60,12 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         self.__myKwargs = {
             "cachePath": self.__cachePath,
             "useCache": True,
-            # "fpTypeList": self.__fpTypeList,
             "ccFileNamePrefix": "cc-abbrev",
             "oeFileNamePrefix": "oe-abbrev",
-            # "molBuildType": "oe-iso-smiles",
-            # "molBuildType": "model-xyz",
             "limitPerceptions": False,
             "minCount": 500,
             "maxFpResults": 50,
-            "fpTypeCuttoffList": fpTypeCuttoffList,
+            "fpTypeCuttoffList": self.__fpTypeCuttoffList,
             "buildTypeList": self.__buildTypeList,
         }
         #
@@ -74,6 +73,9 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("Starting %s at %s", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()))
 
     def tearDown(self):
+        unitS = "MB" if platform.system() == "Darwin" else "GB"
+        rusageMax = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        logger.info("Maximum resident memory size %.4f %s", rusageMax / 10 ** 6, unitS)
         endTime = time.time()
         logger.info("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
@@ -93,8 +95,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         ccIdxD = ccIdxP.getIndex()
         return oesmP, ccIdxD
 
-    def testSubStructureSearchExhaustive(self):
-        """Exhaustive substructure search.
+    def testSubStructureSearchExhaustiveAbbrev(self):
+        """Exhaustive substructure search. (abbrev)
         """
         return self.__exhaustiveSubStructureSearch(self.__numMols, **self.__myKwargs)
 
@@ -125,7 +127,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
-    def testFingerprintSearch(self):
+    def testFingerprintSearchAbbrev(self):
         """Fingerprint search.
         """
         return self.__fingerPrintSearch(self.__numMols, **self.__myKwargs)
@@ -144,9 +146,11 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
         missedFpD = {}
         missedBuildD = {}
+        numMols = min(len(ccIdxD), numMols) if numMols else len(ccIdxD)
+        logger.info("Begin finger print search on %d molecules", numMols)
         # ----
         startTime = time.time()
-        for ccId, ccD in ccIdxD.items():
+        for ccId, ccD in list(ccIdxD.items())[:numMols]:
             for buildType in buildTypeList:
                 if buildType in ccD:
                     oeMol = oeioU.descriptorToMol(ccD[buildType], buildType, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildType)
@@ -175,10 +179,27 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(fpTypeCuttoffList), numMols, time.time() - startTime)
         # ----
 
-    def testFingerprintScores(self):
-        """Fingerprint scores.
+    def testFingerprintScoresAbbrev(self):
+        """Fingerprint scores. (abbreviated)
         """
         return self.__fingerPrintScores(self.__numMols, **self.__myKwargs)
+
+    def testFingerprintScoresFull(self):
+        """Fingerprint scores. (full)
+        """
+        numMols = 200000
+        myKwargs = {
+            "cachePath": self.__cachePath,
+            "useCache": True,
+            "ccFileNamePrefix": "cc-full",
+            "oeFileNamePrefix": "oe-full",
+            "limitPerceptions": False,
+            "minCount": 500,
+            "maxFpResults": 50,
+            "fpTypeCuttoffList": self.__fpTypeCuttoffList,
+            "buildTypeList": self.__buildTypeList,
+        }
+        return self.__fingerPrintScores(numMols, **myKwargs)
 
     def __fingerPrintScores(self, numMols, **kwargs):
         maxFpResults = kwargs.get("maxResults", 50)
@@ -196,6 +217,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         #
         missedFpD = {}
         missedBuildD = {}
+        numMols = min(len(ccIdxD), numMols) if numMols else len(ccIdxD)
+        logger.info("Begin finger print score search on %d molecules", numMols)
         # ----
         startTime = time.time()
         for ccId, ccD in list(ccIdxD.items())[:numMols]:
@@ -245,8 +268,13 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(fpTypeCuttoffList), numMols, time.time() - startTime)
         # ----                                  ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
 
-    def testSubStructureSearchWithFingerPrint(self):
-        """Substructure search with fingerprint prefilter.
+    def testSubStructureSearchWithFpAbbrev(self):
+        """Substructure search with fingerprint prefilter. (abbreviated data)
+        """
+        return self.__sssWithFingerPrintFromDescriptor(self.__numMols, **self.__myKwargs)
+
+    def testSubStructureSearchWithFpFull(self):
+        """Substructure search with fingerprint prefilter. (full)
         """
         return self.__sssWithFingerPrintFromDescriptor(self.__numMols, **self.__myKwargs)
 
@@ -268,6 +296,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         missTupL = []
         missedD = {}
         missedFpD = {}
+        numMols = min(len(ccIdxD), numMols) if numMols else len(ccIdxD)
+        logger.info("Begin substructure search w/ finger print filter on %d molecules", numMols)
         # ----
         startTime = time.time()
         for ccId, ccD in list(ccIdxD.items())[:numMols]:
@@ -316,7 +346,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(fpTypeCuttoffList), numMols, time.time() - startTime)
         # ----                                  ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
 
-    def testSubStructureSearchScreened(self):
+    def testSubStructureSearchScreenedAbbrev(self):
         """Screened substructure search.
         """
         numMols = 3000
@@ -356,6 +386,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             oeioU = OeIoUtils()
             #
             missL = []
+            numMols = min(len(ccIdxD), numMols) if numMols else len(ccIdxD)
             for ccId, ccD in list(ccIdxD.items())[:numMols]:
                 for buildType in buildTypeList:
                     if buildType in ccD:
@@ -400,21 +431,28 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
 
 def subStructureSearch():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchExhaustive"))
-    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchWithFingerPrint"))
-    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchScreened"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchExhaustiveAbbrev"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchWithFpAbbrev"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchScreenedAbbrev"))
     suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchScreenedFiltered"))
     return suiteSelect
 
 
 def fingerprintSearch():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintSearch"))
-    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintScores"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintSearchAbbrev"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintScoresAbbrev"))
+    return suiteSelect
+
+
+def fullSearchTests():
+    suiteSelect = unittest.TestSuite()
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintScoresFull"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchWithFpFull"))
     return suiteSelect
 
 
 if __name__ == "__main__":
 
-    mySuite = subStructureSearch()
+    mySuite = fullSearchTests()
     unittest.TextTestRunner(verbosity=2).run(mySuite)

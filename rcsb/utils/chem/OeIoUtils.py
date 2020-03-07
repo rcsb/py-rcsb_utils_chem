@@ -374,7 +374,7 @@ class OeIoUtils(object):
 
             numFp = fpDb.NumFingerPrints()
             ok = numMols == numFp
-            logger.info("Loaded molecules  %d fingerprints %d (%.4f seconds)", numMols, numFp, time.time() - startTime)
+            logger.info("Loaded molecules  %d %s fingerprints %d (%.4f seconds)", numMols, fpType, numFp, time.time() - startTime)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             fpDb = None
