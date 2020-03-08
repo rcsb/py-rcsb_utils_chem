@@ -74,11 +74,27 @@ class ChemCompIndexProviderTests(unittest.TestCase):
         useCache = kwargs.get("useCache", True)
         logSizes = kwargs.get("logSizes", False)
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
-        ccmP = ChemCompIndexProvider(cachePath=self.__cachePath, useCache=useCache, molLimit=molLimit, ccFileNamePrefix=ccFileNamePrefix)
-        ok = ccmP.testCache(minCount=molLimit, logSizes=logSizes)
+        ccidxP = ChemCompIndexProvider(cachePath=self.__cachePath, useCache=useCache, molLimit=molLimit, ccFileNamePrefix=ccFileNamePrefix)
+        ok = ccidxP.testCache(minCount=molLimit, logSizes=logSizes)
         self.assertTrue(ok)
         logger.info(" ******* Completed operation ******** ")
         #
+        return ccidxP
+
+    def testFormulaMatch(self):
+        """Test formula match   ...
+        """
+        ccidxP = self.__testBuildMoleculeCacheFiles(logSizes=False, useCache=True, ccFileNamePrefix="cc-full")
+        ccidxD = ccidxP.getIndex()
+        for ccId, idxD in ccidxD.items():
+            startTime = time.time()
+            fQueryD = {el: {"min": eCount, "max": eCount} for el, eCount in idxD["type-counts"].items()}
+            if fQueryD:
+                rL = ccidxP.matchMolecularFormula(fQueryD)
+                logger.debug("%s formula matches %r (%.4f seconds)", ccId, rL, time.time() - startTime)
+                if ccId not in rL:
+                    logger.info("%s formula not matched %r %r  (%.4f seconds)", ccId, rL, fQueryD, time.time() - startTime)
+                # self.assertTrue(ccId in rL)
 
 
 def buildCacheFiles():

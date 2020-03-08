@@ -461,8 +461,8 @@ def fingerprintSearch():
 
 def fullSearchTests():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintScoresFull"))
     suiteSelect.addTest(OeSearchIndexUtilsTests("testSubStructureSearchWithFpFull"))
+    suiteSelect.addTest(OeSearchIndexUtilsTests("testFingerPrintScoresFull"))
     return suiteSelect
 
 

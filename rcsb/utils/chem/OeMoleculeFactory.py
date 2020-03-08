@@ -412,7 +412,7 @@ class OeMoleculeFactory(object):
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
                     if smiles and inchiKey and smiles not in uniqSmilesD:
                         uniqSmilesD[smiles] = True
-                        retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
+                        retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "type_counts": eleD}
             for buildType in ["oe-smiles", "acdlabs-smiles", "cactvs-smiles"]:
                 ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
                 if ok:
@@ -424,7 +424,7 @@ class OeMoleculeFactory(object):
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
                     if smiles and inchiKey and smiles not in uniqSmilesD:
                         uniqSmilesD[smiles] = True
-                        retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "elementCounts": eleD}
+                        retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "type_counts": eleD}
             # --- do charge and tautomer normalization on the model-xyz build
             ok = self.build(molBuildType="model-xyz", setTitle=True, limitPerceptions=limitPerceptions)
             if ok:
@@ -449,7 +449,7 @@ class OeMoleculeFactory(object):
                             "inchi-key": inchiKey,
                             "formula": formula,
                             "fcharge": fCharge,
-                            "elementCounts": eleD,
+                            "type_counts": eleD,
                         }
                     logger.debug("%s begin tautomer search", self.__ccId)
                     tautomerList = self.getTautomerMolList()
@@ -473,7 +473,7 @@ class OeMoleculeFactory(object):
                                     "inchi-key": inchiKey,
                                     "formula": formula,
                                     "fcharge": fCharge,
-                                    "elementCounts": eleD,
+                                    "type-counts": eleD,
                                 }
 
         except Exception as e:

@@ -16,6 +16,7 @@ __email__ = "john.westbrook@rcsb.org"
 __license__ = "Apache 2.0"
 
 import logging
+import os
 
 from openeye import oechem
 from openeye import oedepict
@@ -186,6 +187,12 @@ class OeDepictMultiPage(OeDepictBase):
             citer.Next()
 
     def write(self, imagePath):
+        try:
+            dirPath, _ = os.path.split(imagePath)
+            if not os.access(dirPath, os.W_OK):
+                os.makedirs(dirPath, mode=0o755)
+        except Exception:
+            pass
         oedepict.OEWriteMultiPageImage(imagePath, self.__multi)
 
 
@@ -249,4 +256,10 @@ class OeDepict(OeDepictBase):
                 oedepict.OEDrawBorder(cell, oedepict.OEPen(oedepict.OEBlackPen))
 
     def write(self, imagePath):
+        try:
+            dirPath, _ = os.path.split(imagePath)
+            if not os.access(dirPath, os.W_OK):
+                os.makedirs(dirPath, mode=0o755)
+        except Exception:
+            pass
         oedepict.OEWriteImage(imagePath, self.__image)
