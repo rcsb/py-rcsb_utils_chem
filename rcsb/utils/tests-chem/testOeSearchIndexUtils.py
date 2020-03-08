@@ -187,7 +187,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
     def testFingerPrintScoresFull(self):
         """Fingerprint scores. (full)
         """
-        numMols = 6000
+        numMols = 300000
         myKwargs = {
             "cachePath": self.__cachePath,
             "useCache": True,
@@ -221,7 +221,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("Begin finger print score search on %d molecules", numMols)
         # ----
         startTime = time.time()
-        for ccId, ccD in list(ccIdxD.items())[:numMols]:
+        for ii, ccId, in enumerate(list(ccIdxD.keys())[:numMols]):
+            ccD = ccIdxD[ccId]
             for buildType in buildTypeList:
                 if buildType in ccD:
                     oeMol = oeioU.descriptorToMol(ccD[buildType], buildType, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildType)
@@ -251,6 +252,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                         logger.info("%s buildType %r min hits %d max hits %d (%.4f seconds)", ccId, buildType, minHits, maxHits, time.time() - startTime1)
                 else:
                     logger.debug("%s missing descriptor %r", ccId, buildType)
+            if ii % 100 == 0:
+                logger.info("Completed %d of %d missed count %d", ii, numMols, len(missedBuildD))
 
         # ------
         for ccId, bTL in missedBuildD.items():
@@ -278,7 +281,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
     def testSubStructureSearchWithFpFull(self):
         """Substructure search with fingerprint prefilter. (full)
         """
-        numMols = 6000
+        numMols = 300000
         myKwargs = {
             "cachePath": self.__cachePath,
             "useCache": True,
@@ -314,7 +317,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("Begin substructure search w/ finger print filter on %d molecules", numMols)
         # ----
         startTime = time.time()
-        for ii, ccId, ccD in enumerate(list(ccIdxD.items())[:numMols]):
+        for ii, ccId, in enumerate(list(ccIdxD.keys())[:numMols]):
+            ccD = ccIdxD[ccId]
             for buildType in buildTypeList:
                 if buildType in ccD:
                     startTime1 = time.time()
@@ -382,6 +386,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
     def testSubStructureSearchScreenedFiltered(self):
         """Screened substructure search.
         """
+        numMols = 5000
         myKwargs = {
             "cachePath": self.__cachePath,
             "useCache": True,
@@ -391,7 +396,6 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             "buildTypeList": ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles"],
             "screenTypeList": ["SMARTS"],
         }
-        numMols = 5000
         return self.__subStructureSearchScreened(numMols, **myKwargs)
 
     def __subStructureSearchScreened(self, numMols, **kwargs):
@@ -405,7 +409,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             #
             missL = []
             numMols = min(len(ccIdxD), numMols) if numMols else len(ccIdxD)
-            for ccId, ccD in list(ccIdxD.items())[:numMols]:
+            for ii, ccId, in enumerate(list(ccIdxD.keys())[:numMols]):
+                ccD = ccIdxD[ccId]
                 for buildType in buildTypeList:
                     if buildType in ccD:
                         if screenType == "SMARTS":
@@ -423,6 +428,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                         if not self.__resultContains(ccId, mL):
                             missL.append((ccId, buildType, screenType))
                         # ----
+                if ii % 100 == 0:
+                    logger.info("Completed %d of %d missed count %d", ii, numMols, len(missL))
             logger.info("Screen %r missed searches (%d) %r", screenType, len(missL), missL)
 
     def __displayAlignedDescriptorPair(self, ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
