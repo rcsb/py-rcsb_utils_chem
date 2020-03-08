@@ -246,8 +246,9 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                     #
                     if not selfHit:
                         missedBuildD.setdefault(ccId, []).append(buildType)
-
-                    logger.info("%s buildType %r min hits %d max hits %d (%.4f seconds)", ccId, buildType, minHits, maxHits, time.time() - startTime1)
+                    #
+                    if maxHits < 1 or not selfHit:
+                        logger.info("%s buildType %r min hits %d max hits %d (%.4f seconds)", ccId, buildType, minHits, maxHits, time.time() - startTime1)
                 else:
                     logger.debug("%s missing descriptor %r", ccId, buildType)
 
@@ -337,7 +338,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                     if not selfHit:
                         missedD.setdefault(ccId, []).append(buildType)
 
-                    logger.debug("%s (%r) buildType %r min hits %d max hits %d (%.4f seconds)", ccId, selfHit, buildType, minHits, maxHits, time.time() - startTime1)
+                    if maxHits < 1 or not selfHit:
+                        logger.info("%s (%r) buildType %r min hits %d max hits %d (%.4f seconds)", ccId, selfHit, buildType, minHits, maxHits, time.time() - startTime1)
                 else:
                     logger.debug("%s missing descriptor %r", ccId, buildType)
         #
