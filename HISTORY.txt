@@ -4,4 +4,5 @@
 18-Jan-2020 - V0.12 Preliminary APIs for OpenEye TK, RDKIT, OpenBabel/Pybel, and CACTVS.
 25-Jan-2020 - V0.13 Add CactvsMoleculeFactory() and test methods.
  7-Mar-2020 - V0.14 Add OeSearchMoleculeProvider(), ChemCompSearchIndexProvider()
+10-Mar-2020 - V0.15 Add CI pipeline configuration.
 #

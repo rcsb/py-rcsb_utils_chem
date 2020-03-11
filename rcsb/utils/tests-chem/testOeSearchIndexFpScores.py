@@ -42,12 +42,14 @@ logger.setLevel(logging.INFO)
 
 
 class OeSearchIndexUtilsTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         # self.__fpTypeList = ["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"]
         self.__fpTypeCuttoffList = [("TREE", 0.6), ("PATH", 0.6), ("MACCS", 0.9), ("CIRCULAR", 0.6), ("LINGO", 0.9)]
         self.__screenType = "SMARTS"
@@ -99,6 +101,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         ccIdxD = ccIdxP.getIndex()
         return oesmP, ccIdxD
 
+    @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testFingerPrintScoresFull(self):
         """Fingerprint scores. (full)
         """
@@ -193,6 +196,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(fpTypeCuttoffList), numMols, time.time() - startTime)
         # ----                                  ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
 
+    @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testSubStructureSearchWithFpFull(self):
         """Substructure search with fingerprint prefilter. (full)
         """

@@ -35,8 +35,9 @@ logger.setLevel(logging.INFO)
 
 
 class IoUtilsTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
-        self.__cachePath = os.path.join(TOPDIR, "CACHE")
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__startTime = time.time()
@@ -64,6 +65,7 @@ class IoUtilsTests(unittest.TestCase):
             sdfL.append(sdfS)
         #
 
+    @unittest.skipIf(skipFlag, "Long test")
     def testSdfBulkGenerator(self):
         ioU = IoUtils()
         sdfL = []

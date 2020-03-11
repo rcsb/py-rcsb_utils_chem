@@ -127,20 +127,25 @@ class OeSearchMoleculeProvider(object):
         return None
 
     def __getFastFpDbFileName(self, fpType):
-        return "%s-fast-fp-database-%s.fpbin" % (self.__oeFileNamePrefix, fpType)
+        return "%s-si-fast-fp-database-%s.fpbin" % (self.__oeFileNamePrefix, fpType)
 
     def __getSubSearchFileName(self, screenType):
-        return "%s-ss-database-%s.oeb" % (self.__oeFileNamePrefix, screenType)
+        return "%s-si-ss-database-%s.oeb" % (self.__oeFileNamePrefix, screenType)
 
     def __getOeMolDbFileName(self):
-        return "%s-mol-db-components.oeb" % self.__oeFileNamePrefix
+        return "%s-si-mol-db-components.oeb" % self.__oeFileNamePrefix
 
     def __getOeSearchMolFileName(self):
-        return "%s-search-mol-components.oeb" % self.__oeFileNamePrefix
+        """Raw binary files of OE molecules in the search index.
 
-    def __getCcSearchIndexlFileName(self, fmt="json"):
-        fExt = "json" if fmt == "json" else "pic"
-        return "%s-search-mol-components.%s" % (self.__ccFileNamePrefix, fExt)
+        Returns:
+            str: file name
+        """
+        return "%s-si-search-mol-components.oeb" % self.__oeFileNamePrefix
+
+    # def __getCcSearchIndexlFileName(self, fmt="json"):
+    #    fExt = "json" if fmt == "json" else "pic"
+    #    return "%s-si-search-mol-components.%s" % (self.__ccFileNamePrefix, fExt)
 
     def __reload(self, **kwargs):
         """Reload the dictionary of OE molecules and related data artifacts for chemical component definitions.
@@ -161,7 +166,7 @@ class OeSearchMoleculeProvider(object):
         useCache = kwargs.get("useCache", True)
         cachePath = kwargs.get("cachePath", ".")
         numProc = kwargs.get("numProc", 2)
-        molLimit = kwargs.get("molLimit", 0)
+        molLimit = kwargs.get("molLimit", None)
         fpTypeList = kwargs.get("fpTypeList", ["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"])
         # screenTypeList = kwargs.get("screenTypeList", ["SMARTS"])
         screenTypeList = kwargs.get("screenTypeList", [])

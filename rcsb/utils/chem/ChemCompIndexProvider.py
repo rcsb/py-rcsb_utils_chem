@@ -25,12 +25,13 @@ from rcsb.utils.chem.PdbxChemComp import PdbxChemCompIt
 from rcsb.utils.chem.PdbxChemComp import PdbxChemCompAtomIt
 from rcsb.utils.io.IoUtil import getObjSize
 from rcsb.utils.io.MarshalUtil import MarshalUtil
-from rcsb.utils.io.SingletonClass import SingletonClass
+
+# from rcsb.utils.io.SingletonClass import SingletonClass
 
 logger = logging.getLogger(__name__)
 
 
-class ChemCompIndexProvider(SingletonClass):
+class ChemCompIndexProvider(object):
     """Utilities to read and process an index of PDB chemical component definitions.
     """
 
@@ -41,7 +42,7 @@ class ChemCompIndexProvider(SingletonClass):
         self.__mU = MarshalUtil(workPath=self.__dirPath)
         self.__ccIdxD = self.__reload(**kwargs)
 
-    def testCache(self, minCount=29000, logSizes=False):
+    def testCache(self, minCount=None, logSizes=False):
         if logSizes and self.__ccIdxD:
             logger.info("ccIdxD (%.2f MB)", getObjSize(self.__ccIdxD) / 1000000.0)
         ok = self.__ccIdxD and len(self.__ccIdxD) >= minCount if minCount else self.__ccIdxD is not None
@@ -101,11 +102,12 @@ class ChemCompIndexProvider(SingletonClass):
             (list): chemical component data containers
         """
         #
+        logger.debug("kwargs %r", kwargs.items())
         ccIdxD = {}
         useCache = kwargs.get("useCache", True)
         molLimit = kwargs.get("molLimit", 0)
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
-        ccIdxFilePath = os.path.join(self.__dirPath, "%s-idx-components.pic" % ccFileNamePrefix)
+        ccIdxFilePath = os.path.join(self.__dirPath, "%s-idx-chemical-components.pic" % ccFileNamePrefix)
         #
         if useCache and self.__mU.exists(ccIdxFilePath):
             _, fExt = os.path.splitext(ccIdxFilePath)

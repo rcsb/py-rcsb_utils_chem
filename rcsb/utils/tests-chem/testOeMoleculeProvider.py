@@ -36,13 +36,15 @@ logger = logging.getLogger()
 
 
 class OeMoleculeProviderTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         self.__startTime = time.time()
         #
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         #
         logger.debug("Running tests on version %s", __version__)
         logger.info("Starting %s at %s", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()))
@@ -58,12 +60,13 @@ class OeMoleculeProviderTests(unittest.TestCase):
                 birdUrlTarget=self.__birdUrlTarget,
                 ccFileNamePrefix="cc-abbrev",
                 oeFileNamePrefix="oe-abbrev",
-                molLimit=500,
+                molLimit=24,
                 fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"],
                 screenTypeList=["SMARTS"],
                 molBuildType=molBuildType,
             )
 
+    @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesSubset(self):
         """ Test construction of OE resource files for a subset (1K) of full public chemical reference dictionary
         """
@@ -78,6 +81,7 @@ class OeMoleculeProviderTests(unittest.TestCase):
             )
         #
 
+    @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesFiltered(self):
         """ Test construction of OE resource files for a filtered subset of full public chemical reference dictionary
         """
@@ -92,6 +96,7 @@ class OeMoleculeProviderTests(unittest.TestCase):
             )
         #
 
+    @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesFull(self):
         """ Test construction of OE resource files for the full public chemical reference dictionary
 
@@ -103,6 +108,7 @@ class OeMoleculeProviderTests(unittest.TestCase):
                 molBuildType=molBuildType, ccFileNamePrefix="cc-full", oeFileNamePrefix="oe-full", fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"]
             )
 
+    @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesFullScreened(self):
         """ Test construction of OE resource files with screened substructure database for the full public chemical reference dictionary
         """
@@ -129,41 +135,35 @@ class OeMoleculeProviderTests(unittest.TestCase):
         oeFileNamePrefix = kwargs.get("oeFileNamePrefix", "oe")
         #
         startTime = time.time()
-        if ccUrlTarget and birdUrlTarget and molLimit:
-            # Using abbreviated reference source files
-            oemp = OeMoleculeProvider(
-                ccUrlTarget=ccUrlTarget,
-                birdUrlTarget=birdUrlTarget,
-                cachePath=self.__cachePath,
-                ccFileNamePrefix=ccFileNamePrefix,
-                oeFileNamePrefix=oeFileNamePrefix,
-                molBuildType=molBuildType,
-                useCache=False,
-                quietFlag=quietFlag,
-                fpTypeList=fpTypeList,
-                screenTypeList=screenTypeList,
-            )
-        else:
-            oemp = OeMoleculeProvider(
-                cachePath=self.__cachePath,
-                ccFileNamePrefix=ccFileNamePrefix,
-                oeFileNamePrefix=oeFileNamePrefix,
-                molBuildType=molBuildType,
-                useCache=False,
-                quietFlag=quietFlag,
-                molLimit=molLimit,
-                fpTypeList=fpTypeList,
-                screenTypeList=screenTypeList,
-            )
+
+        oemp = OeMoleculeProvider(
+            ccUrlTarget=ccUrlTarget,
+            birdUrlTarget=birdUrlTarget,
+            cachePath=self.__cachePath,
+            ccFileNamePrefix=ccFileNamePrefix,
+            oeFileNamePrefix=oeFileNamePrefix,
+            molBuildType=molBuildType,
+            useCache=False,
+            quietFlag=quietFlag,
+            fpTypeList=fpTypeList,
+            screenTypeList=screenTypeList,
+        )
         ok = oemp.testCache()
         self.assertTrue(ok)
-        #
+        oemp = OeMoleculeProvider(
+            ccUrlTarget=ccUrlTarget,
+            birdUrlTarget=birdUrlTarget,
+            cachePath=self.__cachePath,
+            ccFileNamePrefix=ccFileNamePrefix,
+            oeFileNamePrefix=oeFileNamePrefix,
+            molBuildType=molBuildType,
+            useCache=True,
+        )
         endTime = time.time()
         logger.info(">> Completed load molBuildType %r molLimit %r (%.4f seconds)", molBuildType, molLimit, endTime - startTime)
         #
         # ---
-        oemp = OeMoleculeProvider(cachePath=self.__cachePath, ccFileNamePrefix=ccFileNamePrefix, oeFileNamePrefix=oeFileNamePrefix, molBuildType=molBuildType, useCache=True)
-        #
+
         deltaMol = 2
         minMol = minNumFp = molLimit - deltaMol if molLimit else 30000
         for fpType in fpTypeList:
@@ -188,6 +188,7 @@ class OeMoleculeProviderTests(unittest.TestCase):
         if molBuildType in ["oe-iso-smiles"] and screenTypeList:
             ssDb = oemp.getSubSearchDb()
             self.assertGreaterEqual(ssDb.NumMolecules(), minMol)
+        return True
 
 
 def buildCacheFiles():

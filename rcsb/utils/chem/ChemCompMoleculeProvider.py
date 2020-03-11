@@ -7,7 +7,7 @@
 #
 ##
 """
-Utilities to read and process the dictionary of PDB chemical component definitions.
+Utilities to read and serialize the dictionary of PDBx/mmCIF chemical component definitions.
 """
 __docformat__ = "restructuredtext en"
 __author__ = "John Westbrook"
@@ -22,30 +22,35 @@ from rcsb.utils.chem.PdbxChemComp import PdbxChemCompIt
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.IoUtil import getObjSize
 from rcsb.utils.io.MarshalUtil import MarshalUtil
-from rcsb.utils.io.SingletonClass import SingletonClass
+
+# from rcsb.utils.io.SingletonClass import SingletonClass
 
 logger = logging.getLogger(__name__)
 
 
-class ChemCompMoleculeProvider(SingletonClass):
-    """Utilities to read and process the dictionary of PDB chemical component definitions.
+class ChemCompMoleculeProvider(object):
+    """Utilities to read and serialize the dictionary of PDBx/mmCIF chemical component definitions.
     """
 
     def __init__(self, **kwargs):
-        # Source target locators
+        # Default source target locators
         self.__ccUrlTarget = kwargs.get("ccUrlTarget", "http://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz")
-        self.__birdUrlTarget = kwargs.get("birdUrlTarget", "http://ftp.wwpdb.org/pub/pdb/data/bird/prd/prdcc-all.cif.gz")
-        self.__ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
-        self.__cachePath = kwargs.get("cachePath", ".")
-        dirPath = os.path.join(self.__cachePath, "chem_comp")
+        self.__ccUrlTarget = self.__ccUrlTarget if self.__ccUrlTarget else "http://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
+        self.__birdUrlTarget = kwargs.get("birdUrlTarget", None)
+        self.__birdUrlTarget = self.__birdUrlTarget if self.__birdUrlTarget else "http://ftp.wwpdb.org/pub/pdb/data/bird/prd/prdcc-all.cif.gz"
+        #
+        ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
+        cachePath = kwargs.get("cachePath", ".")
+        dirPath = os.path.join(cachePath, "chem_comp")
         useCache = kwargs.get("useCache", True)
-        self.__molLimit = kwargs.get("molLimit", 0)
+        molLimit = kwargs.get("molLimit", 0)
+        # Optional id dictionary filter
         filterIdD = kwargs.get("filterIdD", None)
         #
         self.__mU = MarshalUtil(workPath=dirPath)
-        self.__ccMolD = self.__reload(self.__ccUrlTarget, self.__birdUrlTarget, dirPath, useCache=useCache, molLimit=self.__molLimit, filterIdD=filterIdD)
+        self.__ccMolD = self.__reload(self.__ccUrlTarget, self.__birdUrlTarget, ccFileNamePrefix, dirPath, useCache=useCache, molLimit=molLimit, filterIdD=filterIdD)
 
-    def testCache(self, minCount=29000, logSizes=False):
+    def testCache(self, minCount=None, logSizes=False):
         if logSizes and self.__ccMolD:
             logger.info("ccMolD object size %.2f MB", getObjSize(self.__ccMolD) / 1000000.0)
         ok = self.__ccMolD and len(self.__ccMolD) >= minCount if minCount else self.__ccMolD is not None
@@ -61,7 +66,7 @@ class ChemCompMoleculeProvider(SingletonClass):
             logger.debug("Get molecule %r failing with %s", ccId, str(e))
         return None
 
-    def __reload(self, ccUrlTarget, birdUrlTarget, dirPath, useCache=False, molLimit=None, filterIdD=None):
+    def __reload(self, ccUrlTarget, birdUrlTarget, ccFileNamePrefix, dirPath, useCache=False, molLimit=None, filterIdD=None):
         """Reload or create serialized data dictionary of chemical components.
 
         Args:
@@ -77,7 +82,8 @@ class ChemCompMoleculeProvider(SingletonClass):
         """
         #
         startTime = time.time()
-        ccDataFilePath = os.path.join(dirPath, "%s-data.pic" % self.__ccFileNamePrefix)
+        # This is the naming standard for serialized PDBx/mmCIF component data
+        ccDataFilePath = os.path.join(dirPath, "%s-chemical-component-data.pic" % ccFileNamePrefix)
         _, fExt = os.path.splitext(ccDataFilePath)
         ccDataFormat = "json" if fExt == ".json" else "pickle"
         #
@@ -91,7 +97,7 @@ class ChemCompMoleculeProvider(SingletonClass):
             rdCcObjD = self.__readComponentDefinitions(ccdFilePath, birdFilePath, molLimit=molLimit)
             ccObjD = {ccId: ccObj for ccId, ccObj in rdCcObjD.items() if ccId in filterIdD} if filterIdD else rdCcObjD
             ok = self.__mU.doExport(ccDataFilePath, ccObjD, fmt=ccDataFormat)
-            logger.info("Storing %s with data for %d definitions (status=%r) ", ccDataFilePath, len(ccObjD), ok)
+            logger.info("Storing %d definitions (status=%r) path: %s ", len(ccObjD), ok, ccDataFilePath)
         #
         endTime = time.time()
         logger.info("Loaded/reloaded %d definitions (%.4f seconds)", len(ccObjD), endTime - startTime)
@@ -116,14 +122,14 @@ class ChemCompMoleculeProvider(SingletonClass):
         ccObjD = {}
         try:
             startTime = time.time()
-            logger.debug("Reading %s", ccdFilePath)
+            logger.info("Reading definitions from %s", ccdFilePath)
             rdCcObjL = self.__mU.doImport(ccdFilePath, fmt="mmcif")
             endTime = time.time()
             logger.info("Read %s with %d CCD definitions (%.4f seconds)", ccdFilePath, len(rdCcObjL), endTime - startTime)
             # -------
             if birdFilePath:
                 startTime = time.time()
-                logger.debug("Reading %s", birdFilePath)
+                logger.info("Reading definitions from %s", birdFilePath)
                 birdCcObjL = self.__mU.doImport(birdFilePath, fmt="mmcif")
                 endTime = time.time()
                 logger.info("Read %s with %d BIRD definitions (%.4f seconds)", birdFilePath, len(birdCcObjL), endTime - startTime)

@@ -22,7 +22,8 @@ from rcsb.utils.chem.ChemCompMoleculeProvider import ChemCompMoleculeProvider
 from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 from rcsb.utils.io.IoUtil import getObjSize
 from rcsb.utils.io.MarshalUtil import MarshalUtil
-from rcsb.utils.io.SingletonClass import SingletonClass
+
+# from rcsb.utils.io.SingletonClass import SingletonClass
 from rcsb.utils.multiproc.MultiProcUtil import MultiProcUtil
 
 # from rcsb.utils.multiproc.MultiProcPoolUtil import MultiProcPoolUtil
@@ -95,7 +96,7 @@ class ChemCompSearchIndexWorker(object):
         return rL, fL
 
 
-class ChemCompSearchIndexProvider(SingletonClass):
+class ChemCompSearchIndexProvider(object):
     """Utilities to read and process the index of chemical component definitions search targets
     """
 
@@ -106,7 +107,7 @@ class ChemCompSearchIndexProvider(SingletonClass):
         self.__mU = MarshalUtil(workPath=self.__dirPath)
         self.__searchIdx = self.__reload(**kwargs)
 
-    def testCache(self, minCount=29000, logSizes=False):
+    def testCache(self, minCount=None, logSizes=False):
         if logSizes and self.__searchIdx:
             logger.info("searchIdxD (%.2f MB)", getObjSize(self.__searchIdx) / 1000000.0)
         ok = self.__searchIdx and len(self.__searchIdx) >= minCount if minCount else self.__searchIdx is not None
@@ -141,8 +142,8 @@ class ChemCompSearchIndexProvider(SingletonClass):
         maxChunkSize = kwargs.get("maxChunkSize", 20)
         limitPerceptions = kwargs.get("limitPerceptions", True)
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
-        quietFlag = kwargs.get("quietFlag", False)
-        searchIdxFilePath = os.path.join(self.__dirPath, "%s-search-idx-components.json" % ccFileNamePrefix)
+        quietFlag = kwargs.get("quietFlag", True)
+        searchIdxFilePath = os.path.join(self.__dirPath, "%s-search-idx-chemical-components.json" % ccFileNamePrefix)
         #
         if useCache and self.__mU.exists(searchIdxFilePath):
             _, fExt = os.path.splitext(searchIdxFilePath)

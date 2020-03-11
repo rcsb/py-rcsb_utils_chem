@@ -22,7 +22,11 @@ import os
 import unittest
 
 from rcsb.utils.chem.IoUtils import IoUtils
-from rcsb.utils.chem.RdMoleculeFactory import RdMoleculeFactory
+
+try:
+    from rcsb.utils.chem.RdMoleculeFactory import RdMoleculeFactory
+except Exception:
+    pass
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -33,11 +37,12 @@ logger = logging.getLogger()
 
 
 class RdMolecularFactoryTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         #
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
-        self.__cachePath = os.path.join(TOPDIR, "CACHE")
         self.__molLimit = 50
         self.__exportFlag = True
         #
@@ -45,6 +50,7 @@ class RdMolecularFactoryTests(unittest.TestCase):
     def tearDown(self):
         pass
 
+    @unittest.skipIf(skipFlag, "Special install RDKit dependency")
     def testFromSdf(self):
         rdmf = RdMoleculeFactory()
         ioU = IoUtils()

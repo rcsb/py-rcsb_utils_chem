@@ -2,15 +2,14 @@
 #
 # File:    OeDepictFromChemTests.py
 # Author:  jdw
-# Date:    5-May-2013
+# Date:    5-Mar-2020
 # Version: 0.001
 #
 # Updates:
-#  4-May-2014 jdw add example for depiction from SMILES input
-#  6-Jun-2016 jdw general cleanup
 ##
 """
-A collection of tests for the OEDepict and related classes.
+A collection of tests for the OEDepict and related classes working directly from
+chemical component definitions
 
 """
 __docformat__ = "restructuredtext en"
@@ -44,15 +43,15 @@ class OeDepictFromChemCompTests(unittest.TestCase):
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         self.__molLimit = 50
-        self.__ccIdList = ["002", "004", "PRD_000921"]
+        self.__ccIdList = ["002", "004"]
         #
 
     def tearDown(self):
         pass
 
-    def __getChemCompDefs(self, molLimit=500):
+    def __getChemCompDefs(self, molLimit=24):
         ccMolD = {}
         try:
             useCache = True

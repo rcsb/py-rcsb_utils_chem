@@ -28,7 +28,6 @@ from rcsb.utils.chem.ChemCompIndexProvider import ChemCompIndexProvider
 from rcsb.utils.chem.ChemCompMoleculeProvider import ChemCompMoleculeProvider
 from rcsb.utils.chem.OeDepict import OeDepict
 from rcsb.utils.chem.OeDepictAlign import OeDepictMCSAlignPage
-from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -39,6 +38,8 @@ logger = logging.getLogger()
 
 
 class OeDepictCompareTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         #
         self.__startTime = time.time()
@@ -46,14 +47,15 @@ class OeDepictCompareTests(unittest.TestCase):
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         self.__molLimit = 50
         self.__ccIdList = ["002", "004", "PRD_000921"]
         self.__myKwargs = {
+            "ccUrlTarget": self.__ccUrlTarget,
+            "birdUrlTarget": self.__birdUrlTarget,
             "cachePath": self.__cachePath,
             "useCache": True,
-            # "ccFileNamePrefix": "cc-filtered",
-            "ccFileNamePrefix": "cc-full",
+            "ccFileNamePrefix": "cc-abbrev",
             "molLimit": None,
         }
         #
@@ -70,7 +72,7 @@ class OeDepictCompareTests(unittest.TestCase):
             ccMolD = ccmP.getMolD()
             ccmP = ChemCompIndexProvider(**self.__myKwargs)
             ccIdxD = ccmP.getIndex()
-            ok = ccmP.testCache(minCount=500)
+            ok = ccmP.testCache(minCount=10)
             self.assertTrue(ok)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -83,6 +85,7 @@ class OeDepictCompareTests(unittest.TestCase):
         model vs iso smiles 5937
         ideal va iso smiles  7047
         """
+        doDepict = False
         ccResultD = {}
         genResultD = {}
         smilesByBuildTypeD = {}
@@ -140,7 +143,7 @@ class OeDepictCompareTests(unittest.TestCase):
                     if not genEq:
                         genResultD.setdefault(molBuildType, []).append(ccId)
 
-                    if False:
+                    if doDepict:
                         pS = "-limited" if limitPerceptions else ""
                         imagePath = os.path.join(self.__workPath, ccId + "-%s%s.svg" % (molBuildType, pS))
                         oed = OeDepict()
@@ -171,6 +174,7 @@ class OeDepictCompareTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    @unittest.skipIf(skipFlag, "Troubleshooting test")
     def testCompareDescriptors(self):
         molLimit = self.__molLimit
         # for molBuildType in ["model-xyz", "ideal-xyz", None]:

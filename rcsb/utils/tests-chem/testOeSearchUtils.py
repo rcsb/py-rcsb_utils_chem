@@ -40,12 +40,14 @@ logger.setLevel(logging.INFO)
 
 
 class OeSearchUtilsTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         self.__fpTypeList = ["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"]
         self.__fpTypeCuttoffList = [("TREE", 0.6), ("PATH", 0.6), ("MACCS", 0.9), ("CIRCULAR", 0.6), ("LINGO", 0.9)]
         self.__screenType = "SMARTS"
@@ -56,9 +58,8 @@ class OeSearchUtilsTests(unittest.TestCase):
             "cachePath": self.__cachePath,
             "useCache": True,
             "fpTypeList": self.__fpTypeList,
-            "ccFileNamePrefix": "cc-full",
-            "oeFileNamePrefix": "oe-full",
-            # "molBuildType": "oe-iso-smiles",
+            "ccFileNamePrefix": "cc-abbrev",
+            "oeFileNamePrefix": "oe-abbrev",
             "molBuildType": "model-xyz",
             "limitPerceptions": False,
         }
@@ -76,6 +77,7 @@ class OeSearchUtilsTests(unittest.TestCase):
                 return True
         return False
 
+    @unittest.skipIf(skipFlag, "deprecated test")
     def testSubStructureSearch(self):
         oemp = OeMoleculeProvider(**self.__myKwargs)
         ok = oemp.testCache()
@@ -96,6 +98,7 @@ class OeSearchUtilsTests(unittest.TestCase):
             # self.assertGreaterEqual(len(mL), 1)
             # ----
 
+    @unittest.skipIf(skipFlag, "deprecated test")
     def testFingerPrintSearch(self):
         oemp = OeMoleculeProvider(**self.__myKwargs)
         # This will reload the oe binary cache.
@@ -109,7 +112,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         self.assertTrue(ok)
         minScore = 0.50
         maxResults = 50
-        numMols = 100
+        numMols = 50
         oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
         # ----
         startTime = time.time()
@@ -123,6 +126,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(self.__fpTypeList), numMols, time.time() - startTime)
         # ----
 
+    @unittest.skipIf(skipFlag, "deprecated test")
     def testFingerPrintScores(self):
         oemp = OeMoleculeProvider(**self.__myKwargs)
         #
@@ -191,7 +195,8 @@ class OeSearchUtilsTests(unittest.TestCase):
             logger.info("%s unmatched fpTypes %r", ccId, missedFpD[ccId])
 
         #
-        if False:
+        doDepict = False
+        if doDepict:
             for ccId, bTL in missedBuildD.items():
                 idxD = ccIdxD[ccId]
                 if "oe-iso-smiles" in idxD:
@@ -201,6 +206,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(self.__fpTypeList), numMols, time.time() - startTime)
         # ----                                  ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
 
+    @unittest.skipIf(skipFlag, "deprecated test")
     def testSssWithFingerPrintFromDescriptor(self):
         oemp = OeMoleculeProvider(**self.__myKwargs)
         ok = oemp.testCache()
@@ -263,7 +269,8 @@ class OeSearchUtilsTests(unittest.TestCase):
             if ccId in missedFpD:
                 logger.info("%s unmatched for fpTypes %r", ccId, missedFpD[ccId])
         # ----
-        if False:
+        doDepict = False
+        if doDepict:
             mD = {}
             for missTup in missTupL:
                 mD.setdefault(missTup[0], []).append(missTup[1])
@@ -277,6 +284,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(self.__fpTypeList), numMols, time.time() - startTime)
         # ----                                  ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
 
+    @unittest.skipIf(skipFlag, "deprecated test")
     def testSubStructureSearchWithFingerPrint(self):
         oemp = OeMoleculeProvider(**self.__myKwargs)
         #
@@ -287,7 +295,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         self.assertTrue(ok)
         minFpScore = 0.40
         maxFpResults = 50
-        numMols = 100
+        numMols = 20
         matchOpts = "simple"
         oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
         # ----
@@ -302,6 +310,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         logger.info("%s fingerprints search on %d in (%.4f seconds)", len(self.__fpTypeList), numMols, time.time() - startTime)
         # ----
 
+    @unittest.skipIf(skipFlag, "deprecated test")
     def testSubStructureSearchScreened(self):
         oeioU = OeIoUtils()
         oemp = OeMoleculeProvider(**self.__myKwargs)
@@ -311,7 +320,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         ok = ccmP.testCache(minCount=self.__minCount)
         self.assertTrue(ok)
         oesU = OeSearchUtils(oemp, screenType=self.__screenType, numProc=self.__numProc)
-        numMols = 100
+        numMols = 20
         missL = []
         for ccId, ccD in list(ccIdxD.items())[:numMols]:
             # ----
@@ -330,6 +339,7 @@ class OeSearchUtilsTests(unittest.TestCase):
             # ----
         logger.info("Missed searches (%d) %r", len(missL), missL)
 
+    @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testSubStructureSearchScreenedFiltered(self):
         myKwargs = {
             "cachePath": self.__cachePath,

@@ -38,13 +38,15 @@ logger = logging.getLogger()
 
 
 class OeSearchMoleculeProviderTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         self.__startTime = time.time()
         #
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         #
         logger.debug("Running tests on version %s", __version__)
         logger.info("Starting %s at %s", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()))
@@ -66,11 +68,19 @@ class OeSearchMoleculeProviderTests(unittest.TestCase):
             fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"],
             screenTypeList=["SMARTS"],
             numProc=2,
+            minCount=24,
         )
 
+    @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testSearchBuildMoleculeCacheFilesFull(self):
         self.__testBuildSearchMoleculeCacheFiles(
-            ccFileNamePrefix="cc-full", oeFileNamePrefix="oe-full", molLimit=None, fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"], screenTypeList=[], numProc=2,
+            ccFileNamePrefix="cc-full",
+            oeFileNamePrefix="oe-full",
+            molLimit=None,
+            minCount=500,
+            fpTypeList=["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"],
+            screenTypeList=[],
+            numProc=2,
         )
 
     def __testBuildSearchMoleculeCacheFiles(self, **kwargs):
@@ -78,41 +88,32 @@ class OeSearchMoleculeProviderTests(unittest.TestCase):
         """
         ccUrlTarget = kwargs.get("ccUrlTarget", None)
         birdUrlTarget = kwargs.get("birdUrlTarget", None)
-        molLimit = kwargs.get("molLimit", 0)
+        molLimit = kwargs.get("molLimit", None)
         quietFlag = kwargs.get("quietFlag", True)
         fpTypeList = kwargs.get("fpTypeList", ["TREE"])
         screenTypeList = kwargs.get("screenTypeList", [])
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
         oeFileNamePrefix = kwargs.get("oeFileNamePrefix", "oe")
         numProc = kwargs.get("numProc", 2)
+        minCount = kwargs.get("minCount", 0)
         #
         startTime = time.time()
-        if ccUrlTarget and birdUrlTarget and molLimit:
-            # Using abbreviated reference source files
-            oesmp = OeSearchMoleculeProvider(
-                ccUrlTarget=ccUrlTarget,
-                birdUrlTarget=birdUrlTarget,
-                cachePath=self.__cachePath,
-                ccFileNamePrefix=ccFileNamePrefix,
-                oeFileNamePrefix=oeFileNamePrefix,
-                useCache=False,
-                quietFlag=quietFlag,
-                fpTypeList=fpTypeList,
-                screenTypeList=screenTypeList,
-                numProc=numProc,
-            )
-        else:
-            oesmp = OeSearchMoleculeProvider(
-                cachePath=self.__cachePath,
-                ccFileNamePrefix=ccFileNamePrefix,
-                oeFileNamePrefix=oeFileNamePrefix,
-                useCache=False,
-                quietFlag=quietFlag,
-                molLimit=molLimit,
-                fpTypeList=fpTypeList,
-                screenTypeList=screenTypeList,
-                numProc=numProc,
-            )
+
+        # Using abbreviated reference source files
+        oesmp = OeSearchMoleculeProvider(
+            ccUrlTarget=ccUrlTarget,
+            birdUrlTarget=birdUrlTarget,
+            cachePath=self.__cachePath,
+            ccFileNamePrefix=ccFileNamePrefix,
+            oeFileNamePrefix=oeFileNamePrefix,
+            useCache=False,
+            quietFlag=quietFlag,
+            fpTypeList=fpTypeList,
+            screenTypeList=screenTypeList,
+            numProc=numProc,
+            molLimit=molLimit,
+        )
+
         ok = oesmp.testCache()
         self.assertTrue(ok)
         #
@@ -123,7 +124,7 @@ class OeSearchMoleculeProviderTests(unittest.TestCase):
         oesmp = OeSearchMoleculeProvider(cachePath=self.__cachePath, ccFileNamePrefix=ccFileNamePrefix, oeFileNamePrefix=oeFileNamePrefix, useCache=True)
         #
         deltaMol = 2
-        minMol = minNumFp = molLimit - deltaMol if molLimit else 500
+        minMol = minNumFp = minCount - deltaMol if minCount else 10
         for fpType in fpTypeList:
             fpDb = oesmp.getFingerPrintDb(fpType="TREE")
             logger.debug("fpType %r length %d", fpType, fpDb.NumFingerPrints())

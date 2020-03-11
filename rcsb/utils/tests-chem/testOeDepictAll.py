@@ -39,8 +39,10 @@ class OeDepictAllTests(unittest.TestCase):
     def setUp(self):
         self.__startTime = time.time()
         self.__workPath = os.path.join(HERE, "test-output")
-        # self.__dataPath = os.path.join(HERE, "test-data")
+        self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output")
+        self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         #
         self.__oeMolD = self.__getCache()
 
@@ -48,7 +50,15 @@ class OeDepictAllTests(unittest.TestCase):
         pass
 
     def __getCache(self):
-        oemp = OeMoleculeProvider(cachePath=self.__cachePath, molBuildType="model-xyz", useCache=True, ccFileNamePrefix="cc-full", oeFileNamePrefix="oe-full",)
+        oemp = OeMoleculeProvider(
+            ccUrlTarget=self.__ccUrlTarget,
+            birdUrlTarget=self.__birdUrlTarget,
+            ccFileNamePrefix="cc-abbrev",
+            cachePath=self.__cachePath,
+            molBuildType="model-xyz",
+            useCache=True,
+            oeFileNamePrefix="oe-abbrev",
+        )
         ok = oemp.testCache()
         self.assertTrue(ok)
         return oemp.getOeMolD()
@@ -69,7 +79,7 @@ class OeDepictAllTests(unittest.TestCase):
                 oed.prepare()
                 oed.write(imagePath)
             for ccId, oeMol in self.__oeMolD.items():
-                imagePath = os.path.join(self.__workPath, "image-labeled", ccId[0], ccId + ".svg")
+                imagePath = os.path.join(self.__workPath, "image_labeled", ccId[0], ccId + ".svg")
                 oed = OeDepict()
                 title = ""
                 oed.setMolTitleList([(ccId, oeMol, title)])

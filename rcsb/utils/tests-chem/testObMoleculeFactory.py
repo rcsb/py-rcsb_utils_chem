@@ -22,7 +22,11 @@ import os
 import unittest
 
 from rcsb.utils.chem.IoUtils import IoUtils
-from rcsb.utils.chem.ObMoleculeFactory import ObMoleculeFactory
+
+try:
+    from rcsb.utils.chem.ObMoleculeFactory import ObMoleculeFactory
+except Exception:
+    pass
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -33,11 +37,12 @@ logger = logging.getLogger()
 
 
 class ObMolecularFactoryTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         #
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
-        self.__cachePath = os.path.join(TOPDIR, "CACHE")
         self.__molLimit = 50
         self.__exportFlag = True
         #
@@ -45,6 +50,7 @@ class ObMolecularFactoryTests(unittest.TestCase):
     def tearDown(self):
         pass
 
+    @unittest.skipIf(skipFlag, "Special install OpenBabel dependency")
     def testFromSdfFile(self):
         obmf = ObMoleculeFactory()
         ioU = IoUtils()
@@ -68,6 +74,7 @@ class ObMolecularFactoryTests(unittest.TestCase):
         #
         logger.debug("\n%s", "\n".join(sdfL))
 
+    @unittest.skipIf(skipFlag, "Special install OpenBabel dependency")
     def testFromSdfString(self):
         obmf = ObMoleculeFactory()
         ioU = IoUtils()

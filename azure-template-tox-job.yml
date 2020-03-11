@@ -15,11 +15,12 @@ parameters:
 
 jobs:
 - job: ${{ format('build_test_{0}_{1}', parameters.tox, parameters.os) }}
+  timeoutInMinutes: 0
   pool:
     ${{ if eq(parameters.os, 'macos') }}:
       vmImage: 'macOS-10.14'
     ${{ if eq(parameters.os, 'linux') }}:
-      vmImage: 'ubuntu-latest'
+      vmImage: 'ubuntu-18.04'
 
   variables:
     - group: py-shared-variables
@@ -57,11 +58,19 @@ jobs:
         displayName: 'Check bison'
     # ----------------------------------------------
     - ${{ if startsWith(parameters.os, 'linux') }}:
+      - script: lsb_release -a
+        displayName: 'Ubuntu kernal version'
       - script: which apt
         displayName: 'Installing OS dependencies'
       - script: apt-cache policy | grep http | awk '{print $2 $3}' | sort -u
         displayName: 'Checking for repos'
       #
+      - script: sudo apt-get update
+        displayName: 'update apt'
+      #- script: sudo apt-get upgrade
+      #  displayName: 'upgrade apt'
+      #- script: sudo apt-get update
+      #  displayName: 'update apt'
       - script: sudo apt-get install flex
         displayName: 'Install flex'
       - script: sudo apt-get install bison
@@ -69,7 +78,9 @@ jobs:
   #
     - ${{ if and(contains(parameters.fixtures, 'mysql'), startsWith(parameters.os, 'linux')) }}:
       - bash: |
-          sudo apt-get install libmysqlclient-dev python-mysqldb
+          sudo apt-get install python3-dev mysql-server
+          sudo apt-get install default-libmysqlclient-dev
+          sudo apt-get install python-mysqldb
           sudo apt list --installed | grep -i mysql
         displayName: 'Install mysql development libraries'
       - bash: |
@@ -102,9 +113,12 @@ jobs:
     - ${{ if and(contains(parameters.fixtures, 'mongodb'), startsWith(parameters.os, 'linux')) }}:
       # Mongo install
       - script: |
-          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
+          sudo apt-get install gnupg wget
+          wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
+          # sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
           sudo apt list --installed | grep mongodb
-          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+          # echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
           sudo apt-get update
           sudo apt-get install -y mongodb-org
           sudo apt list --installed | grep mongo
@@ -125,23 +139,34 @@ jobs:
     - script: pip install -r requirements.txt
       displayName: 'Install dependencies'
     #
+    #
+    - task: DownloadSecureFile@1
+      name: oelicense
+      displayName: 'Download OE license file'
+      inputs:
+        secureFile: 'oe_license.txt'
+
     - ${{ if startsWith(parameters.tox, 'py') }}:
       - script: |
+          export OE_LICENSE=$(oelicense.secureFilePath)
           export CONFIG_SUPPORT_TOKEN_ENV=$(VAR_CONFIG_SUPPORT_TOKEN_ENV)
           ${{ format('python -m tox -e {0}', parameters.tox) }}
         displayName: 'Running tox task'
     - ${{ if and(not(startsWith(parameters.tox, 'py')), startsWith(parameters.python, '3.8')) }}:
       - script: |
+          export OE_LICENSE=$(oelicense.secureFilePath)
           export CONFIG_SUPPORT_TOKEN_ENV=$(VAR_CONFIG_SUPPORT_TOKEN_ENV)
           ${{ format('python -m tox -e {0}-py38', parameters.tox) }}
         displayName: 'Running tox task'
     - ${{ if and(not(startsWith(parameters.tox, 'py')), startsWith(parameters.python, '3.7')) }}:
       - script: |
+          export OE_LICENSE=$(oelicense.secureFilePath)
           export CONFIG_SUPPORT_TOKEN_ENV=$(VAR_CONFIG_SUPPORT_TOKEN_ENV)
           ${{ format('python -m tox -e {0}-py37', parameters.tox) }}
         displayName: 'Running tox task'
     - ${{ if and(not(startsWith(parameters.tox, 'py')), startsWith(parameters.python, '2.7')) }}:
       - script: |
+          export OE_LICENSE=$(oelicense.secureFilePath)
           export CONFIG_SUPPORT_TOKEN_ENV=$(VAR_CONFIG_SUPPORT_TOKEN_ENV)
           ${{ format('python -m tox -e {0}-py27', parameters.tox) }}
         displayName: 'Runing tox task'

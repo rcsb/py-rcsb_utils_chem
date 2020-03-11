@@ -42,18 +42,26 @@ class OeDepictTests(unittest.TestCase):
         self.__startTime = time.time()
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
-        self.__cachePath = os.path.join(TOPDIR, "CACHE")
+        self.__cachePath = os.path.join(HERE, "test-output")
+        self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         #
-        self.__ccIdList = ["atp", "gtp", "A", "C", "G", "DG", "HYP"]
-        self.__ccIdListLong = ["HYP", "A00", "A01", "A02", "A03", "A04", "A05", "A07", "A09", "A0A", "A0D", "A0H", "A0P", "A11", "A12", "A13", "A14"]
-
+        self.__ccIdList = ["000", "001", "002", "003", "004", "0K3"]
+        self.__ccIdListLong = self.__ccIdList
         self.__oeMolD = self.__getCache(molBuildType="model-xyz", useCache=True)
 
     def tearDown(self):
         pass
 
     def __getCache(self, molBuildType="model-xyz", useCache=True):
-        oemp = OeMoleculeProvider(cachePath=self.__cachePath, molBuildType=molBuildType, useCache=useCache)
+        oemp = OeMoleculeProvider(
+            ccUrlTarget=self.__ccUrlTarget,
+            birdUrlTarget=self.__birdUrlTarget,
+            ccFileNamePrefix="cc-abbrev",
+            cachePath=self.__cachePath,
+            molBuildType=molBuildType,
+            useCache=useCache,
+        )
         ok = oemp.testCache()
         self.assertTrue(ok)
         return oemp.getOeMolD()

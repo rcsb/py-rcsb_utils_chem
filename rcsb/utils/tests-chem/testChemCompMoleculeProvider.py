@@ -38,12 +38,14 @@ logger = logging.getLogger()
 
 
 class ChemCompMoleculeProviderTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         self.__startTime = time.time()
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         self.__missedIdsPath = os.path.join(self.__dataPath, "filteredIds.json")
         #
         logger.debug("Running tests on version %s", __version__)
@@ -59,31 +61,35 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
     def testBuildMoleculeCacheFilesAbbrev(self):
         """Test construction of abbreviated of chemical component definitions from alternate source paths
         """
-        self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, ccFileNamePrefix="cc-abbrev", useCache=False, molLimit=500)
+        self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, ccFileNamePrefix="cc-abbrev")
 
+    @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesSubset(self):
         """ Test construction of a subset (1K) of chemical component definitions.
         """
-        self.__testBuildMoleculeCacheFiles(molLimit=1000, useCache=False)
+        self.__testBuildMoleculeCacheFiles(molLimit=1000, ccFileNamePrefix="cc-1k")
         #
 
+    @unittest.skipIf(skipFlag, "Long test")
     def testSubsetBuildMoleculeCacheFiltered(self):
         """ Test construction of a filtered selection of chemical component definitions.
         """
         mU = MarshalUtil()
         fD = mU.doImport(self.__missedIdsPath, fmt="json")
         filterIdD = {ccId: True for ccId in fD["filteredIdList"]}
-        self.__testBuildMoleculeCacheFiles(useCache=False, filterIdD=filterIdD, ccFileNamePrefix="cc-filtered")
+        self.__testBuildMoleculeCacheFiles(filterIdD=filterIdD, ccFileNamePrefix="cc-filtered")
         #
 
+    @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesFull(self):
         """ Test construction and reload of full chemical component resource files.
-            Running 138 sec sp macbookpro 6.6G resident mem
+            Running 151 sec sp macbookpro 6.6G resident mem
         """
-        self.__testBuildMoleculeCacheFiles(useCache=False, logSizes=True)
-        logger.info("Reloading cache file")
+        self.__testBuildMoleculeCacheFiles(logSizes=True)
+        logger.info("Reloading full cache file")
         self.__testBuildMoleculeCacheFiles(useCache=True, logSizes=False)
 
+    # ----
     def __testBuildMoleculeCacheFiles(self, **kwargs):
         """ Test build chemical component cache files from the input component dictionaries
         """
@@ -91,8 +97,8 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
             ccUrlTarget = kwargs.get("ccUrlTarget", None)
             birdUrlTarget = kwargs.get("birdUrlTarget", None)
             molLimit = kwargs.get("molLimit", None)
-            minCount = kwargs.get("minCount", 500)
-            useCache = kwargs.get("useCache", True)
+            minCount = kwargs.get("minCount", None)
+            useCache = kwargs.get("useCache", False)
             logSizes = kwargs.get("logSizes", False)
             filterIdD = kwargs.get("filterIdD", None)
             ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")

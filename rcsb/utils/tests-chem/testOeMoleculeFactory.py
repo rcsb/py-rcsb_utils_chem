@@ -35,20 +35,21 @@ logger = logging.getLogger()
 
 
 class OeMolecularFactoryTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         #
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
-        # self.__cachePath = os.path.join(TOPDIR, "CACHE")
         self.__cachePath = os.path.join(HERE, "test-output")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-all.cif")
-        self.__molLimit = 50
+        self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
+        self.__molLimit = None
 
     def tearDown(self):
         pass
 
-    def __getChemCompDefs(self, molLimit=500):
+    def __getChemCompDefs(self, molLimit=None):
         ccMolD = {}
         try:
             useCache = True
@@ -86,6 +87,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    @unittest.skipIf(skipFlag, "Troubleshooting test")
     def testSelfConsistency(self):
         """Compare constructed molecule with underlying chemical definitions -
         """
@@ -201,7 +203,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
                         for (rCC, rAt, tCC, tAt) in aML:
                             logger.info("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
                 else:
-                    logger.info("%s matched all cases", ccId)
+                    logger.debug("%s matched all cases", ccId)
 
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -211,8 +213,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
         try:
             ccMolD = self.__getChemCompDefs()
             quietFlag = False
-            molBuildTypeL = ["model-xyz", "ideal-xyz", None]
-            molBuildTypeL = [None]
+            molBuildTypeL = ["model-xyz", "ideal-xyz"]
             for molBuildType in molBuildTypeL:
                 oemf = OeMoleculeFactory()
                 if quietFlag:

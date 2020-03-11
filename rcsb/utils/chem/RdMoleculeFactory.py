@@ -7,6 +7,8 @@
 # Updates:
 #
 ##
+# flake8: noqa
+# pylint: skip-file
 """
 Classes to build RdKit molecule objects from chemical component definition data.
 """

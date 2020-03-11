@@ -34,11 +34,12 @@ logger = logging.getLogger()
 
 
 class CactvsMoleculeFactoryTests(unittest.TestCase):
+    skipFlag = True
+
     def setUp(self):
         #
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
-        self.__cachePath = os.path.join(TOPDIR, "CACHE")
         self.__cactvsPythonPath = "/apps/lib/cspy"
         self.__molLimit = 50
         self.__exportFlag = True
@@ -47,6 +48,7 @@ class CactvsMoleculeFactoryTests(unittest.TestCase):
     def tearDown(self):
         pass
 
+    @unittest.skipIf(skipFlag, "Special install CACTVS dependency")
     def testFromSdf(self):
         aroModel = "daylight"
         retD = {}

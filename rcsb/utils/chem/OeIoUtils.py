@@ -73,10 +73,43 @@ class OeIoUtils(object):
             logger.exception("Loading %s failing with %s", ccdFilePath, str(e))
         return retMolL
 
+    def descriptorToSmiles(self, descr, descrType, limitPerceptions=True, messageTag=None):
+        """Parse the input descriptor string and return an OE smiles.
+
+        Args:
+            descr (str): descriptor
+            descrType (str): descriptor type
+            limitPerceptions (bool): flag to limit the perceptions/transformations of input descriptor
+            messageTag (srt, optional): prefix string for error messages. Defaults to None.
+
+        Returns:
+            object: OeGraphMol()/OeQmol() object or None for failure
+        """
+        try:
+            if "SMILES" in descrType.upper() and "ISO" in descrType.upper():
+                oeMol = self.smilesToMol(descr, limitPerceptions=limitPerceptions, messageTag=messageTag)
+                if oeMol:
+                    return oechem.OECreateIsoSmiString(oeMol)
+                else:
+                    return None
+            if "SMILES" in descrType.upper():
+                oeMol = self.smilesToMol(descr, limitPerceptions=limitPerceptions, messageTag=messageTag)
+                if oeMol:
+                    return oechem.OECreateCanSmiString(oeMol)
+                else:
+                    return None
+            elif "INCHI" in descrType.upper():
+                oeMol = self.inchiToMol(descr, limitPerceptions=limitPerceptions, messageTag=messageTag)
+                if oeMol:
+                    return oechem.OECreateIsoSmiString(oeMol)
+            else:
+                return None
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return None
+
     def descriptorToMol(self, descr, descrType, limitPerceptions=True, messageTag=None):
         """Parse the input descriptor string and return a molecule object (OeGraphMol/OeQMol).
-
-           ** SMILES are
 
         Args:
             descr (str): descriptor
@@ -103,7 +136,10 @@ class OeIoUtils(object):
                 else:
                     return None
             elif "INCHI" in descrType.upper():
-                return self.inchiToMol(descr, limitPerceptions=limitPerceptions, messageTag=messageTag)
+                oeMol = self.inchiToMol(descr, limitPerceptions=limitPerceptions, messageTag=messageTag)
+                if oeMol:
+                    isoSmiles = oechem.OECreateIsoSmiString(oeMol)
+                    return self.smilesToMol(isoSmiles, limitPerceptions=limitPerceptions, messageTag=messageTag)
             elif "SMARTS" in descrType.upper():
                 return self.smartsToQmol(descr, messageTag=messageTag)
             else:

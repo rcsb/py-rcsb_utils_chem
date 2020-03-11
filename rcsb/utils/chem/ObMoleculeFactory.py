@@ -7,6 +7,8 @@
 # Updates:
 #
 ##
+# flake8: noqa
+# pylint: skip-file
 """
 Classes to build OpenBabel molecule objects from chemical component definition data.
 """
