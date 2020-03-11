@@ -1,5 +1,7 @@
 # py-rcsb_utils_chem
 
+[![Build Status](https://dev.azure.com/rcsb/RCSB%20PDB%20Python%20Projects/_apis/build/status/rcsb.py-rcsb_utils_chem?branchName=master)](https://dev.azure.com/rcsb/RCSB%20PDB%20Python%20Projects/_build/latest?definitionId=20&branchName=master)
+
 RCSB Python tools for accessing and annotating PDB chemical components definitions.
 
 ## Introduction
