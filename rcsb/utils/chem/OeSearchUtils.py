@@ -28,7 +28,7 @@ from openeye import oegraphsim
 
 logger = logging.getLogger(__name__)
 
-MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts screenType fpType fpScore oeIdx", defaults=(None,) * 8)
+MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts screenType fpType fpScore oeIdx formula", defaults=(None,) * 9)
 
 
 class OeSearchUtils(object):

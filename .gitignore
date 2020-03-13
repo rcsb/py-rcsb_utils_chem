@@ -6,6 +6,8 @@ test-output/
 CACHE/
 LOGTOX
 Archive/
+test-data/components.cif
+test-data/components.cif.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

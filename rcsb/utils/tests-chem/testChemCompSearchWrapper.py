@@ -227,7 +227,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                 for buildType in self.__buildTypeList:
                     if buildType in ccD:
                         startTime = time.time()
-                        retStatus, ssL, fpL = ccsw.searchDescriptor(ccD[buildType], buildType)
+                        retStatus, ssL, fpL = ccsw.matchByDescriptor(ccD[buildType], buildType)
                         mOk = self.__resultContains(ccId, ssL)
                         self.assertTrue(mOk)
                         #
@@ -244,6 +244,37 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                             ssCcIdList,
                             time.time() - startTime,
                         )
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
+    def testZoomMatchFormula(self):
+        """Test formula matching
+        """
+        try:
+            numMolsTest = 500
+            ccsw = ChemCompSearchWrapper()
+            ok = ccsw.readConfig()
+            self.assertTrue(ok)
+            ok = ccsw.updateChemCompIndex(useCache=True)
+            self.assertTrue(ok)
+            ccIdx = ccsw.getChemCompIndex()
+            #
+            logger.debug("ccIdx (%d) keys %r entry %r", len(ccIdx), list(ccIdx.keys())[:10], ccIdx["000"])
+            #
+            logger.info("Dependencies loaded - Starting formula test scan of (limit=%r)", numMolsTest)
+            for ii, (ccId, idxD) in enumerate(ccIdx.items(), 1):
+                if numMolsTest and ii > numMolsTest:
+                    break
+                #
+                startTime = time.time()
+                elementRangeD = {el: {"min": eCount, "max": eCount} for el, eCount in idxD["type-counts"].items()}
+                retStatus, rL = ccsw.matchByFormula(elementRangeD, ccId)
+                mOk = self.__resultContains(ccId, rL)
+                self.assertTrue(mOk)
+                logger.info(
+                    "%s (%d) (%d) (%r) (%.4f secs)", ccId, ii, len(rL), mOk and retStatus == 0, time.time() - startTime,
+                )
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()

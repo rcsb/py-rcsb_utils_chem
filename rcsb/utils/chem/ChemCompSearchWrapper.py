@@ -38,7 +38,7 @@ TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 
 logger = logging.getLogger(__name__)
 
-MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts screenType fpType fpScore oeIdx", defaults=(None,) * 8)
+MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts screenType fpType fpScore oeIdx formula", defaults=(None,) * 9)
 
 
 class ChemCompSearchWrapper(SingletonClass):
@@ -53,11 +53,10 @@ class ChemCompSearchWrapper(SingletonClass):
         self.__mU = MarshalUtil(workPath=self.__cachePath)
         # ---
         self.__configD = {}
+        self.__ccIdxP = None
         self.__siIdx = {}
         self.__oesmP = None
         self.__oesU = None
-        # For testing
-        self.__ccIdx = None
         # ---
         self.__statusDescriptorError = -100
         self.__searchError = -200
@@ -87,7 +86,7 @@ class ChemCompSearchWrapper(SingletonClass):
         """Rebuild the basic index of source chemical component and BIRD definitions.
            Update the internal state of this index in the current object instance.
 
-            Resource requirements: 94sec 1 proc 7GB memory macbook pro
+            Resource requirements: 94 sec 1 proc 7GB memory macbook pro
 
         Args:
             useCache (bool): False to rebuild search index and True to reload
@@ -102,14 +101,14 @@ class ChemCompSearchWrapper(SingletonClass):
                 kwargs["useCache"] = useCache
                 ccIdxP = ChemCompIndexProvider(**kwargs)
                 ok = ccIdxP.testCache()
-                self.__ccIdx = ccIdxP.getIndex() if ccIdxP and ok else {}
-                logger.info("Chemical component index status %r index len %d", ok, len(self.__ccIdx) if self.__ccIdx else 0)
+                self.__ccIdxP = ccIdxP if ok else None
+                logger.info("Chemical component index status %r", ok)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return ok
 
     def getChemCompIndex(self):
-        return self.__ccIdx
+        return self.__ccIdxP.getIndex() if self.__ccIdxP else {}
 
     def updateSearchIndex(self, useCache=False):
         """Rebuild the search index from source chemical component and BIRD definitions.
@@ -181,8 +180,9 @@ class ChemCompSearchWrapper(SingletonClass):
             logger.exception("Failing with %s", str(e))
         return ok
 
-    def searchDescriptor(self, descriptor, descriptorType, matchOpts="relaxed", searchId=None):
-        """Return graph match and finger print search results for the input desriptor subject to finger print pre-filtering.
+    def matchByDescriptor(self, descriptor, descriptorType, matchOpts="relaxed", searchId=None):
+        """Return graph match (w/  finger print pre-filtering) and finger print search results for the
+           input desriptor.
 
         Args:
             descriptor (str):  molecular descriptor (SMILES, InChI)
@@ -217,6 +217,28 @@ class ChemCompSearchWrapper(SingletonClass):
             logger.exception("Failing with %s", str(e))
             #
         return statusCode, ssL, fpL
+
+    def matchByFormula(self, elementRangeD, searchId=None):
+        """Return formula match results for input element range dictionary.
+
+        Args:
+            elementRangeD (dict): {'<element_name>: {'min': <int>, 'max': <int>}, ... }
+            searchId (str, optional): search identifier for logging. Defaults to None.
+
+        Returns:
+            (statusCode, list): status, list of chemical component identifiers
+        """
+        ok = False
+        rL = []
+        try:
+            startTime = time.time()
+            searchId = searchId if searchId else "query"
+            rL = self.__ccIdxP.matchMolecularFormula(elementRangeD)
+            ok = True
+            logger.info("%s formula %r matched %r (%.4f seconds)", searchId, elementRangeD, rL, time.time() - startTime)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return ok, rL
 
     def status(self):
         unitS = "MB" if platform.system() == "Darwin" else "GB"

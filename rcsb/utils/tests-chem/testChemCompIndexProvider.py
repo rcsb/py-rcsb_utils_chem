@@ -104,9 +104,14 @@ class ChemCompIndexProviderTests(unittest.TestCase):
             if fQueryD:
                 rL = ccidxP.matchMolecularFormula(fQueryD)
                 logger.debug("%s formula matches %r (%.4f seconds)", ccId, rL, time.time() - startTime)
-                if ccId not in rL:
+                if not self.__resultContains(ccId, rL):
                     logger.info("%s formula not matched %r %r  (%.4f seconds)", ccId, rL, fQueryD, time.time() - startTime)
-                # self.assertTrue(ccId in rL)
+
+    def __resultContains(self, ccId, matchResultList):
+        for matchResult in matchResultList:
+            if ccId in matchResult.ccId:
+                return True
+        return False
 
 
 def buildCacheFiles():

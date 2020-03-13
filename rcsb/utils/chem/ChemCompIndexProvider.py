@@ -17,7 +17,7 @@ __license__ = "Apache 2.0"
 import logging
 import os
 import time
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from rcsb.utils.chem.ChemCompMoleculeProvider import ChemCompMoleculeProvider
 from rcsb.utils.chem.PdbxChemComp import PdbxChemCompDescriptorIt
@@ -29,6 +29,8 @@ from rcsb.utils.io.MarshalUtil import MarshalUtil
 # from rcsb.utils.io.SingletonClass import SingletonClass
 
 logger = logging.getLogger(__name__)
+
+MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts screenType fpType fpScore oeIdx formula", defaults=(None,) * 9)
 
 
 class ChemCompIndexProvider(object):
@@ -55,7 +57,7 @@ class ChemCompIndexProvider(object):
             typeRangeD (dict): dictionary of element ranges {'<element_name>: {'min': <int>, 'max': <int>}}
 
         Returns:
-            (list):  chemical component identifiers with matching formula
+            (list):  chemical component identifiers with matching formula (MatchResults)
         """
         rL = []
         try:
@@ -75,7 +77,7 @@ class ChemCompIndexProvider(object):
                         break
                 if match:
                     # logger.info("%s formula %r query %r", ccId, idxD["type-counts"], typeRangeD)
-                    rL.append(ccId)
+                    rL.append(MatchResults(ccId=ccId, searchType="formula", formula=idxD["formula"]))
         except Exception as e:
             logger.exception("Failing for %r with %s", typeRangeD, str(e))
         return rL
