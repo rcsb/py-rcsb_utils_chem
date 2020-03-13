@@ -123,7 +123,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                             continue
                         # ----
                         startTime = time.time()
-                        retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="simple")
+                        retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="relaxed")
                         if not self.__resultContains(ccId, mL):
                             logger.info("%s match length %d build type %s in (%.4f seconds)", ccId, len(mL), buildType, time.time() - startTime)
                         self.assertTrue(retStatus)
@@ -320,7 +320,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         oeMol = oesmP.getMol("004")
         self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
 
-        matchOpts = "simple"
+        matchOpts = "relaxed"
         missTupL = []
         missedD = {}
         missedFpD = {}

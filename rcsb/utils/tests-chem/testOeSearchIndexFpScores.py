@@ -230,7 +230,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         oeMol = oesmP.getMol("004")
         self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
 
-        matchOpts = "simple"
+        matchOpts = "relaxed"
         missTupL = []
         missedD = {}
         missedFpD = {}

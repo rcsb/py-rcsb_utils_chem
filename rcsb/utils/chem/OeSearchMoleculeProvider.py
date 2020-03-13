@@ -61,7 +61,7 @@ class OeSearchMoleculeProvider(object):
         self.__oeMolDbTitleD = None
         #
         self.__mU = MarshalUtil(workPath=self.__dirPath)
-        self.__molCount = self.__reload(**kwargs)
+        self.__reload(**kwargs)
 
     def testCache(self):
         return self.__mU.exists(os.path.join(self.__dirPath, self.__getOeSearchMolFileName())) and self.__mU.exists(os.path.join(self.__dirPath, self.__getOeMolDbFileName()))
@@ -143,10 +143,6 @@ class OeSearchMoleculeProvider(object):
         """
         return "%s-si-search-mol-components.oeb" % self.__oeFileNamePrefix
 
-    # def __getCcSearchIndexlFileName(self, fmt="json"):
-    #    fExt = "json" if fmt == "json" else "pic"
-    #    return "%s-si-search-mol-components.%s" % (self.__ccFileNamePrefix, fExt)
-
     def __reload(self, **kwargs):
         """Reload the dictionary of OE molecules and related data artifacts for chemical component definitions.
 
@@ -160,75 +156,79 @@ class OeSearchMoleculeProvider(object):
             molLimit (int):
 
         Returns:
-            (dict): dictionary of constructed OE molecules
+            (bool) : True for success or False othewise
 
         """
-        useCache = kwargs.get("useCache", True)
-        cachePath = kwargs.get("cachePath", ".")
-        numProc = kwargs.get("numProc", 2)
-        molLimit = kwargs.get("molLimit", None)
-        fpTypeList = kwargs.get("fpTypeList", ["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"])
-        # screenTypeList = kwargs.get("screenTypeList", ["SMARTS"])
-        screenTypeList = kwargs.get("screenTypeList", [])
-        limitPerceptions = kwargs.get("limitPerceptions", False)
-        quietFlag = kwargs.get("quietFlag", True)
-        logSizes = kwargs.get("logSizes", False)
-        fpDbType = "STANDARD"
-        buildScreenedDb = True
-        #
-        ccCount = 0
-        oeCount = 0
-        errCount = 0
-        failIdList = []
-        oeIo = OeIoUtils(quietFlag=quietFlag)
-        # --------
-        oeSearchMolFilePath = os.path.join(self.__dirPath, self.__getOeSearchMolFileName())
-        if not useCache or (useCache and not self.__mU.exists(oeSearchMolFilePath)):
-            cmpKwargs = {k: v for k, v in kwargs.items() if k not in ["cachePath", "useCache", "molLimit"]}
-            ccsiP = ChemCompSearchIndexProvider(cachePath=cachePath, useCache=True, molLimit=molLimit, **cmpKwargs)
-            ok = ccsiP.testCache(minCount=molLimit, logSizes=logSizes)
-            # ----
-            ccIdxD = ccsiP.getIndex() if ok else {}
-            idxCount = len(ccIdxD)
-            # -------
-            startTime = time.time()
-            oeCount, errCount, failIdList = oeIo.buildOeBinaryMolCacheFromIndex(
-                oeSearchMolFilePath, ccIdxD, quietFlag=quietFlag, fpTypeList=fpTypeList, limitPerceptions=limitPerceptions
-            )
-            logger.info("Stored %d/%d oeMols created with (unconverted %d)", oeCount, idxCount, errCount)
-            if failIdList:
-                logger.info("failures %r", failIdList)
-            endTime = time.time()
-            logger.info("Constructed %d/%d cached oeMols (%.4f seconds)", oeCount, ccCount, endTime - startTime)
-        # --------
-        oeMolDbFilePath = os.path.join(self.__dirPath, self.__getOeMolDbFileName())
-        if not useCache or (useCache and not self.__mU.exists(oeMolDbFilePath)):
-            startTime = time.time()
-            molCount = oeIo.createOeBinaryDatabaseAndIndex(oeSearchMolFilePath, oeMolDbFilePath)
-            endTime = time.time()
-            logger.info("Created and stored %d indexed oeMols in OE database format (%.4f seconds)", molCount, endTime - startTime)
+        try:
+            useCache = kwargs.get("useCache", True)
+            cachePath = kwargs.get("cachePath", ".")
+            numProc = kwargs.get("numProc", 2)
+            molLimit = kwargs.get("molLimit", None)
+            fpTypeList = kwargs.get("fpTypeList", ["TREE", "PATH", "MACCS", "CIRCULAR", "LINGO"])
+            # screenTypeList = kwargs.get("screenTypeList", ["SMARTS"])
+            screenTypeList = kwargs.get("screenTypeList", None)
 
-        # --------
-        if fpDbType == "FAST":
-            for fpType in fpTypeList:
+            limitPerceptions = kwargs.get("limitPerceptions", False)
+            quietFlag = kwargs.get("quietFlag", True)
+            logSizes = kwargs.get("logSizes", False)
+            fpDbType = "STANDARD"
+            buildScreenedDb = True
+            #
+            oeCount = 0
+            errCount = 0
+            failIdList = []
+            oeIo = OeIoUtils(quietFlag=quietFlag)
+            # --------
+            oeSearchMolFilePath = os.path.join(self.__dirPath, self.__getOeSearchMolFileName())
+            if not useCache or (useCache and not self.__mU.exists(oeSearchMolFilePath)):
+                cmpKwargs = {k: v for k, v in kwargs.items() if k not in ["cachePath", "useCache", "molLimit"]}
+                ccsiP = ChemCompSearchIndexProvider(cachePath=cachePath, useCache=True, molLimit=molLimit, **cmpKwargs)
+                ok = ccsiP.testCache(minCount=molLimit, logSizes=logSizes)
+                # ----
+                ccIdxD = ccsiP.getIndex() if ok else {}
+                idxCount = len(ccIdxD)
+                # -------
                 startTime = time.time()
-                #  Fast FP search database file names
-                fpPath = os.path.join(self.__dirPath, self.__getFastFpDbFileName(fpType))
-                if not useCache or (useCache and not self.__mU.exists(fpPath)):
-                    ok = oeIo.createOeFingerPrintDatabase(oeMolDbFilePath, fpPath, fpType=fpType)
-                    endTime = time.time()
-                    logger.info("Created and stored %s fingerprint database (%.4f seconds)", fpType, endTime - startTime)
-        # --------
-        if buildScreenedDb:
-            for screenType in screenTypeList:
+                oeCount, errCount, failIdList = oeIo.buildOeBinaryMolCacheFromIndex(
+                    oeSearchMolFilePath, ccIdxD, quietFlag=quietFlag, fpTypeList=fpTypeList, limitPerceptions=limitPerceptions
+                )
+                if failIdList:
+                    logger.info("failures %r", failIdList)
+                endTime = time.time()
+                logger.info("Constructed %d/%d cached oeMols  (unconverted %d) (%.4f seconds)", oeCount, idxCount, errCount, endTime - startTime)
+            # --------
+            oeMolDbFilePath = os.path.join(self.__dirPath, self.__getOeMolDbFileName())
+            if not useCache or (useCache and not self.__mU.exists(oeMolDbFilePath)):
                 startTime = time.time()
-                fp = os.path.join(self.__dirPath, self.__getSubSearchFileName(screenType))
-                if not useCache or (useCache and not self.__mU.exists(fp)):
-                    ok = oeIo.createOeSubSearchDatabase(oeSearchMolFilePath, fp, screenType=screenType, numProc=numProc)
-                    endTime = time.time()
-                    logger.info("Constructed screened substructure database (status %r) with screenType %s (%.4f seconds)", ok, screenType, endTime - startTime)
-                    # ---------
-                    ssDb = oeIo.loadOeSubSearchDatabase(fp, screenType=screenType, numProc=numProc)
-                    ok = ssDb.NumMolecules() == oeCount
-                    # ----------
-        return oeCount
+                molCount = oeIo.createOeBinaryDatabaseAndIndex(oeSearchMolFilePath, oeMolDbFilePath)
+                endTime = time.time()
+                logger.info("Created and stored %d indexed oeMols in OE database format (%.4f seconds)", molCount, endTime - startTime)
+
+            # --------
+            if fpDbType == "FAST":
+                for fpType in fpTypeList:
+                    startTime = time.time()
+                    #  Fast FP search database file names
+                    fpPath = os.path.join(self.__dirPath, self.__getFastFpDbFileName(fpType))
+                    if not useCache or (useCache and not self.__mU.exists(fpPath)):
+                        ok = oeIo.createOeFingerPrintDatabase(oeMolDbFilePath, fpPath, fpType=fpType)
+                        endTime = time.time()
+                        logger.info("Created and stored %s fingerprint database (%.4f seconds)", fpType, endTime - startTime)
+            # --------
+            if buildScreenedDb and screenTypeList:
+                for screenType in screenTypeList:
+                    startTime = time.time()
+                    fp = os.path.join(self.__dirPath, self.__getSubSearchFileName(screenType))
+                    if not useCache or (useCache and not self.__mU.exists(fp)):
+                        ok = oeIo.createOeSubSearchDatabase(oeSearchMolFilePath, fp, screenType=screenType, numProc=numProc)
+                        endTime = time.time()
+                        logger.info("Constructed screened substructure database (status %r) with screenType %s (%.4f seconds)", ok, screenType, endTime - startTime)
+                        # ---------
+                        ssDb = oeIo.loadOeSubSearchDatabase(fp, screenType=screenType, numProc=numProc)
+                        ok = ssDb.NumMolecules() == oeCount
+                        # ----------
+            #
+            return True
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return False

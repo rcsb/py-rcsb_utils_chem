@@ -91,7 +91,7 @@ class OeSearchUtilsTests(unittest.TestCase):
             # ----
             startTime = time.time()
             oeMol = oemp.getMol(ccId)
-            retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="simple")
+            retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="relaxed")
             logger.info("%s match length %d in (%.4f seconds)", ccId, len(mL), time.time() - startTime)
             self.assertTrue(retStatus)
             self.assertTrue(self.__resultContains(ccId, mL))
@@ -217,7 +217,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         limitPerceptions = False
         # minFpScore = 0.5
         maxFpResults = 50
-        matchOpts = "simple"
+        matchOpts = "relaxed"
         numMols = 20
         oeioU = OeIoUtils()
         oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
@@ -296,7 +296,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         minFpScore = 0.40
         maxFpResults = 50
         numMols = 20
-        matchOpts = "simple"
+        matchOpts = "relaxed"
         oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
         # ----
         startTime = time.time()

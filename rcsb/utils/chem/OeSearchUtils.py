@@ -20,6 +20,7 @@ __license__ = "Apache 2.0"
 import logging
 import time
 from collections import namedtuple
+from collections import OrderedDict
 
 from openeye import oechem
 from openeye import oegraphsim
@@ -27,7 +28,7 @@ from openeye import oegraphsim
 
 logger = logging.getLogger(__name__)
 
-MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts screenType fpType fpScore", defaults=(None,) * 7)
+MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts screenType fpType fpScore oeIdx", defaults=(None,) * 8)
 
 
 class OeSearchUtils(object):
@@ -46,8 +47,25 @@ class OeSearchUtils(object):
         logger.info("Loaded %d definitions (%.4f seconds)", self.__oeMolDb.NumMols(), endTime - startTime)
         logger.debug("self.__oeMolDbTitleD %s", list(self.__oeMolDbTitleD.items())[:5])
 
-    def searchSubStructure(self, oeQueryMol, idxList=None, reverseFlag=False, matchOpts="default"):
-        """Perform a substructure search for the input query molecule on the binary
+    def testCache(self):
+        """Check for existence of data dependencies and non-zero content counts
+
+        Returns:
+            bool: True for success or False otherwise
+        """
+        okdb = self.__oeMolDb and self.__oeMolDb.NumMols() and self.__idxTitleD and len(self.__idxTitleD)
+        if not okdb or len(self.__fpDbD) < 1:
+            return False
+        #
+        ok = True
+        for fpType, fpDb in self.__fpDbD.items():
+            ok = ok and fpDb.NumFingerPrints() > 1
+            logger.debug("fpType %r fp count %d status %r", fpType, fpDb.NumFingerPrints(), ok)
+        logger.info("Return status %r", ok)
+        return ok
+
+    def searchSubStructure(self, oeQueryMol, idxList=None, reverseFlag=False, matchOpts="relaxed"):
+        """Perform a graph match for the input query molecule on the binary
         database of molecules.  The search optionally restricted to the input index
         list.   The sense of the search may be optionally reversed.
 
@@ -55,6 +73,7 @@ class OeSearchUtils(object):
             oeQueryMol (object): query molecule OeGraphMol or OeQmol
             idxList ([type], optional): [description]. Defaults to None.
             reverseFlag (bool, optional): [description]. Defaults to False.
+            matchOpts (str, optional): graph match criteria type (exact|). Defaults to "relaxed".
 
         Returns:
             [type]: [description]
@@ -66,10 +85,10 @@ class OeSearchUtils(object):
             if matchOpts == "default":
                 atomexpr = oechem.OEExprOpts_DefaultAtoms
                 bondexpr = oechem.OEExprOpts_DefaultBonds
-            elif matchOpts == "simple-stereo":
+            elif matchOpts == "relaxed-stereo":
                 atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_FormalCharge
                 bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Chiral
-            elif matchOpts == "simple":
+            elif matchOpts == "relaxed" or matchOpts == "simple":
                 atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
                 bondexpr = oechem.OEExprOpts_BondOrder
             #
@@ -100,7 +119,7 @@ class OeSearchUtils(object):
         #
         return retStatus, hL
 
-    def searchFingerPrints(self, oeQueryMol, fpType, minFpScore=None, maxFpResults=100, annotateMols=False, verbose=False):
+    def searchFingerPrints(self, oeQueryMol, fpType, minFpScore=None, maxFpResults=50, annotateMols=False, verbose=False):
         hL = []
         retStatus = True
         try:
@@ -136,6 +155,17 @@ class OeSearchUtils(object):
         return retStatus, hL
 
     def getFingerPrintScores(self, oeQueryMol, fpType, minFpScore, maxFpResults):
+        """Return finger print search scores for the input OE molecule.
+
+        Args:
+            oeQueryMol (OEmol): OE graph molecule
+            fpType (str): fingerprint type  [TREE,PATH,MACCS,CIRCULAR,LINGO]
+            fpMinScore (float): min fingerprint match score (0.0-1.0)
+            maxFpResults (int): maximum number of finger print results returned
+
+        Returns:
+            (bool, list): status, finger match lists of type (MatchResults)
+        """
         hL = []
         retStatus = True
         try:
@@ -144,14 +174,54 @@ class OeSearchUtils(object):
             if minFpScore:
                 opts.SetCutoff(minFpScore)
             scores = fpDb.GetSortedScores(oeQueryMol, opts)
-            # hL = [(self.__oeMolDb.GetTitle(si.GetIdx()), si.GetScore()) for si in scores]
-            hL = [MatchResults(ccId=self.__oeMolDb.GetTitle(si.GetIdx()), searchType="fp", fpType=fpType, fpScore=si.GetScore()) for si in scores]
+            hL = [MatchResults(ccId=self.__oeMolDb.GetTitle(si.GetIdx()), searchType="fp", fpType=fpType, fpScore=si.GetScore(), oeIdx=si.GetIdx()) for si in scores]
         except Exception as e:
             retStatus = False
             logger.exception("Failing with %s", str(e))
         return retStatus, hL
 
-    def searchSubStructureWithFingerPrint(self, oeQueryMol, fpType, minFpScore, maxFpResults, matchOpts="simple"):
+    def searchSubStructureAndFingerPrint(self, oeQueryMol, fpTypeCutoffList, maxFpResults, matchOpts="relaxed"):
+        """Return graph match and finger print search results for the input OE molecule using finger print pre-filtering.
+
+        Args:
+            oeQueryMol (OEmol): OE graph molecule
+            fpTypeCutoffList (list): [(finger print type, min score),...]
+            maxFpResults (int): maximum number of finger print results returned
+            matchOpts (str, optional): graph match criteria type (exact|). Defaults to "relaxed".
+
+        Returns:
+            (bool, list, list): status, graph match and finger match lists of type (MatchResults)
+        """
+        fpL = []
+        ssL = []
+        retStatus = True
+        try:
+            for fpType, fpCutoff in fpTypeCutoffList:
+                ok, tL = self.getFingerPrintScores(oeQueryMol, fpType, fpCutoff, maxFpResults)
+                fpL.extend(tL)
+            fpL = list(set(fpL))
+            fpL = sorted(fpL, key=lambda nTup: nTup.fpScore, reverse=True)
+            idxList = [nTup.oeIdx for nTup in fpL]
+            idxList = list(OrderedDict.fromkeys(idxList))
+            #
+            retStatus, ssL = self.searchSubStructure(oeQueryMol, idxList=idxList, reverseFlag=False, matchOpts=matchOpts)
+        except Exception as e:
+            retStatus = False
+            logger.exception("Failing with %s", str(e))
+        return ok and retStatus, ssL, fpL
+
+    def searchSubStructureWithFingerPrint(self, oeQueryMol, fpType, minFpScore, maxFpResults, matchOpts="relaxed"):
+        """Return graph match search results for the input OE molecule using finger print pre-filtering.
+
+        Args:
+            oeQueryMol (OEmol): OE graph molecule
+            fpTypeCutoffList (list): [(finger print type, min score),...]
+            maxFpResults (int): maximum number of finger print results returned
+            matchOpts (str, optional): graph match criteria type (exact|). Defaults to "relaxed".
+
+        Returns:
+            (bool, list, list): status, graph match and finger match lists of type (MatchResults)
+        """
         hL = []
         retStatus = True
         try:
