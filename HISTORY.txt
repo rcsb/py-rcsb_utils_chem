@@ -7,3 +7,4 @@
 10-Mar-2020 - V0.15 Add CI pipeline configuration.
 11-Mar-2020 - V0.16 Update documentation and path defaults for concatenated component dictionaries
 12-Mar-2020 - V0.17 Add ChemCompSearchWrapper() and associated tests
+13-Mar-2020 - V0.18 Add formula matching method in ChemCompSearchIndexProvider()

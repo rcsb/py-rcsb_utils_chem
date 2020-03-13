@@ -4,7 +4,7 @@
 # Date:    3-Mar-2020
 #
 # Updates:
-#
+#  13-Mar-2020 jdw Add formula index search method.
 ##
 """
 Utilities to read and process an index of PDB chemical component definitions.
@@ -221,3 +221,35 @@ class ChemCompSearchIndexProvider(object):
         #
         rD = {vD["name"]: vD for vD in resultList[0]}
         return rD
+
+    def matchMolecularFormula(self, typeRangeD):
+        """Find matching formula for the input atom type range query (evaluates min <= ff <= max).
+
+        Args:
+            typeRangeD (dict): dictionary of element ranges {'<element_name>: {'min': <int>, 'max': <int>}}
+
+        Returns:
+            (list):  chemical component identifiers with matching formula
+        """
+        rL = []
+        try:
+            if not typeRangeD:
+                return rL
+            for ccId, idxD in self.__searchIdx.items():
+                tD = idxD["type-counts"]
+                match = True
+                for atomType, rangeD in typeRangeD.items():
+                    if atomType in tD:
+                        # min <= ff <= max
+                        if ("min" in rangeD and rangeD["min"] > tD[atomType]) or ("max" in rangeD and rangeD["max"] < tD[atomType]):
+                            match = False
+                            break
+                    else:
+                        match = False
+                        break
+                if match:
+                    # logger.info("%s formula %r query %r", ccId, idxD["type-counts"], typeRangeD)
+                    rL.append(ccId)
+        except Exception as e:
+            logger.exception("Failing for %r with %s", typeRangeD, str(e))
+        return rL
