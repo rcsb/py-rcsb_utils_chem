@@ -158,10 +158,10 @@ class OeDepictAlignBase(OeDepictBase):
         self._mcss = oechem.OEMCSSearch(oechem.OEMCSType_Approximate)
         # self._mcss = oechem.OEMCSSearch(OEMCSType_Exhaustive)
         #
-        if self._searchType == "default":
+        if self._searchType in ["default", "graph-strict"]:
             atomexpr = oechem.OEExprOpts_DefaultAtoms
             bondexpr = oechem.OEExprOpts_DefaultBonds
-        elif self._searchType == "relaxed":
+        elif self._searchType in ["relaxed", "graph-relaxed"]:
             # atomexpr = oechem.OEExprOpts_AtomicNumber
             atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
             bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_EqSingleDouble

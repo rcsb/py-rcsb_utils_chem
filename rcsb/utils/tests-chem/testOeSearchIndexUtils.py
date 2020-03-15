@@ -123,7 +123,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                             continue
                         # ----
                         startTime = time.time()
-                        retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="relaxed")
+                        retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="graph-relaxed")
                         if not self.__resultContains(ccId, mL):
                             logger.info("%s match length %d build type %s in (%.4f seconds)", ccId, len(mL), buildType, time.time() - startTime)
                         self.assertTrue(retStatus)
@@ -320,7 +320,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         oeMol = oesmP.getMol("004")
         self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
 
-        matchOpts = "relaxed"
+        matchOpts = "graph-relaxed"
         missTupL = []
         missedD = {}
         missedFpD = {}
@@ -453,7 +453,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         oeMolFit = oeioU.descriptorToMol(descrFit, buildTypeFit, limitPerceptions=limitPerceptions, messageTag=ccId + ":" + buildTypeFit)
         #
         oed = OeDepictMCSAlignPage()
-        oed.setSearchType(sType="relaxed", minAtomMatchFraction=0.50)
+        oed.setSearchType(sType="graph-relaxed", minAtomMatchFraction=0.50)
         oed.setDisplayOptions(
             labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, highlightStyleFit="ballAndStickInverse", bondDisplayWidth=0.5
         )

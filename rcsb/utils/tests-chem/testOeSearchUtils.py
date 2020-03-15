@@ -217,7 +217,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         limitPerceptions = False
         # minFpScore = 0.5
         maxFpResults = 50
-        matchOpts = "relaxed"
+        matchOpts = "graph-relaxed"
         numMols = 20
         oeioU = OeIoUtils()
         oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
@@ -296,7 +296,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         minFpScore = 0.40
         maxFpResults = 50
         numMols = 20
-        matchOpts = "relaxed"
+        matchOpts = "graph-relaxed"
         oesU = OeSearchUtils(oemp, fpTypeList=self.__fpTypeList)
         # ----
         startTime = time.time()
@@ -388,7 +388,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         oeMolFit = oemfFit.getMol()
         #
         oed = OeDepictMCSAlignPage()
-        oed.setSearchType(sType="relaxed", minAtomMatchFraction=0.50)
+        oed.setSearchType(sType="graph-relaxed", minAtomMatchFraction=0.50)
         oed.setDisplayOptions(
             labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, highlightStyleFit="ballAndStickInverse", bondDisplayWidth=0.5
         )

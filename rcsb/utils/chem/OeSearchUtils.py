@@ -64,7 +64,7 @@ class OeSearchUtils(object):
         logger.info("Return status %r", ok)
         return ok
 
-    def searchSubStructure(self, oeQueryMol, idxList=None, reverseFlag=False, matchOpts="relaxed"):
+    def searchSubStructure(self, oeQueryMol, idxList=None, reverseFlag=False, matchOpts="graph-relaxed"):
         """Perform a graph match for the input query molecule on the binary
         database of molecules.  The search optionally restricted to the input index
         list.   The sense of the search may be optionally reversed.
@@ -73,7 +73,7 @@ class OeSearchUtils(object):
             oeQueryMol (object): query molecule OeGraphMol or OeQmol
             idxList ([type], optional): [description]. Defaults to None.
             reverseFlag (bool, optional): [description]. Defaults to False.
-            matchOpts (str, optional): graph match criteria type (exact|). Defaults to "relaxed".
+            matchOpts (str, optional): graph match criteria type (graph-strict|graph-relaxed|graph-relaxed-stereo). Defaults to "graph-relaxed".
 
         Returns:
             [type]: [description]
@@ -82,15 +82,17 @@ class OeSearchUtils(object):
         retStatus = True
         try:
             # logger.info("Query mol type %r", type(oeQueryMol))
-            if matchOpts == "default":
+            if matchOpts in ["default", "strict", "graph-strict"]:
                 atomexpr = oechem.OEExprOpts_DefaultAtoms
                 bondexpr = oechem.OEExprOpts_DefaultBonds
-            elif matchOpts == "relaxed-stereo":
+            elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo"]:
                 atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_FormalCharge
                 bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Chiral
-            elif matchOpts == "relaxed" or matchOpts == "simple":
+            elif matchOpts in ["relaxed", "graph-relaxed", "simple"]:
                 atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
                 bondexpr = oechem.OEExprOpts_BondOrder
+            else:
+                logger.error("Unanticipated match options %r", matchOpts)
             #
             ss = oechem.OESubSearch(oeQueryMol, atomexpr, bondexpr)
             if not ss.IsValid():
@@ -180,14 +182,14 @@ class OeSearchUtils(object):
             logger.exception("Failing with %s", str(e))
         return retStatus, hL
 
-    def searchSubStructureAndFingerPrint(self, oeQueryMol, fpTypeCutoffList, maxFpResults, matchOpts="relaxed"):
+    def searchSubStructureAndFingerPrint(self, oeQueryMol, fpTypeCutoffList, maxFpResults, matchOpts="graph-relaxed"):
         """Return graph match and finger print search results for the input OE molecule using finger print pre-filtering.
 
         Args:
             oeQueryMol (OEmol): OE graph molecule
             fpTypeCutoffList (list): [(finger print type, min score),...]
             maxFpResults (int): maximum number of finger print results returned
-            matchOpts (str, optional): graph match criteria type (exact|). Defaults to "relaxed".
+            matchOpts (str, optional): graph match criteria type (graph-strict|graph-relaxed|...). Defaults to "graph-relaxed".
 
         Returns:
             (bool, list, list): status, graph match and finger match lists of type (MatchResults)
@@ -210,14 +212,14 @@ class OeSearchUtils(object):
             logger.exception("Failing with %s", str(e))
         return ok and retStatus, ssL, fpL
 
-    def searchSubStructureWithFingerPrint(self, oeQueryMol, fpType, minFpScore, maxFpResults, matchOpts="relaxed"):
+    def searchSubStructureWithFingerPrint(self, oeQueryMol, fpType, minFpScore, maxFpResults, matchOpts="graph-relaxed"):
         """Return graph match search results for the input OE molecule using finger print pre-filtering.
 
         Args:
             oeQueryMol (OEmol): OE graph molecule
             fpTypeCutoffList (list): [(finger print type, min score),...]
             maxFpResults (int): maximum number of finger print results returned
-            matchOpts (str, optional): graph match criteria type (exact|). Defaults to "relaxed".
+            matchOpts (str, optional): graph match criteria type (graph-strict|graph-relaxed). Defaults to "graph-relaxed".
 
         Returns:
             (bool, list, list): status, graph match and finger match lists of type (MatchResults)

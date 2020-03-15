@@ -181,14 +181,14 @@ class ChemCompSearchWrapper(SingletonClass):
             logger.exception("Failing with %s", str(e))
         return ok
 
-    def matchByDescriptor(self, descriptor, descriptorType, matchOpts="relaxed", searchId=None):
+    def matchByDescriptor(self, descriptor, descriptorType, matchOpts="graph-relaxed", searchId=None):
         """Return graph match (w/  finger print pre-filtering) and finger print search results for the
            input desriptor.
 
         Args:
             descriptor (str):  molecular descriptor (SMILES, InChI)
             descriptorType (str): descriptor type (SMILES, InChI
-            matchOpts (str, optional): graph match criteria (relaxed, relaxed-stereo, default). Defaults to "relaxed".
+            matchOpts (str, optional): graph match criteria (graph-relaxed, graph-relaxed-stereo, graph-string). Defaults to "graph-relaxed".
             searchId (str, optional): search identifier for logging. Defaults to None.
 
         Returns:
