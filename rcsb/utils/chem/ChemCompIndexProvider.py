@@ -50,11 +50,12 @@ class ChemCompIndexProvider(object):
         ok = self.__ccIdxD and len(self.__ccIdxD) >= minCount if minCount else self.__ccIdxD is not None
         return ok
 
-    def matchMolecularFormula(self, typeRangeD):
+    def matchMolecularFormulaRange(self, typeRangeD, matchSubset=False):
         """Find matching formula for the input atom type range query (evaluates min <= ff <= max).
 
         Args:
             typeRangeD (dict): dictionary of element ranges {'<element_name>: {'min': <int>, 'max': <int>}}
+            matchSubset (bool, optional): test for formula subset (default: False)
 
         Returns:
             (list):  chemical component identifiers with matching formula (MatchResults)
@@ -63,10 +64,19 @@ class ChemCompIndexProvider(object):
         try:
             if not typeRangeD:
                 return rL
+            myTypeRangeD = {k.upper(): v for k, v in typeRangeD.items()}
+            queryTypeS = set(myTypeRangeD.keys())
             for ccId, idxD in self.__ccIdxD.items():
                 tD = idxD["type-counts"]
+                targetTypeS = set(tD.keys())
+                if matchSubset and targetTypeS != queryTypeS:
+                    continue
+                #
+                if not queryTypeS.issubset(targetTypeS):
+                    continue
+                #
                 match = True
-                for atomType, rangeD in typeRangeD.items():
+                for atomType, rangeD in myTypeRangeD.items():
                     if atomType in tD:
                         # min <= ff <= max
                         if ("min" in rangeD and rangeD["min"] > tD[atomType]) or ("max" in rangeD and rangeD["max"] < tD[atomType]):

@@ -27,6 +27,7 @@ from collections import namedtuple
 
 from rcsb.utils.chem.ChemCompIndexProvider import ChemCompIndexProvider
 from rcsb.utils.chem.ChemCompSearchIndexProvider import ChemCompSearchIndexProvider
+from rcsb.utils.chem.MolecularFormula import MolecularFormula
 from rcsb.utils.chem.OeSearchMoleculeProvider import OeSearchMoleculeProvider
 from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeSearchUtils import OeSearchUtils
@@ -218,11 +219,12 @@ class ChemCompSearchWrapper(SingletonClass):
             #
         return statusCode, ssL, fpL
 
-    def matchByFormula(self, elementRangeD, searchId=None):
+    def matchByFormulaRange(self, elementRangeD, matchSubset=False, searchId=None):
         """Return formula match results for input element range dictionary.
 
         Args:
             elementRangeD (dict): {'<element_name>: {'min': <int>, 'max': <int>}, ... }
+            matchSubset (bool, optional): query for formula subset (default: False)
             searchId (str, optional): search identifier for logging. Defaults to None.
 
         Returns:
@@ -233,7 +235,33 @@ class ChemCompSearchWrapper(SingletonClass):
         try:
             startTime = time.time()
             searchId = searchId if searchId else "query"
-            rL = self.__ccIdxP.matchMolecularFormula(elementRangeD)
+            rL = self.__ccIdxP.matchMolecularFormulaRange(elementRangeD, matchSubset=matchSubset)
+            ok = True
+            logger.info("%s formula %r matched %r (%.4f seconds)", searchId, elementRangeD, rL, time.time() - startTime)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return ok, rL
+
+    def matchByFormula(self, formula, matchSubset=False, searchId=None):
+        """Return formula match results for input molecular formula.
+
+        Args:
+            formula (str): molecular formula  (ex. 'C6H6')
+            matchSubset (bool, optional): query for formula subset (default: False)
+            searchId (str, optional): search identifier for logging. Defaults to None.
+
+        Returns:
+            (statusCode, list): status, list of chemical component identifiers
+        """
+        ok = False
+        rL = []
+        try:
+            startTime = time.time()
+            searchId = searchId if searchId else "query"
+            mf = MolecularFormula()
+            eD = mf.parseFormula(formula)
+            elementRangeD = {k.upper(): {"min": v, "max": v} for k, v in eD.items()}
+            rL = self.__ccIdxP.matchMolecularFormulaRange(elementRangeD, matchSubset=matchSubset)
             ok = True
             logger.info("%s formula %r matched %r (%.4f seconds)", searchId, elementRangeD, rL, time.time() - startTime)
         except Exception as e:

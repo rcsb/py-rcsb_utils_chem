@@ -9,3 +9,4 @@
 12-Mar-2020 - V0.17 Add ChemCompSearchWrapper() and associated tests
 13-Mar-2020 - V0.18 Add formula matching method in ChemCompSearchIndexProvider()
 13-Mar-2020 - V0.19 Make formula result MatchResults()
+14-Mar-2020 - V0.20 Add formula parser in module MolecularFormula()

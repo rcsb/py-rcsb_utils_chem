@@ -9,7 +9,7 @@
 #
 ##
 """
-Tests for utilities to read and process the dictionary of PDB chemical component definitions.
+Tests for utilities to read and process an index of PDB chemical component definitions.
 
 """
 
@@ -28,6 +28,7 @@ import unittest
 
 from rcsb.utils.chem import __version__
 from rcsb.utils.chem.ChemCompIndexProvider import ChemCompIndexProvider
+from rcsb.utils.chem.MolecularFormula import MolecularFormula
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -95,23 +96,56 @@ class ChemCompIndexProviderTests(unittest.TestCase):
     def testFormulaMatch(self):
         """Test formula match   ...
         """
-        ccidxP = self.__testBuildMoleculeCacheFiles(logSizes=False, useCache=True, ccFileNamePrefix="cc-abbrev")
+        ccidxP = self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, logSizes=False, useCache=True, ccFileNamePrefix="cc-abbrev")
         ccidxD = ccidxP.getIndex()
         logger.info("Matching formula for %d definitions", len(ccidxD))
         for ccId, idxD in ccidxD.items():
             startTime = time.time()
             fQueryD = {el: {"min": eCount, "max": eCount} for el, eCount in idxD["type-counts"].items()}
             if fQueryD:
-                rL = ccidxP.matchMolecularFormula(fQueryD)
+                rL = ccidxP.matchMolecularFormulaRange(fQueryD, matchSubset=False)
                 logger.debug("%s formula matches %r (%.4f seconds)", ccId, rL, time.time() - startTime)
-                if not self.__resultContains(ccId, rL):
+                ok = self.__resultContains(ccId, rL)
+                if not ok:
                     logger.info("%s formula not matched %r %r  (%.4f seconds)", ccId, rL, fQueryD, time.time() - startTime)
+                self.assertTrue(ok)
+
+    def testFormulaSubsetMatch(self):
+        """Test formula match   ...
+        """
+        ccidxP = self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, logSizes=False, useCache=True, ccFileNamePrefix="cc-abbrev")
+        startTime = time.time()
+        fQueryD = {"S": {"min": 1, "max": 4}}
+        rL = ccidxP.matchMolecularFormulaRange(fQueryD, matchSubset=False)
+        logger.info("S formula subset matches (%d) (%.4f seconds)", len(rL), time.time() - startTime)
+        self.assertGreaterEqual(len(rL), 0)
 
     def __resultContains(self, ccId, matchResultList):
         for matchResult in matchResultList:
             if ccId in matchResult.ccId:
                 return True
         return False
+
+    def testFormulaStringMatch(self):
+        """Test formula match   ...
+        """
+        mf = MolecularFormula()
+        ccidxP = self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, logSizes=False, useCache=True, ccFileNamePrefix="cc-abbrev")
+        ccidxD = ccidxP.getIndex()
+        logger.info("Matching formula for %d definitions", len(ccidxD))
+        for ccId, idxD in ccidxD.items():
+            startTime = time.time()
+            formula = idxD["formula"]
+            eD = mf.parseFormula(formula)
+            eDU = {k.upper(): v for k, v in eD.items()}
+            eDS = set(eDU.items())
+            typeCounts = idxD["type-counts"]
+            tCS = set(typeCounts.items())
+            ok = eDS == tCS
+            if not ok:
+                logger.info("%s parsed eD %r typeCounts %r  (%.4f seconds)", ccId, eDS, tCS, time.time() - startTime)
+            self.assertTrue(ok)
+            # logger.info("%s parsed eD %r typeCounts %r  (%.4f seconds)", ccId, eD, typeCounts, time.time() - startTime)
 
 
 def buildCacheFiles():
@@ -122,7 +156,18 @@ def buildCacheFiles():
     return suiteSelect
 
 
+def matchFormula():
+    suiteSelect = unittest.TestSuite()
+    suiteSelect.addTest(ChemCompIndexProviderTests("testFormulaMatch"))
+    suiteSelect.addTest(ChemCompIndexProviderTests("testFormulaSubsetMatch"))
+    suiteSelect.addTest(ChemCompIndexProviderTests("testFormulaStringMatch"))
+    return suiteSelect
+
+
 if __name__ == "__main__":
 
     mySuite = buildCacheFiles()
+    unittest.TextTestRunner(verbosity=2).run(mySuite)
+
+    mySuite = matchFormula()
     unittest.TextTestRunner(verbosity=2).run(mySuite)

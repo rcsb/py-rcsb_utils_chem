@@ -429,7 +429,7 @@ class OeMoleculeFactory(object):
             ok = self.build(molBuildType="model-xyz", setTitle=True, limitPerceptions=limitPerceptions)
             if ok:
                 logger.debug("%s begin protomer search", self.__ccId)
-                upMol = self.getUniqueProtomerMolExtended(maxTautomerAtoms=100, maxSearchTime=0.10)
+                upMol = self.getUniqueProtomerMolExtended(maxTautomerAtoms=100, maxSearchTime=0.50)
                 if not upMol:
                     logger.warning("%s protomer and tautomer generation failed", self.__ccId)
                 else:
