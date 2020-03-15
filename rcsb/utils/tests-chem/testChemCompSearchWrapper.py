@@ -269,7 +269,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                 #
                 startTime = time.time()
                 elementRangeD = {el: {"min": eCount, "max": eCount} for el, eCount in idxD["type-counts"].items()}
-                retStatus, rL = ccsw.matchByFormula(elementRangeD, ccId)
+                retStatus, rL = ccsw.matchByFormulaRange(elementRangeD, ccId)
                 mOk = self.__resultContains(ccId, rL)
                 self.assertTrue(mOk)
                 logger.info(
