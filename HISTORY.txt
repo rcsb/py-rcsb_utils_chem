@@ -11,3 +11,4 @@
 13-Mar-2020 - V0.19 Make formula result MatchResults()
 14-Mar-2020 - V0.20 Add formula parser in module MolecularFormula()
 16-Mar-2020 - V0.21 Adjust formula range search filter.
+16-Mar-2020 - V0.22 Simplify joint fingerprint and ssSearch -

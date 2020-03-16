@@ -188,7 +188,7 @@ class ChemCompSearchWrapper(SingletonClass):
         Args:
             descriptor (str):  molecular descriptor (SMILES, InChI)
             descriptorType (str): descriptor type (SMILES, InChI
-            matchOpts (str, optional): graph match criteria (graph-relaxed, graph-relaxed-stereo, graph-string). Defaults to "graph-relaxed".
+            matchOpts (str, optional): graph match criteria (graph-relaxed, graph-relaxed-stereo, graph-strict, fingerprint-similarity). Defaults to "graph-relaxed".
             searchId (str, optional): search identifier for logging. Defaults to None.
 
         Returns:

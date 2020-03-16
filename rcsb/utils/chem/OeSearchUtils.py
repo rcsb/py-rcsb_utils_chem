@@ -206,7 +206,9 @@ class OeSearchUtils(object):
             idxList = [nTup.oeIdx for nTup in fpL]
             idxList = list(OrderedDict.fromkeys(idxList))
             #
-            retStatus, ssL = self.searchSubStructure(oeQueryMol, idxList=idxList, reverseFlag=False, matchOpts=matchOpts)
+            if matchOpts not in ["fingerprint-similarity"]:
+                retStatus, ssL = self.searchSubStructure(oeQueryMol, idxList=idxList, reverseFlag=False, matchOpts=matchOpts)
+
         except Exception as e:
             retStatus = False
             logger.exception("Failing with %s", str(e))
