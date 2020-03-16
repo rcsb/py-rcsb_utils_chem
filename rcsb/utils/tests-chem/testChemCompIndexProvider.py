@@ -115,10 +115,10 @@ class ChemCompIndexProviderTests(unittest.TestCase):
         """
         ccidxP = self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, logSizes=False, useCache=True, ccFileNamePrefix="cc-abbrev")
         startTime = time.time()
-        fQueryD = {"S": {"min": 1, "max": 4}}
-        rL = ccidxP.matchMolecularFormulaRange(fQueryD, matchSubset=False)
-        logger.info("S formula subset matches (%d) (%.4f seconds)", len(rL), time.time() - startTime)
-        self.assertGreaterEqual(len(rL), 0)
+        fQueryD = {"C": {"min": 50, "max": 65}}
+        rL = ccidxP.matchMolecularFormulaRange(fQueryD, matchSubset=True)
+        logger.info("C formula subset matches (%d) (%.4f seconds)", len(rL), time.time() - startTime)
+        self.assertGreaterEqual(len(rL), 10)
 
     def __resultContains(self, ccId, matchResultList):
         for matchResult in matchResultList:

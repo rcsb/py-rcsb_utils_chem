@@ -69,7 +69,7 @@ class ChemCompIndexProvider(object):
             for ccId, idxD in self.__ccIdxD.items():
                 tD = idxD["type-counts"]
                 targetTypeS = set(tD.keys())
-                if matchSubset and targetTypeS != queryTypeS:
+                if not matchSubset and targetTypeS != queryTypeS:
                     continue
                 #
                 if not queryTypeS.issubset(targetTypeS):
