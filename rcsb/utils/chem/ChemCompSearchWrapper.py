@@ -237,7 +237,7 @@ class ChemCompSearchWrapper(SingletonClass):
             searchId = searchId if searchId else "query"
             rL = self.__ccIdxP.matchMolecularFormulaRange(elementRangeD, matchSubset=matchSubset)
             ok = True
-            logger.info("%s formula %r matched %r (%.4f seconds)", searchId, elementRangeD, rL, time.time() - startTime)
+            logger.info("%s formula %r matched %d (%.4f seconds)", searchId, elementRangeD, len(rL), time.time() - startTime)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return ok, rL
@@ -263,7 +263,7 @@ class ChemCompSearchWrapper(SingletonClass):
             elementRangeD = {k.upper(): {"min": v, "max": v} for k, v in eD.items()}
             rL = self.__ccIdxP.matchMolecularFormulaRange(elementRangeD, matchSubset=matchSubset)
             ok = True
-            logger.info("%s formula %r matched %r (%.4f seconds)", searchId, elementRangeD, rL, time.time() - startTime)
+            logger.info("%s formula %r matched %d (%.4f seconds)", searchId, elementRangeD, len(rL), time.time() - startTime)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return ok, rL
