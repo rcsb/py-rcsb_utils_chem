@@ -46,7 +46,7 @@ class OeDepictTests(unittest.TestCase):
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         #
-        self.__ccIdList = ["000", "001", "002", "003", "004", "0K3"]
+        self.__ccIdList = ["000", "001", "002", "003", "004", "0K3", "LHI", "NTP", "X12"]
         self.__ccIdListLong = self.__ccIdList
         self.__oeMolD = self.__getCache(molBuildType="model-xyz", useCache=True)
 
@@ -78,6 +78,7 @@ class OeDepictTests(unittest.TestCase):
 
     def testDepictCCIdList(self):
         """Test case -  single OE molecule depiction.
+         labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, abelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=0.5
         """
         try:
             oeMolTitleList = self.__getMolDepictList(self.__ccIdList)
@@ -86,8 +87,30 @@ class OeDepictTests(unittest.TestCase):
                 oed = OeDepict()
                 title = ""
                 oed.setMolTitleList([(ccId, mol, title)])
-                oed.setDisplayOptions(labelAtomName=False, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, cellBorders=False, bondDisplayWidth=0.5)
-                oed.setGridOptions(rows=1, cols=1)
+                oed.setDisplayOptions(
+                    labelAtomName=False, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, labelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=0.5
+                )
+                oed.setGridOptions(rows=1, cols=1, cellBorders=False)
+                oed.prepare()
+                oed.write(imagePath)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
+    def testDepictCCIdListLabeled(self):
+        """Test case -  single OE molecule depiction.
+        """
+        try:
+            oeMolTitleList = self.__getMolDepictList(self.__ccIdList)
+            for ccId, mol, title in oeMolTitleList:
+                imagePath = os.path.join(self.__workPath, ccId + "-labeled.svg")
+                oed = OeDepict()
+                title = ""
+                oed.setMolTitleList([(ccId, mol, title)])
+                oed.setDisplayOptions(
+                    labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, labelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=0.5,
+                )
+                oed.setGridOptions(rows=1, cols=1, cellBorders=False)
                 oed.prepare()
                 oed.write(imagePath)
         except Exception as e:
@@ -101,7 +124,9 @@ class OeDepictTests(unittest.TestCase):
             oeMolTitleList = self.__getMolDepictList(self.__ccIdList)
             oed = OeDepict()
             oed.setMolTitleList(oeMolTitleList)
-            oed.setDisplayOptions(imageX=1000, imageY=1000, labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, bondDisplayWidth=0.5)
+            oed.setDisplayOptions(
+                imageX=1000, imageY=1000, labelAtomName=True, labelAtomCIPStereo=True, labelBondCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, bondDisplayWidth=0.5
+            )
             oed.setGridOptions(rows=2, cols=2)
             oed.prepare()
             oed.write(os.path.join(self.__workPath, "myIdListtest.png"))
@@ -129,7 +154,9 @@ class OeDepictTests(unittest.TestCase):
             oeMolTitleList = self.__getMolDepictList(self.__ccIdListLong)
             oed = OeDepictMultiPage()
             oed.setMolTitleList(oeMolTitleList)
-            oed.setDisplayOptions(pageOrientation="Portrait", labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, bondDisplayWidth=0.5)
+            oed.setDisplayOptions(
+                pageOrientation="Portrait", labelAtomName=True, labelAtomCIPStereo=True, labelBondCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, bondDisplayWidth=0.5
+            )
             oed.setGridOptions(rows=2, cols=1)
             oed.prepare()
             oed.write(os.path.join(self.__workPath, "multiPathListtest.pdf"))
@@ -148,7 +175,7 @@ class OeDepictTests(unittest.TestCase):
             #
             oed = OeDepict()
             oed.setMolTitleList([("ATP", oeMolL[0], "Title for ATP")])
-            oed.setDisplayOptions(labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, bondDisplayWidth=0.5)
+            oed.setDisplayOptions(labelAtomName=True, labelAtomCIPStereo=True, labelBondCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, bondDisplayWidth=0.5)
             oed.setGridOptions(rows=1, cols=1)
             oed.prepare()
             oed.write(imagePath)
@@ -166,7 +193,7 @@ class OeDepictTests(unittest.TestCase):
 
             oed = OeDepict()
             oed.setMolTitleList([("benzene", oeMol, "Title for benzene")])
-            oed.setDisplayOptions(labelAtomName=False, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, bondDisplayWidth=1.0)
+            oed.setDisplayOptions(labelAtomName=False, labelAtomCIPStereo=True, labelBondCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, bondDisplayWidth=1.0)
             oed.setGridOptions(rows=1, cols=1)
             oed.prepare()
             oed.write(imagePath)

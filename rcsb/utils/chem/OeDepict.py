@@ -90,10 +90,14 @@ class OeDepictBase(object):
 
     def _assignDisplayOptions(self):
         if self._params["labelAtomCIPStereo"]:
-            self._opts.SetAtomStereoStyle(oedepict.OEAtomStereoStyle_Display_All)
+            #
+            # self._opts.SetAtomStereoStyle(oedepict.OEAtomStereoStyle_Display_All)
+            self._opts.SetAtomStereoStyle(oedepict.OEAtomStereoStyle_Display_CIPAtomStereo)
 
         if self._params["labelBondCIPStereo"]:
-            self._opts.SetBondStereoStyle(oedepict.OEBondStereoStyle_Display_All)
+            # will include bowties for undefined stereo
+            # self._opts.SetBondStereoStyle(oedepict.OEBondStereoStyle_Display_All)
+            self._opts.SetBondStereoStyle(oedepict.OEBondStereoStyle_Display_CIPBondStereo)
 
         if self._params["labelAtomIndex"]:
             self._opts.SetAtomPropertyFunctor(oedepict.OEDisplayAtomIdx())

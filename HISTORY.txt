@@ -13,3 +13,4 @@
 16-Mar-2020 - V0.21 Adjust formula range search filter.
 16-Mar-2020 - V0.22 Simplify joint fingerprint and ssSearch -
 16-Mar-2020 - V0.23 Suppress logging of formula results
+27-Mar-2020 - V0.24 Adjust atom and bond stereo depiction avoid display undefined features

@@ -59,7 +59,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         #
         # self.__buildTypeList = ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]
         self.__buildTypeList = ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]
-        self.__numMols = 24
+        self.__numMols = 28
         self.__myKwargs = {
             "ccUrlTarget": self.__ccUrlTarget,
             "birdUrlTarget": self.__birdUrlTarget,
