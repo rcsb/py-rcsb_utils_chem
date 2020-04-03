@@ -46,7 +46,7 @@ class OeDepictTests(unittest.TestCase):
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         #
-        self.__ccIdList = ["000", "001", "002", "003", "004", "0K3", "LHI", "NTP", "X12"]
+        self.__ccIdList = ["000", "001", "002", "003", "004", "0K3", "LHI", "NTP", "X12", "GLC", "MAN"]
         self.__ccIdListLong = self.__ccIdList
         self.__oeMolD = self.__getCache(molBuildType="model-xyz", useCache=True)
 

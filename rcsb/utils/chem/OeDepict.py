@@ -3,7 +3,8 @@
 # Date:  25-Oct-2019  J. Westbrook  adapted from earlier code module.
 #
 # Updates:
-#
+#  2-April-2020 jdw enlarge the base image size to avoid dropping labels.
+#                   Tweak stereo style to include W/H but avoid undefined stereo marking
 #
 ##
 """
@@ -51,8 +52,8 @@ class OeDepictBase(object):
         # internal dictionary of display parameters -
         #
         self._params = {
-            "imageSizeX": 500,
-            "imageSizeY": 500,
+            "imageSizeX": 1500,
+            "imageSizeY": 1500,
             "cellBorders": True,
             "suppressHydrogens": False,
             "labelAtomName": False,
@@ -91,18 +92,19 @@ class OeDepictBase(object):
     def _assignDisplayOptions(self):
         if self._params["labelAtomCIPStereo"]:
             #
-            # self._opts.SetAtomStereoStyle(oedepict.OEAtomStereoStyle_Display_All)
-            self._opts.SetAtomStereoStyle(oedepict.OEAtomStereoStyle_Display_CIPAtomStereo)
+            self._opts.SetAtomStereoStyle(oedepict.OEAtomStereoStyle_Display_All)
+            # self._opts.SetAtomStereoStyle(oedepict.OEAtomStereoStyle_Display_CIPAtomStereo)
 
         if self._params["labelBondCIPStereo"]:
             # will include bowties for undefined stereo
             # self._opts.SetBondStereoStyle(oedepict.OEBondStereoStyle_Display_All)
             self._opts.SetBondStereoStyle(oedepict.OEBondStereoStyle_Display_CIPBondStereo)
+            self._opts.SetAtomPropLabelFontScale(0.650)
 
         if self._params["labelAtomIndex"]:
             self._opts.SetAtomPropertyFunctor(oedepict.OEDisplayAtomIdx())
             self._opts.SetAtomPropLabelFont(oedepict.OEFont(oechem.OEDarkGreen))
-            self._opts.SetAtomPropLabelFontScale(0.75)
+            self._opts.SetAtomPropLabelFontScale(0.650)
 
         if self._params["labelBondIndex"]:
             self._opts.SetBondPropertyFunctor(oedepict.OEDisplayBondIdx())
@@ -112,7 +114,7 @@ class OeDepictBase(object):
             atomlabel = LabelAtoms()
             self._opts.SetAtomPropertyFunctor(atomlabel)
             self._opts.SetAtomPropLabelFont(oedepict.OEFont(oechem.OEDarkGreen))
-            self._opts.SetAtomPropLabelFontScale(0.75)
+            self._opts.SetAtomPropLabelFontScale(0.650)
 
         if self._params["bondDisplayWidth"] is not None:
             pen = oedepict.OEPen(oechem.OEBlack, oechem.OEBlack, oedepict.OEFill_On, self._params["bondDisplayWidth"])
