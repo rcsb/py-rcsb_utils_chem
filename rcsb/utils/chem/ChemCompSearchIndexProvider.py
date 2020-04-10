@@ -68,7 +68,7 @@ class ChemCompSearchIndexWorker(object):
         #
         return successList, retList, diagList
 
-    def __buildChemCompSearchIndex(self, procName, ccIdList, limitPerceptions=True, quietFlag=False):
+    def __buildChemCompSearchIndex(self, procName, ccIdList, limitPerceptions=False, quietFlag=False):
         """Internal method return a dictionary of extracted chemical component descriptors and formula.
         """
         rL = []
@@ -187,7 +187,7 @@ class ChemCompSearchIndexProvider(object):
         #
         return searchIdxD
 
-    def __buildChemCompSearchIndex(self, ccObjD, limitPerceptions=True, molLimit=None):
+    def __buildChemCompSearchIndex(self, ccObjD, limitPerceptions=False, molLimit=None):
         """Internal method return a dictionary of extracted chemical component descriptors and formula.
         """
         rD = {}
@@ -209,7 +209,7 @@ class ChemCompSearchIndexProvider(object):
 
         return rD
 
-    def __buildChemCompSearchIndexMulti(self, ccObjD, limitPerceptions=True, molLimit=None, numProc=2, maxChunkSize=20, quietFlag=False):
+    def __buildChemCompSearchIndexMulti(self, ccObjD, limitPerceptions=False, molLimit=None, numProc=2, maxChunkSize=20, quietFlag=False):
         #
         ccIdList = sorted(ccObjD.keys())[:molLimit] if molLimit else sorted(ccObjD.keys())
         logger.info("Input definition length %d numProc %d limitPerceptions %r", len(ccIdList), numProc, limitPerceptions)

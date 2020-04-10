@@ -94,7 +94,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             maxChunkSize = cfgD.get("maxChunkSize", 10)
             logger.info("+++ >>> Using MAXPROC %d", numProc)
             #
-            limitPerceptions = cfgD.get("limitPerceptions", True)
+            limitPerceptions = cfgD.get("limitPerceptions", False)
             quietFlag = cfgD.get("quietFlag", True)
             #
             fpTypeCuttoffD = {"TREE": 0.6, "MACCS": 0.9, "PATH": 0.6, "CIRCULAR": 0.6, "LINGO": 0.9}

@@ -168,7 +168,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
                 logger.debug("%s name %r formula %r charge %d", ccId, ccName, formula, ifCharge)
                 # ----
                 ccId = oemf1.setChemCompDef(ccObj)
-                ok = oemf1.build(molBuildType=buildTypeRef, limitPerceptions=True)
+                ok = oemf1.build(molBuildType=buildTypeRef, limitPerceptions=False)
                 if not ok:
                     logger.info("Build using %r failed for %s (ambiguous flag %r current %r)", buildTypeRef, ccId, isAmbiguous, isCurrent)
                 #
@@ -178,7 +178,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
                     genIsoSmi = oemf1.getCanSMILES()
                     oemf2 = OeMoleculeFactory()
                     oemf2.setDescriptor(genIsoSmi, "oe-iso-smiles", ccId)
-                    oemf2.build(molBuildType="oe-iso-smiles", limitPerceptions=True)
+                    oemf2.build(molBuildType="oe-iso-smiles", limitPerceptions=False)
                     regenIsoSmi = oemf2.getIsoSMILES()
                     if genIsoSmi != regenIsoSmi:
                         logger.info("%s  regenerated ISOSMILES differ \n -- INP: %s\n -- OUT: %s", ccId, genIsoSmi, regenIsoSmi)

@@ -73,7 +73,7 @@ class OeIoUtils(object):
             logger.exception("Loading %s failing with %s", ccdFilePath, str(e))
         return retMolL
 
-    def descriptorToSmiles(self, descr, descrType, limitPerceptions=True, messageTag=None):
+    def descriptorToSmiles(self, descr, descrType, limitPerceptions=False, messageTag=None):
         """Parse the input descriptor string and return an OE smiles.
 
         Args:
@@ -108,7 +108,7 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return None
 
-    def descriptorToMol(self, descr, descrType, limitPerceptions=True, messageTag=None):
+    def descriptorToMol(self, descr, descrType, limitPerceptions=False, messageTag=None):
         """Parse the input descriptor string and return a molecule object (OeGraphMol/OeQMol).
 
         Args:
@@ -148,7 +148,7 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return None
 
-    def smilesToMol(self, smiles, limitPerceptions=True, messageTag=None):
+    def smilesToMol(self, smiles, limitPerceptions=False, messageTag=None):
         """Parse the input SMILES string and return a molecule object (OeGraphMol).
 
         Args:
@@ -179,7 +179,7 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return None
 
-    def inchiToMol(self, inchi, limitPerceptions=True, messageTag=None):
+    def inchiToMol(self, inchi, limitPerceptions=False, messageTag=None):
         """Parse the input InChI string and return a molecule object (OeGraphMol).
 
         Args:
@@ -209,7 +209,7 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return None
 
-    def descriptorToQMol(self, descr, descrType, limitPerceptions=True, messageTag=None):
+    def descriptorToQMol(self, descr, descrType, limitPerceptions=False, messageTag=None):
         """Parse the input descriptor string and return a query molecule object (OeQMol).
 
         Args:
@@ -498,7 +498,7 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return molCount
 
-    def buildOeBinaryMolCache(self, filePath, ccObjD, molBuildType="model-xyz", quietFlag=False, fpTypeList=None, limitPerceptions=True):
+    def buildOeBinaryMolCache(self, filePath, ccObjD, molBuildType="model-xyz", quietFlag=False, fpTypeList=None, limitPerceptions=False):
         """Build cache of OEGraphMol() objects from the input chemical component definition list.
 
         Args:
@@ -544,7 +544,7 @@ class OeIoUtils(object):
         logger.info("Completed operation at %s (%.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
         return ccCount, errCount, failIdList
 
-    def buildOeBinaryMolCacheFromIndex(self, filePath, ccIdxD, quietFlag=False, fpTypeList=None, limitPerceptions=True):
+    def buildOeBinaryMolCacheFromIndex(self, filePath, ccIdxD, quietFlag=False, fpTypeList=None, limitPerceptions=False):
         """Build cache of OEGraphMol() objects from the input chemical component search index.
 
         Args:

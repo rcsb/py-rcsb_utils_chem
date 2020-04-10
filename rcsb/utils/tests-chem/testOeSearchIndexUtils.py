@@ -59,7 +59,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         #
         # self.__buildTypeList = ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]
         self.__buildTypeList = ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]
-        self.__numMols = 28
+        self.__numMols = 31
         self.__myKwargs = {
             "ccUrlTarget": self.__ccUrlTarget,
             "birdUrlTarget": self.__birdUrlTarget,
@@ -67,7 +67,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             "useCache": self.__useCacheFlag,
             "ccFileNamePrefix": "cc-abbrev",
             "oeFileNamePrefix": "oe-abbrev",
-            "limitPerceptions": True,
+            "limitPerceptions": False,
             "minCount": 20,
             "maxFpResults": 50,
             "fpTypeCuttoffList": self.__fpTypeCuttoffList,
@@ -123,7 +123,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                             continue
                         # ----
                         startTime = time.time()
-                        retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="graph-relaxed")
+                        retStatus, mL = oesU.searchSubStructure(oeMol, matchOpts="graph-strict")
                         if not self.__resultContains(ccId, mL):
                             logger.info("%s match length %d build type %s in (%.4f seconds)", ccId, len(mL), buildType, time.time() - startTime)
                         self.assertTrue(retStatus)

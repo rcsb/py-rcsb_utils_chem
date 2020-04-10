@@ -83,8 +83,10 @@ class OeSearchUtils(object):
         try:
             # logger.info("Query mol type %r", type(oeQueryMol))
             if matchOpts in ["default", "strict", "graph-strict"]:
-                atomexpr = oechem.OEExprOpts_DefaultAtoms
-                bondexpr = oechem.OEExprOpts_DefaultBonds
+                # atomexpr = oechem.OEExprOpts_DefaultAtoms
+                # bondexpr = oechem.OEExprOpts_DefaultBonds
+                atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge | oechem.OEExprOpts_Aromaticity
+                bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Aromaticity
             elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo"]:
                 atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_FormalCharge
                 bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Chiral

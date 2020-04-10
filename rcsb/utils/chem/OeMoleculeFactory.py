@@ -482,7 +482,7 @@ class OeMoleculeFactory(object):
         return retD
 
     # ----
-    def build(self, molBuildType="model", setTitle=True, limitPerceptions=True, fallBackBuildType="model-xyz", normalize=False):
+    def build(self, molBuildType="model", setTitle=True, limitPerceptions=False, fallBackBuildType="model-xyz", normalize=False):
         try:
             if molBuildType in ["ideal-xyz", "model-xyz"]:
                 oeMol = self.__build3D(molBuildType=molBuildType, setTitle=setTitle)
@@ -501,7 +501,7 @@ class OeMoleculeFactory(object):
             logger.info("Failing with %s", str(e))
         return False
 
-    def __buildFromDescriptor(self, ccId, molBuildType, setTitle=True, limitPerceptions=True, fallBackBuildType="model-xyz", rebuildOnFailure=False):
+    def __buildFromDescriptor(self, ccId, molBuildType, setTitle=True, limitPerceptions=False, fallBackBuildType="model-xyz", rebuildOnFailure=False):
         """Parse the input descriptor string and return a molecule object (OeGraphMol).
 
         Args:
