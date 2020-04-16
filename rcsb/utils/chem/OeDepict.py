@@ -52,8 +52,8 @@ class OeDepictBase(object):
         # internal dictionary of display parameters -
         #
         self._params = {
-            "imageSizeX": 1500,
-            "imageSizeY": 1500,
+            "imageSizeX": 2500,
+            "imageSizeY": 2500,
             "cellBorders": True,
             "suppressHydrogens": False,
             "labelAtomName": False,

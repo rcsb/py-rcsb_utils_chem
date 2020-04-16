@@ -16,3 +16,4 @@
 27-Mar-2020 - V0.24 Adjust atom and bond stereo depiction avoid display undefined features
  2-Apr-2020 - V0.25 Adjustments to improve labeling of large structures and include W/H stereo
 10-Apr-2020 - V0.26 Adjustments for default substructure search constraints and build defaults
+16-Apr-2020 - V0.27 Return screening fpScores with substructure search results - adjustments in depiction resolution

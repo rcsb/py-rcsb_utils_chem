@@ -209,8 +209,13 @@ class OeSearchUtils(object):
             idxList = list(OrderedDict.fromkeys(idxList))
             #
             if matchOpts not in ["fingerprint-similarity"]:
-                retStatus, ssL = self.searchSubStructure(oeQueryMol, idxList=idxList, reverseFlag=False, matchOpts=matchOpts)
-
+                # Save the maximum fp score
+                fpScoreD = {}
+                for fpTup in fpL:
+                    fpScoreD[fpTup.ccId] = max(fpScoreD[fpTup.ccId], fpTup.fpScore) if fpTup.ccId in fpScoreD else fpTup.fpScore
+                retStatus, rTupL = self.searchSubStructure(oeQueryMol, idxList=idxList, reverseFlag=False, matchOpts=matchOpts)
+                for rTup in rTupL:
+                    ssL.append(rTup._replace(fpScore=fpScoreD[rTup.ccId]))
         except Exception as e:
             retStatus = False
             logger.exception("Failing with %s", str(e))

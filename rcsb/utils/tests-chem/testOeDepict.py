@@ -78,7 +78,7 @@ class OeDepictTests(unittest.TestCase):
 
     def testDepictCCIdList(self):
         """Test case -  single OE molecule depiction.
-         labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, abelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=0.5
+         labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, abelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=3.0
         """
         try:
             oeMolTitleList = self.__getMolDepictList(self.__ccIdList)
@@ -88,7 +88,7 @@ class OeDepictTests(unittest.TestCase):
                 title = ""
                 oed.setMolTitleList([(ccId, mol, title)])
                 oed.setDisplayOptions(
-                    labelAtomName=False, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, labelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=0.5
+                    labelAtomName=False, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, labelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=8.0
                 )
                 oed.setGridOptions(rows=1, cols=1, cellBorders=False)
                 oed.prepare()
@@ -107,8 +107,21 @@ class OeDepictTests(unittest.TestCase):
                 oed = OeDepict()
                 title = ""
                 oed.setMolTitleList([(ccId, mol, title)])
+                bondDisplayWidth = 10.0
+                numAtoms = mol.NumAtoms()
+                if numAtoms > 100 and numAtoms <= 200:
+                    bondDisplayWidth = 6.0
+                elif mol.NumAtoms() > 200:
+                    bondDisplayWidth = 4.0
+
                 oed.setDisplayOptions(
-                    labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, labelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=0.5,
+                    labelAtomName=True,
+                    labelAtomCIPStereo=True,
+                    labelAtomIndex=False,
+                    labelBondIndex=False,
+                    labelBondCIPStereo=True,
+                    cellBorders=False,
+                    bondDisplayWidth=bondDisplayWidth,
                 )
                 oed.setGridOptions(rows=1, cols=1, cellBorders=False)
                 oed.prepare()
