@@ -222,7 +222,7 @@ class ChemCompSearchIndexProvider(object):
         mpu.set(workerObj=rWorker, workerMethod="buildRelatedList")
         ok, failList, resultList, _ = mpu.runMulti(dataList=ccIdList, numProc=numProc, numResults=1, chunkSize=maxChunkSize)
         logger.info("Multi-proc status %r failures %r result length %r", ok, len(failList), len(resultList[0]))
-        #
+        # JDW
         rD = {vD["name"]: vD for vD in resultList[0]}
         return rD
 

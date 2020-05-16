@@ -175,7 +175,7 @@ class OeDepictMultiPage(OeDepictBase):
             else:
                 mol = oeMol
 
-            if self.__useTitle:
+            if self.__useTitle and title:
                 mol.SetTitle(title)
                 self._opts.SetTitleHeight(5.0)
             else:
@@ -244,7 +244,7 @@ class OeDepict(OeDepictBase):
             else:
                 mol = oeMol
             #
-            if self.__useTitle:
+            if self.__useTitle and title:
                 mol.SetTitle(title)
                 self._opts.SetTitleHeight(5.0)
             else:

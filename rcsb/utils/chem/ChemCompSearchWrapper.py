@@ -111,6 +111,9 @@ class ChemCompSearchWrapper(SingletonClass):
     def getChemCompIndex(self):
         return self.__ccIdxP.getIndex() if self.__ccIdxP else {}
 
+    def getSearchMoleculeProvider(self):
+        return self.__oesmP if self.__oesmP else None
+
     def updateSearchIndex(self, useCache=False):
         """Rebuild the search index from source chemical component and BIRD definitions.
            Update the internal state of this index in the current object instance.

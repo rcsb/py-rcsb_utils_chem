@@ -81,6 +81,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
                 self.assertEqual(tId, ccId)
                 smiD = oemf.buildRelated(limitPerceptions=False)
                 logger.info("%s related molecular forms %d", ccId, len(smiD))
+                # logger.debug("%s related molecular forms %r", ccId, smiD)
 
                 # ----
         except Exception as e:

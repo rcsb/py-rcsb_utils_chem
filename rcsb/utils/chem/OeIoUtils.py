@@ -18,6 +18,7 @@ __license__ = "Apache 2.0"
 
 
 import logging
+import os
 import time
 
 from openeye import oechem
@@ -625,7 +626,7 @@ class OeIoUtils(object):
             logger.exception("Loading %r failing with %s", oeSubSearchFilePath, str(e))
         return ssDb
 
-    def write(self, filePath, oeMol, constantMol=False):
+    def write(self, filePath, oeMol, constantMol=False, addSdTags=True):
         """Write an oeMol with format type inferred from the filePath extension (e.g. .mol)
 
         Args:
@@ -636,9 +637,16 @@ class OeIoUtils(object):
             bool: True for success or False otherwise
         """
         try:
+            self.__mU.mkdir(os.path.dirname(filePath))
             ofs = oechem.oemolostream()
             ofs.open(filePath)
-            logger.info("Writing %s title %s\n", filePath, oeMol.GetTitle())
+            logger.info("Writing %s title %s", filePath, oeMol.GetTitle())
+            if addSdTags:
+                ccId = os.path.splitext(os.path.basename(filePath))[0]
+                oemf = OeMoleculeFactory()
+                oemf.setOeMol(oeMol, ccId)
+                oemf.addSdTags()
+                oeMol = oemf.getMol()
             if constantMol:
                 oechem.OEWriteConstMolecule(ofs, oeMol)
             else:

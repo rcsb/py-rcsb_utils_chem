@@ -17,7 +17,7 @@ __author__ = "John Westbrook"
 __email__ = "john.westbrook@rcsb.org"
 __license__ = "Apache 2.0"
 
-
+import hashlib
 import logging
 from collections import defaultdict, namedtuple
 
@@ -274,6 +274,20 @@ class OeMoleculeFactory(object):
         """
         return self.__ccId
 
+    def addSdTags(self):
+        smi = self.getIsoSMILES()
+        if smi:
+            oechem.OESetSDData(self.__oeMol, "OPENEYE_ISO_SMILES", smi)
+        inchi = self.getInChI()
+        if inchi:
+            oechem.OESetSDData(self.__oeMol, "OPENEYE_INCHI", inchi)
+        inchiKey = self.getInChIKey()
+        if inchiKey:
+            oechem.OESetSDData(self.__oeMol, "OPENEYE_INCHIKEY", inchiKey)
+        formula = self.getFormula()
+        if formula:
+            oechem.OESetSDData(self.__oeMol, "FORMULA", formula)
+
     def setSimpleAtomNames(self):
         """
         """
@@ -392,8 +406,13 @@ class OeMoleculeFactory(object):
         as a nested dictionary of conventionally identified SMILES descriptors.
 
         Returns:
-            dict: {'ccId|<buildType>': {'smiles': ..., 'inchi-key': ...}}
+            dict: {'ccId|qualifier': {'smiles': ..., 'inchi-key': ...}}
+
+            qualifier is provided if build_type is not model-xyz
+
+            qualifier m = hashlib.sha256(isoSmiles).hexdigest()
         """
+        oeVersionString = "OpenEye OEChem %s" % oechem.OEToolkitsGetRelease()
         retD = {}
         if not self.__isDefinitionSet:
             return retD
@@ -404,27 +423,47 @@ class OeMoleculeFactory(object):
                 ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
                 if ok:
                     # name = self.__ccId + "|" + "ref" if buildType == "model-xyz" else self.__ccId + "|" + buildType
-                    name = self.__ccId if buildType == "model-xyz" else self.__ccId + "|" + buildType
-                    smiles = self.getIsoSMILES()
                     inchiKey = self.getInChIKey()
+                    smiles = self.getIsoSMILES()
+                    qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
+                    name = self.__ccId if buildType == "model-xyz" else self.__ccId + "|" + qualifier
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
                     if smiles and inchiKey and smiles not in uniqSmilesD:
                         uniqSmilesD[smiles] = True
-                        retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "type_counts": eleD}
+                        retD[name] = {
+                            "name": name,
+                            "build-type": buildType,
+                            "smiles": smiles,
+                            "inchi-key": inchiKey,
+                            "formula": formula,
+                            "fcharge": fCharge,
+                            "type_counts": eleD,
+                            "program": oeVersionString,
+                        }
             for buildType in ["oe-smiles", "acdlabs-smiles", "cactvs-smiles"]:
                 ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
                 if ok:
-                    name = self.__ccId + "|" + buildType
-                    smiles = self.getCanSMILES()
                     inchiKey = self.getInChIKey()
+                    smiles = self.getCanSMILES()
+                    qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
+                    name = self.__ccId + "|" + qualifier
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
                     if smiles and inchiKey and smiles not in uniqSmilesD:
                         uniqSmilesD[smiles] = True
-                        retD[name] = {"name": name, "build-type": buildType, "smiles": smiles, "inchi-key": inchiKey, "formula": formula, "fcharge": fCharge, "type_counts": eleD}
+                        retD[name] = {
+                            "name": name,
+                            "build-type": buildType,
+                            "smiles": smiles,
+                            "inchi-key": inchiKey,
+                            "formula": formula,
+                            "fcharge": fCharge,
+                            "type_counts": eleD,
+                            "program": oeVersionString,
+                        }
             # --- do charge and tautomer normalization on the model-xyz build
             ok = self.build(molBuildType="model-xyz", setTitle=True, limitPerceptions=limitPerceptions)
             if ok:
@@ -433,10 +472,11 @@ class OeMoleculeFactory(object):
                 if not upMol:
                     logger.warning("%s protomer and tautomer generation failed", self.__ccId)
                 else:
-                    name = self.__ccId + "|unique-protomer"
                     self.__oeMol = upMol
-                    smiles = self.getIsoSMILES()
                     inchiKey = self.getInChIKey()
+                    smiles = self.getIsoSMILES()
+                    qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
+                    name = self.__ccId + "|" + qualifier
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
@@ -444,23 +484,26 @@ class OeMoleculeFactory(object):
                         uniqSmilesD[smiles] = True
                         retD[name] = {
                             "name": name,
-                            "build-type": "unique-protomer",
+                            "build-type": "unique-protomer|model-xyz",
                             "smiles": smiles,
                             "inchi-key": inchiKey,
                             "formula": formula,
                             "fcharge": fCharge,
                             "type_counts": eleD,
+                            "program": oeVersionString,
                         }
                     logger.debug("%s begin tautomer search", self.__ccId)
                     tautomerList = self.getTautomerMolList()
                     logger.debug("%s tautomer count %d", self.__ccId, len(tautomerList))
                     for ii, tMol in enumerate(tautomerList, 1):
                         if tMol:
-                            label = "tautomer_%d" % ii
-                            name = self.__ccId + "|" + label
                             self.__oeMol = tMol
                             smiles = self.getIsoSMILES()
                             inchiKey = self.getInChIKey()
+                            qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
+                            label = "tautomer_%d|model-xyz" % ii
+                            name = self.__ccId + "|" + qualifier
+
                             formula = self.getFormula()
                             fCharge = self.getFormalCharge()
                             eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
@@ -474,6 +517,7 @@ class OeMoleculeFactory(object):
                                     "formula": formula,
                                     "fcharge": fCharge,
                                     "type-counts": eleD,
+                                    "program": oeVersionString,
                                 }
 
         except Exception as e:
@@ -737,7 +781,7 @@ class OeMoleculeFactory(object):
             logger.exception("Failing with %s", str(e))
         return None
 
-    def __build3D(self, molBuildType, setTitle=True):
+    def __build3D(self, molBuildType, setTitle=True, useFallBackModelXyz=True):
         """ Build molecule using only atom and bond types, and aromatic annotations
             in a chemical component defintion. Use the indicated 3D coordinate data
             to assign stereochemistry assignments.
@@ -792,6 +836,9 @@ class OeMoleculeFactory(object):
                     oeMol.SetCoords(oeAt, cTup)
                 elif (molBuildType == "ideal-xyz") and ccAt.hasIdealCoordinates():
                     cTup = ccAt.getIdealCoordinates()
+                    oeMol.SetCoords(oeAt, cTup)
+                elif (molBuildType == "ideal-xyz") and ccAt.hasModelCoordinates() and useFallBackModelXyz:
+                    cTup = ccAt.getModelCoordinates()
                     oeMol.SetCoords(oeAt, cTup)
                 else:
                     pass

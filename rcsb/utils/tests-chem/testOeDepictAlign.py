@@ -241,9 +241,9 @@ class OeDepictAlignTests(unittest.TestCase):
         try:
             oed = OeDepictMCSAlignPage()
             oed.setSearchType(sType="relaxed")
-            oed.setDisplayOptions(
-                labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, highlightStyleFit="ballAndStickInverse", bondDisplayWidth=0.5
-            )
+            # oed.setDisplayOptions(
+            #    labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, highlightStyleFit="ballAndStickInverse", bondDisplayWidth=0.5
+            # )
 
             oed.setRefMol(self.__oeMolD[self.__refId], self.__refId)
             fitTupList = self.__getMolDepictList(self.__idList)

@@ -155,8 +155,8 @@ class OeDepictAlignBase(OeDepictBase):
     def _setupMCSS(self, refmol):
         """ Internal initialization for the MCSS comparison.
         """
-        self._mcss = oechem.OEMCSSearch(oechem.OEMCSType_Approximate)
-        # self._mcss = oechem.OEMCSSearch(OEMCSType_Exhaustive)
+        # self._mcss = oechem.OEMCSSearch(oechem.OEMCSType_Approximate)
+        self._mcss = oechem.OEMCSSearch(oechem.OEMCSType_Exhaustive)
         #
         if self._searchType in ["default", "graph-strict"]:
             atomexpr = oechem.OEExprOpts_DefaultAtoms
@@ -164,6 +164,7 @@ class OeDepictAlignBase(OeDepictBase):
         elif self._searchType in ["relaxed", "graph-relaxed"]:
             # atomexpr = oechem.OEExprOpts_AtomicNumber
             atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
+            bondexpr = oechem.OEExprOpts_BondOrder
             bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_EqSingleDouble
             # bondexpr = 0
         elif self._searchType == "exact":
@@ -499,6 +500,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         self._params["gridRows"] = 1
         self.__setupImage()
         #
+        aM = []
         self._pairMolList = []
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, None, self._fitId, self._fitMol, self._fitTitle, None))
         try:
@@ -528,7 +530,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
             logger.exception("Failing with %s", str(e))
         return aM
 
-    @timeout(15)
+    # @timeout(15)
     def __alignListWorker(self, imagePath="single.pdf", layout="pairs"):
         """ Working method comparing a reference molecule with a list of fit molecules.
 
