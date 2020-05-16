@@ -637,20 +637,33 @@ class OeIoUtils(object):
             bool: True for success or False otherwise
         """
         try:
+            molId = os.path.splitext(os.path.basename(filePath))[0]
+            fmt = os.path.splitext(os.path.basename(filePath))[1][1:].lower()
+            #
+            if addSdTags:
+                oemf = OeMoleculeFactory()
+                oemf.setOeMol(oeMol, molId)
+                oemf.addSdTags()
+                oeMol = oemf.getMol()
+            #
             self.__mU.mkdir(os.path.dirname(filePath))
             ofs = oechem.oemolostream()
             ofs.open(filePath)
-            logger.info("Writing %s title %s", filePath, oeMol.GetTitle())
-            if addSdTags:
-                ccId = os.path.splitext(os.path.basename(filePath))[0]
-                oemf = OeMoleculeFactory()
-                oemf.setOeMol(oeMol, ccId)
-                oemf.addSdTags()
-                oeMol = oemf.getMol()
+            logger.info("Writing (fmt=%s) molId %s path %s title %s", fmt, molId, filePath, oeMol.GetTitle())
+
             if constantMol:
                 oechem.OEWriteConstMolecule(ofs, oeMol)
             else:
                 oechem.OEWriteMolecule(ofs, oeMol)
+            #
+            # If this is a mol2 file, we need to replace the resname
+            if fmt.startswith("mol2"):
+                # If this is a mol2/mol2h substitute the default substructure id
+                with open(filePath, "r") as ifh:
+                    lines = ifh.readlines()
+                lines = [line.replace("<0>", molId) for line in lines]
+                with open(filePath, "w") as ofh:
+                    ofh.writelines(lines)
             return True
         except Exception as e:
             logger.exception("Failing for %s with %s", filePath, str(e))

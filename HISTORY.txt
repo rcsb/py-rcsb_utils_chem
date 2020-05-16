@@ -18,3 +18,4 @@
 10-Apr-2020 - V0.26 Adjustments for default substructure search constraints and build defaults
 16-Apr-2020 - V0.27 Return screening fpScores with substructure search results - adjustments in depiction resolution
 16-May-2020 - V0.28 Revise search index unique identifiers, adjustments for refine aligned depictions, add ChemCompDepictWrapper()
+16-May-2020 - V0.29 Asign substructure name in mol2* files
