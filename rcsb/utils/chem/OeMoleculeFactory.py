@@ -495,13 +495,13 @@ class OeMoleculeFactory(object):
                     logger.debug("%s begin tautomer search", self.__ccId)
                     tautomerList = self.getTautomerMolList()
                     logger.debug("%s tautomer count %d", self.__ccId, len(tautomerList))
-                    for ii, tMol in enumerate(tautomerList, 1):
+                    for tMol in tautomerList:
                         if tMol:
                             self.__oeMol = tMol
                             smiles = self.getIsoSMILES()
                             inchiKey = self.getInChIKey()
                             qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
-                            label = "tautomer_%d|model-xyz" % ii
+                            label = "tautomer|model-xyz"
                             name = self.__ccId + "|" + qualifier
 
                             formula = self.getFormula()
