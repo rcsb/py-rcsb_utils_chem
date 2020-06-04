@@ -42,7 +42,11 @@ class ChemCompIndexProvider(object):
         self.__cachePath = kwargs.get("cachePath", ".")
         self.__dirPath = os.path.join(self.__cachePath, "chem_comp")
         self.__mU = MarshalUtil(workPath=self.__dirPath)
+        self.__ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
         self.__ccIdxD = self.__reload(**kwargs)
+
+    def getIndexFilePath(self):
+        return os.path.join(self.__dirPath, "%s-idx-chemical-components.json" % self.__ccFileNamePrefix)
 
     def testCache(self, minCount=None, logSizes=False):
         if logSizes and self.__ccIdxD:
@@ -118,8 +122,7 @@ class ChemCompIndexProvider(object):
         ccIdxD = {}
         useCache = kwargs.get("useCache", True)
         molLimit = kwargs.get("molLimit", 0)
-        ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
-        ccIdxFilePath = os.path.join(self.__dirPath, "%s-idx-chemical-components.pic" % ccFileNamePrefix)
+        ccIdxFilePath = self.getIndexFilePath()
         #
         if useCache and self.__mU.exists(ccIdxFilePath):
             _, fExt = os.path.splitext(ccIdxFilePath)

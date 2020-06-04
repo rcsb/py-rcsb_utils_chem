@@ -109,6 +109,7 @@ class ChemCompSearchIndexProvider(object):
         self.__cachePath = kwargs.get("cachePath", ".")
         self.__dirPath = os.path.join(self.__cachePath, "chem_comp")
         self.__mU = MarshalUtil(workPath=self.__dirPath)
+        self.__ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
         self.__searchIdx = self.__reload(**kwargs)
 
     def testCache(self, minCount=None, logSizes=False):
@@ -126,6 +127,9 @@ class ChemCompSearchIndexProvider(object):
         except Exception as e:
             logger.debug("Get index entry %r failing with %s", searchCcId, str(e))
         return None
+
+    def getIndexFilePath(self):
+        return os.path.join(self.__dirPath, "%s-search-idx-chemical-components.json" % self.__ccFileNamePrefix)
 
     def __reload(self, **kwargs):
         """Reload or created index of PDB chemical components.
@@ -145,9 +149,8 @@ class ChemCompSearchIndexProvider(object):
         numProc = kwargs.get("numProc", 1)
         maxChunkSize = kwargs.get("maxChunkSize", 20)
         limitPerceptions = kwargs.get("limitPerceptions", True)
-        ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
         quietFlag = kwargs.get("quietFlag", True)
-        searchIdxFilePath = os.path.join(self.__dirPath, "%s-search-idx-chemical-components.json" % ccFileNamePrefix)
+        searchIdxFilePath = self.getIndexFilePath()
         #
         if useCache and self.__mU.exists(searchIdxFilePath):
             _, fExt = os.path.splitext(searchIdxFilePath)
