@@ -31,7 +31,9 @@ from rcsb.utils.chem.MolecularFormula import MolecularFormula
 from rcsb.utils.chem.OeSearchMoleculeProvider import OeSearchMoleculeProvider
 from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeSearchUtils import OeSearchUtils
+from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
+from rcsb.utils.io.SftpUtil import SftpUtil
 from rcsb.utils.io.SingletonClass import SingletonClass
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -46,10 +48,25 @@ class ChemCompSearchWrapper(SingletonClass):
     """ Wrapper for chemical component search operations.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        """ Wrapper class for chemical search/depiction operations.
+
+            Path and prefix data for wrapper class may be set as keyword arguments
+            as environmental variables.
+
+            Args:
+                cachePath (str): path to top-level cache directory used to store search index file dependencies
+                                 (default environment variable CHEM_SEARCH_CACHE_PATH or ".")
+                ccFileNamePrefix (str): prefix code used to distinguish different subsets of chemical definitions
+                                        (default environment variable CHEM_SEARCH_CC_PREFIX or "cc-full")
+        """
         self.__startTime = time.time()
-        self.__cachePath = os.environ["CHEM_SEARCH_CACHE_PATH"]
-        self.__ccFileNamePrefix = os.environ["CHEM_SEARCH_CC_PREFIX"]
+        #
+        self.__cachePath = kwargs.get("cachePath", os.environ.get("CHEM_SEARCH_CACHE_PATH", "."))
+        self.__ccFileNamePrefix = kwargs.get("ccFilNamePrefix", os.environ.get("CHEM_SEARCH_CC_PREFIX", "cc-full"))
+        #
+        self.__dependFileName = "ChemCompSearchWrapperData.tar.gz"
+        self.__dependTarFilePath = os.path.join(self.__cachePath, self.__dependFileName)
         # ---
         self.__mU = MarshalUtil(workPath=self.__cachePath)
         # ---
@@ -63,23 +80,230 @@ class ChemCompSearchWrapper(SingletonClass):
         self.__searchError = -200
         self.__searchSuccess = 0
 
-    def readConfig(self):
+    def setConfig(self, ccUrlTarget, birdUrlTarget, **kwargs):
+        """Provide the chemical definition source path details for rebuilding search
+           index file dependencies.
+
+        Args:
+            ccUrlTarget (str): path to concatenated chemical component definition file
+            birdUrlTarget (str): path to the concatenated BIRD definition file
+
+            Other options are propagated to configurations of the wrapped classes in __bootstrapConfig()
+
+        """
+        kwargs["ccUrlTarget"] = ccUrlTarget
+        kwargs["birdUrlTarget"] = birdUrlTarget
+        kwargs["cachePath"] = self.__cachePath
+        kwargs["ccFileNamePrefix"] = self.__ccFileNamePrefix
+        self.__configD = self.__bootstrapConfig(**kwargs)
+        return len(self.__configD) >= 3
+
+    def __bootstrapConfig(self, **kwargs):
+        """ Build on-the-fly default configuration for this wrapper class.
+        """
+        # The following few options have no defaults -- and should be specified.
+        ccUrlTarget = kwargs.get("ccUrlTarget", None)
+        birdUrlTarget = kwargs.get("birdUrlTarget", None)
+        cachePath = kwargs.get("cachePath", None)
+        ccFileNamePrefix = kwargs.get("ccFileNamePrefix", None)
+        # ---
+        #  Reasonable values are selected for the remaining options...
+        oeFileNamePrefix = "oe-" + ccFileNamePrefix
+        try:
+            storeConfig = kwargs.get("storeConfig", True)
+            molLimit = kwargs.get("molLimit", None)
+            useCache = kwargs.get("useCache", False)
+            logSizes = kwargs.get("logSizes", False)
+            #
+            numProc = kwargs.get("numProc", 12)
+            maxProc = os.cpu_count()
+            numProc = min(numProc, maxProc)
+            maxChunkSize = kwargs.get("maxChunkSize", 10)
+            #
+            logger.debug("+++ >>> Assigning numProc as %d", numProc)
+            #
+            limitPerceptions = kwargs.get("limitPerceptions", False)
+            quietFlag = kwargs.get("quietFlag", True)
+            #
+            # fpTypeCuttoffD = {"TREE": 0.6, "MACCS": 0.9, "PATH": 0.6, "CIRCULAR": 0.6, "LINGO": 0.9}
+            fpTypeCuttoffD = kwargs.get("fpTypeCuttoffD", {"TREE": 0.6, "MACCS": 0.9})
+            buildTypeList = kwargs.get("buildTypeList", ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"])
+            #
+            oesmpKwargs = {
+                "ccUrlTarget": ccUrlTarget,
+                "birdUrlTarget": birdUrlTarget,
+                "cachePath": cachePath,
+                "useCache": useCache,
+                "ccFileNamePrefix": ccFileNamePrefix,
+                "oeFileNamePrefix": oeFileNamePrefix,
+                "limitPerceptions": limitPerceptions,
+                "minCount": None,
+                "maxFpResults": 50,
+                "fpTypeCuttoffD": fpTypeCuttoffD,
+                "buildTypeList": buildTypeList,
+                "screenTypeList": None,
+                "quietFlag": quietFlag,
+                "numProc": numProc,
+                "maxChunkSize": maxChunkSize,
+                "molLimit": molLimit,
+                "logSizes": logSizes,
+            }
+            ccsiKwargs = {
+                "ccUrlTarget": ccUrlTarget,
+                "birdUrlTarget": birdUrlTarget,
+                "cachePath": cachePath,
+                "useCache": useCache,
+                "ccFileNamePrefix": ccFileNamePrefix,
+                "oeFileNamePrefix": oeFileNamePrefix,
+                "limitPerceptions": limitPerceptions,
+                "minCount": None,
+                "numProc": numProc,
+                "quietFlag": quietFlag,
+                "maxChunkSize": maxChunkSize,
+                "molLimit": None,
+                "logSizes": False,
+            }
+            configD = {"versionNumber": 0.30, "ccsiKwargs": ccsiKwargs, "oesmpKwargs": oesmpKwargs}
+            #
+            if storeConfig:
+                configDirPath = os.path.join(cachePath, "config")
+                configFilePath = os.path.join(configDirPath, ccFileNamePrefix + "-config.json")
+                self.__mU.mkdir(configDirPath)
+                self.__mU.doExport(configFilePath, configD, fmt="json", indent=3)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return configD
+
+    def readConfig(self, resetCachePath=True):
+        """Read a prepared configuration file for the search wrapper class. This will override
+        any default configuration settings.
+
+        Args:
+             resetCachPath (bool): update cachePath configuration option with the current cachePath setting.
+
+        Returns:
+            bool : True for success or False otherwise
+        """
+        #
         #
         ok = False
         try:
-            self.__cachePath = os.environ.get("CHEM_SEARCH_CACHE_PATH", ".")
-            self.__ccFileNamePrefix = os.environ.get("CHEM_SEARCH_CC_PREFIX", "cc-full")
+            #
             configFilePath = os.path.join(self.__cachePath, "config", self.__ccFileNamePrefix + "-config.json")
             configD = self.__mU.doImport(configFilePath, fmt="json")
             logger.debug("ConfigD: %r", configD)
-            if configD and (len(configD) > 2) and float(configD["versionNumber"]) > 0.1:
+            if configD and (len(configD) > 2) and float(configD["versionNumber"]) > 0.2:
                 logger.info("Read version %r sections %r from %s", configD["versionNumber"], list(configD.keys()), configFilePath)
                 ok = True
                 self.__configD = configD
+                if resetCachePath:
+                    # Allow the configuration to be relocatable.
+                    configD["ccsiKwargs"]["cachePath"] = self.__cachePath
+                    configD["oesmpKwargs"]["cachePath"] = self.__cachePath
             else:
                 logger.error("Reading config file fails from %r", configFilePath)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
+            ok = False
+        return ok
+
+    def buildDependenices(self, ccUrlTarget, birdUrlTarget, **kwargs):
+        """ Convenience method to build configuration and static dependencies for the chemical search services.
+
+        Args:
+            ccUrlTarget (str): path to source concatenated chemical component definition file
+            birdUrlTarget (str): path to the source concatenated BIRD definition file
+
+            Other options are propagated to configurations of the wrapped classes in __bootstrapConfig()
+
+        """
+        try:
+            okT = False
+            ok1 = self.setConfig(ccUrlTarget=ccUrlTarget, birdUrlTarget=birdUrlTarget, **kwargs)
+            ok2 = self.updateChemCompIndex()
+            ok3 = self.updateSearchIndex()
+            ok4 = self.updateSearchMoleculeProvider()
+            okBuild = ok1 and ok2 and ok3 and ok4
+            if okBuild:
+                fileU = FileUtil()
+                dirPathList = [os.path.join(self.__cachePath, subDir) for subDir in ["chem_comp", "oe_mol", "config"]]
+                okT = fileU.bundleTarfile(self.__dependTarFilePath, dirPathList, mode="w:gz", recursive=True)
+            #
+            return okT and okBuild
+        except Exception as e:
+            logger.exception("Failing build with %r and %r with %s", ccUrlTarget, birdUrlTarget, str(e))
+        return False
+
+    def stashDependencies(self, url, dirPath, userName=None, pw=None):
+        """ Store a copy of the bundled search dependencies remotely -
+
+        Args:
+            url (str): URL string for the destination host (e.g. sftp://myserver.net or None for a local file)
+            dirPath (str): directory path on the remote resource
+            userName (str, optional): optional access information. Defaults to None.
+            password (str, optional): optional access information. Defaults to None.
+
+        Returns:
+          bool:  True for success or False otherwise
+
+        """
+        try:
+            # userName = "transporter"
+            # hostName = "bl-east.rcsb.org"
+            # pw = "3ffd8b48e7ed9f"
+            ok = False
+            if url and url.startswith("sftp://"):
+                sftpU = SftpUtil()
+                hostName = url[7:]
+                ok = sftpU.connect(hostName, userName, pw=pw, port=22)
+                if ok:
+                    remotePath = os.path.join("/", dirPath, self.__dependFileName)
+                    ok = sftpU.put(self.__dependTarFilePath, remotePath)
+            elif not url:
+                fileU = FileUtil()
+                remotePath = os.path.join(dirPath, self.__dependFileName)
+                ok = fileU.put(self.__dependTarFilePath, remotePath)
+            else:
+                logger.error("Unsupported stash protocol %r", url)
+            return ok
+        except Exception as e:
+            logger.exception("For %r %r failing with %s", url, dirPath, str(e))
+        return False
+
+    def restoreDependencies(self, url, dirPath, userName=None, pw=None):
+        """Restore bundled dependencies from remote storage and unbundle these in the
+           current local cache directory.
+
+        Args:
+            url (str): remote URL
+            dirPath (str): remote directory path on the
+            userName (str, optional): optional access information. Defaults to None.
+            password (str, optional): optional access information. Defaults to None.
+        """
+        try:
+            ok = False
+            fileU = FileUtil()
+            if not url:
+                remotePath = os.path.join(dirPath, self.__dependFileName)
+                ok = fileU.get(remotePath, self.__dependTarFilePath)
+
+            elif url and url.startswith("http://"):
+                remotePath = url + os.path.join("/", dirPath, self.__dependFileName)
+                ok = fileU.get(remotePath, self.__dependTarFilePath)
+
+            elif url and url.startswith("sftp://"):
+                sftpU = SftpUtil()
+                ok = sftpU.connect(url[7:], userName, pw=pw, port=22)
+                if ok:
+                    remotePath = os.path.join(dirPath, self.__dependFileName)
+                    ok = sftpU.get(remotePath, self.__dependTarFilePath)
+            else:
+                logger.error("Unsupported protocol %r", url)
+            if ok:
+                ok = fileU.unbundleTarfile(self.__dependTarFilePath, dirPath=self.__cachePath)
+            return ok
+        except Exception as e:
+            logger.exception("For %r %r Failing with %s", url, dirPath, str(e))
             ok = False
         return ok
 

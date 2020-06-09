@@ -44,6 +44,7 @@ class OeMoleculeFactory(object):
 
     def __init__(self, verbose=False):
         self.__verbose = verbose
+        self.__quietMode = False
         self.__oeErrorLevel = oechem.OEErrorLevel_Info
         self.__ccId = None
         self.__oeMol = None
@@ -68,6 +69,7 @@ class OeMoleculeFactory(object):
         """
         oechem.OEThrow.SetLevel(oechem.OEErrorLevel_Quiet)
         self.__oeErrorLevel = oechem.OEErrorLevel_Quiet
+        self.__quietMode = True
 
     def setDebug(self, flag):
         self.__verbose = flag
@@ -468,7 +470,7 @@ class OeMoleculeFactory(object):
             ok = self.build(molBuildType="model-xyz", setTitle=True, limitPerceptions=limitPerceptions)
             if ok:
                 logger.debug("%s begin protomer search", self.__ccId)
-                upMol = self.getUniqueProtomerMolExtended(maxTautomerAtoms=100, maxSearchTime=0.50)
+                upMol = self.getUniqueProtomerMolExtended(maxTautomerAtoms=200, maxSearchTime=2.50)
                 if not upMol:
                     logger.warning("%s protomer and tautomer generation failed", self.__ccId)
                 else:
@@ -568,7 +570,8 @@ class OeMoleculeFactory(object):
             #
             descr = self.__getDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
             if not descr:
-                logger.warning("%r molBuildType %r missing descriptor", ccId, molBuildType)
+                if not self.__quietMode:
+                    logger.warning("%r molBuildType %r missing descriptor", ccId, molBuildType)
                 return None
             #
             oeMol = oechem.OEGraphMol()
@@ -886,7 +889,8 @@ class OeMoleculeFactory(object):
         #
         for tautomer in oequacpac.OEGetReasonableTautomers(inMol, tautomerOptions, pKaNorm):
             if "Warning:" in str(errfs.str()):
-                logger.info("%s caught OE warning - skipping - %r", self.__ccId, errfs.str()[:-1])
+                if not self.__quietMode:
+                    logger.info("%s caught OE warning - skipping - %r", self.__ccId, errfs.str()[:-1])
             else:
                 tautomerMolL.append(tautomer)
             oechem.OEThrow.Clear()
@@ -935,7 +939,8 @@ class OeMoleculeFactory(object):
             tautomerMolL = []
             for tautomer in oequacpac.OEEnumerateTautomers(inMol, opts):
                 if "Warning:" in str(errfs.str()):
-                    logger.info("%s caught OE warning - skipping - %r", self.__ccId, errfs.str()[:-1])
+                    if not self.__quietMode:
+                        logger.info("%s caught OE warning - skipping - %r", self.__ccId, errfs.str()[:-1])
                 else:
                     tautomerMolL.append(tautomer)
                 oechem.OEThrow.Clear()

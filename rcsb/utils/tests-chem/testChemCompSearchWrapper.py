@@ -27,6 +27,7 @@ import unittest
 
 from rcsb.utils.chem import __version__
 from rcsb.utils.chem.ChemCompSearchWrapper import ChemCompSearchWrapper
+from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 
 
@@ -41,14 +42,21 @@ logger.setLevel(logging.INFO)
 class OeSearchIndexUtilsTests(unittest.TestCase):
     def setUp(self):
         self.__startTime = time.time()
-        self.__testFlagFull = False
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
         self.__cachePath = os.path.join(HERE, "test-output", "CACHE")
         self.__buildTypeList = ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]
-        # Run the bootstrap configuration
+        #
         self.__mU = MarshalUtil(workPath=self.__cachePath)
-        self.__testBootstrapConfig()
+        # Set the external environment for the wrapper class-
+        self.__testFlagFull = False
+        if self.__testFlagFull:
+            os.environ["CHEM_SEARCH_CACHE_PATH"] = os.path.join(self.__cachePath)
+            os.environ["CHEM_SEARCH_CC_PREFIX"] = "cc-full"
+        else:
+            os.environ["CHEM_SEARCH_CACHE_PATH"] = os.path.join(self.__cachePath)
+            os.environ["CHEM_SEARCH_CC_PREFIX"] = "cc-abbrev"
+        #
         logger.debug("Running tests on version %s", __version__)
         logger.info("Starting %s at %s", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()))
 
@@ -59,84 +67,62 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         endTime = time.time()
         logger.info("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
-    def __testBootstrapConfig(self):
-        """Test read/write search configuration.
+    def testAABuildConfiguration(self):
+        """Test case - build configuration -
         """
         try:
-            cfgD = {}
-            if self.__testFlagFull:
-                os.environ["CHEM_SEARCH_CACHE_PATH"] = os.path.join(self.__cachePath)
-                os.environ["CHEM_SEARCH_CC_PREFIX"] = "cc-full"
-                ccFileNamePrefix = "cc-full"
-                configDirPath = os.path.join(self.__cachePath, "config")
-                configFilePath = os.path.join(configDirPath, ccFileNamePrefix + "-config.json")
-                oeFileNamePrefix = cfgD.get("oeFileNamePrefix", "oe-full")
-                ccFileNamePrefix = cfgD.get("oeFileNamePrefix", ccFileNamePrefix)
-                ccUrlTarget = cfgD.get("ccUrlTarget", None)
-                birdUrlTarget = cfgD.get("birdUrlTarget", None)
-            else:
-                os.environ["CHEM_SEARCH_CACHE_PATH"] = os.path.join(self.__cachePath)
-                os.environ["CHEM_SEARCH_CC_PREFIX"] = "cc-abbrev"
-                ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
-                birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
-                ccFileNamePrefix = "cc-abbrev"
-                configDirPath = os.path.join(self.__cachePath, "config")
-                configFilePath = os.path.join(configDirPath, ccFileNamePrefix + "-config.json")
-                oeFileNamePrefix = cfgD.get("oeFileNamePrefix", "oe-abbrev")
+            ccsw = ChemCompSearchWrapper()
+            ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif") if not self.__testFlagFull else None
+            birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif") if not self.__testFlagFull else None
+            ok = ccsw.setConfig(ccUrlTarget=ccUrlTarget, birdUrlTarget=birdUrlTarget)
+            self.assertTrue(ok)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
+    def testAABuildDependencies(self):
+        """Test case - build all dependencies (convenience method)
+        """
+        try:
+            ccsw = ChemCompSearchWrapper()
+            ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif") if not self.__testFlagFull else None
+            birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif") if not self.__testFlagFull else None
+            ok = ccsw.buildDependenices(ccUrlTarget=ccUrlTarget, birdUrlTarget=birdUrlTarget)
+            self.assertTrue(ok)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
+    @unittest.skip("Private test")
+    def testAABuildDependenciesAndStash(self):
+        """Test case - build, stash and restore dependencies -
+        """
+        try:
+            ccsw = ChemCompSearchWrapper()
+            ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif") if not self.__testFlagFull else None
+            birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif") if not self.__testFlagFull else None
+            ok = ccsw.buildDependenices(ccUrlTarget=ccUrlTarget, birdUrlTarget=birdUrlTarget)
+            self.assertTrue(ok)
             #
-            molLimit = cfgD.get("molLimit", None)
-            useCache = cfgD.get("useCache", False)
-            logSizes = cfgD.get("logSizes", False)
+            url = "sftp://bl-east.rcsb.org"
+            userName = ""
+            pw = ""
+            dirPath = "4-coastal"
+            ok = ccsw.stashDependencies(url, dirPath, userName=userName, pw=pw)
+            self.assertTrue(ok)
             #
-            numProc = cfgD.get("numProc", 12)
-            maxProc = os.cpu_count()
-            numProc = min(numProc, maxProc)
-            maxChunkSize = cfgD.get("maxChunkSize", 10)
-            logger.info("+++ >>> Using MAXPROC %d", numProc)
+            fileU = FileUtil()
+            fileU.remove(self.__cachePath)
             #
-            limitPerceptions = cfgD.get("limitPerceptions", False)
-            quietFlag = cfgD.get("quietFlag", True)
+            url = "http://bl-east.rcsb.org"
+            ok = ccsw.restoreDependencies(url, dirPath)
             #
-            fpTypeCuttoffD = {"TREE": 0.6, "MACCS": 0.9, "PATH": 0.6, "CIRCULAR": 0.6, "LINGO": 0.9}
-            buildTypeList = ["oe-iso-smiles", "oe-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]
+            fileU.remove(self.__cachePath)
             #
-            oesmpKwargs = {
-                "ccUrlTarget": ccUrlTarget,
-                "birdUrlTarget": birdUrlTarget,
-                "cachePath": self.__cachePath,
-                "useCache": useCache,
-                "ccFileNamePrefix": ccFileNamePrefix,
-                "oeFileNamePrefix": oeFileNamePrefix,
-                "limitPerceptions": limitPerceptions,
-                "minCount": None,
-                "maxFpResults": 50,
-                "fpTypeCuttoffD": fpTypeCuttoffD,
-                "buildTypeList": buildTypeList,
-                "screenTypeList": None,
-                "quietFlag": quietFlag,
-                "numProc": numProc,
-                "maxChunkSize": maxChunkSize,
-                "molLimit": molLimit,
-                "logSizes": logSizes,
-            }
-            ccsiKwargs = {
-                "ccUrlTarget": ccUrlTarget,
-                "birdUrlTarget": birdUrlTarget,
-                "cachePath": self.__cachePath,
-                "useCache": useCache,
-                "ccFileNamePrefix": ccFileNamePrefix,
-                "oeFileNamePrefix": oeFileNamePrefix,
-                "limitPerceptions": limitPerceptions,
-                "minCount": None,
-                "numProc": numProc,
-                "quietFlag": quietFlag,
-                "maxChunkSize": maxChunkSize,
-                "molLimit": None,
-                "logSizes": False,
-            }
-            configD = {"versionNumber": 0.20, "ccsiKwargs": ccsiKwargs, "oesmpKwargs": oesmpKwargs}
-            self.__mU.mkdir(configDirPath)
-            self.__mU.doExport(configFilePath, configD, fmt="json", indent=3)
+            url = "sftp://bl-east.rcsb.org"
+            ok = ccsw.restoreDependencies(url, dirPath, userName=userName, pw=pw)
+            self.assertTrue(ok)
+
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
