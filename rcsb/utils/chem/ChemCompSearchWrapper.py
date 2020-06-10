@@ -248,9 +248,6 @@ class ChemCompSearchWrapper(SingletonClass):
 
         """
         try:
-            # userName = "transporter"
-            # hostName = "bl-east.rcsb.org"
-            # pw = "3ffd8b48e7ed9f"
             ok = False
             if url and url.startswith("sftp://"):
                 sftpU = SftpUtil()
