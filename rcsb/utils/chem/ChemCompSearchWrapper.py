@@ -59,6 +59,7 @@ class ChemCompSearchWrapper(SingletonClass):
                                  (default environment variable CHEM_SEARCH_CACHE_PATH or ".")
                 ccFileNamePrefix (str): prefix code used to distinguish different subsets of chemical definitions
                                         (default environment variable CHEM_SEARCH_CC_PREFIX or "cc-full")
+
         """
         self.__startTime = time.time()
         #
@@ -118,7 +119,7 @@ class ChemCompSearchWrapper(SingletonClass):
             numProc = kwargs.get("numProc", 12)
             maxProc = os.cpu_count()
             numProc = min(numProc, maxProc)
-            maxChunkSize = kwargs.get("maxChunkSize", 10)
+            maxChunkSize = kwargs.get("maxChunkSize", 50)
             #
             logger.debug("+++ >>> Assigning numProc as %d", numProc)
             #
@@ -234,12 +235,13 @@ class ChemCompSearchWrapper(SingletonClass):
             logger.exception("Failing build with %r and %r with %s", ccUrlTarget, birdUrlTarget, str(e))
         return False
 
-    def stashDependencies(self, url, dirPath, userName=None, pw=None):
+    def stashDependencies(self, url, dirPath, bundleLabel="A", userName=None, pw=None):
         """ Store a copy of the bundled search dependencies remotely -
 
         Args:
             url (str): URL string for the destination host (e.g. sftp://myserver.net or None for a local file)
             dirPath (str): directory path on the remote resource
+            bundleLabel (str, optional): optional label preppended to the stashed dependency bundle artifact (default='A')
             userName (str, optional): optional access information. Defaults to None.
             password (str, optional): optional access information. Defaults to None.
 
@@ -249,16 +251,17 @@ class ChemCompSearchWrapper(SingletonClass):
         """
         try:
             ok = False
+            fn = self.__makeBundleFileName(self.__dependFileName, bundleLabel=bundleLabel)
             if url and url.startswith("sftp://"):
                 sftpU = SftpUtil()
                 hostName = url[7:]
                 ok = sftpU.connect(hostName, userName, pw=pw, port=22)
                 if ok:
-                    remotePath = os.path.join("/", dirPath, self.__dependFileName)
+                    remotePath = os.path.join("/", dirPath, fn)
                     ok = sftpU.put(self.__dependTarFilePath, remotePath)
             elif not url:
                 fileU = FileUtil()
-                remotePath = os.path.join(dirPath, self.__dependFileName)
+                remotePath = os.path.join(dirPath, fn)
                 ok = fileU.put(self.__dependTarFilePath, remotePath)
             else:
                 logger.error("Unsupported stash protocol %r", url)
@@ -267,32 +270,43 @@ class ChemCompSearchWrapper(SingletonClass):
             logger.exception("For %r %r failing with %s", url, dirPath, str(e))
         return False
 
-    def restoreDependencies(self, url, dirPath, userName=None, pw=None):
+    def __makeBundleFileName(self, rootName, bundleLabel="A"):
+        fn = rootName
+        try:
+            fn = rootName
+            fn = "%s-%s" % (bundleLabel.upper(), rootName) if bundleLabel else rootName
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return fn
+
+    def restoreDependencies(self, url, dirPath, bundleLabel="A", userName=None, pw=None):
         """Restore bundled dependencies from remote storage and unbundle these in the
            current local cache directory.
 
         Args:
             url (str): remote URL
             dirPath (str): remote directory path on the
+            bundleLabel (str, optional): optional label preppended to the stashed dependency bundle artifact (default='A')
             userName (str, optional): optional access information. Defaults to None.
             password (str, optional): optional access information. Defaults to None.
         """
         try:
             ok = False
             fileU = FileUtil()
+            fn = self.__makeBundleFileName(self.__dependFileName, bundleLabel=bundleLabel)
             if not url:
-                remotePath = os.path.join(dirPath, self.__dependFileName)
+                remotePath = os.path.join(dirPath, fn)
                 ok = fileU.get(remotePath, self.__dependTarFilePath)
 
             elif url and url.startswith("http://"):
-                remotePath = url + os.path.join("/", dirPath, self.__dependFileName)
+                remotePath = url + os.path.join("/", dirPath, fn)
                 ok = fileU.get(remotePath, self.__dependTarFilePath)
 
             elif url and url.startswith("sftp://"):
                 sftpU = SftpUtil()
                 ok = sftpU.connect(url[7:], userName, pw=pw, port=22)
                 if ok:
-                    remotePath = os.path.join(dirPath, self.__dependFileName)
+                    remotePath = os.path.join(dirPath, fn)
                     ok = sftpU.get(remotePath, self.__dependTarFilePath)
             else:
                 logger.error("Unsupported protocol %r", url)

@@ -472,7 +472,8 @@ class OeMoleculeFactory(object):
                 logger.debug("%s begin protomer search", self.__ccId)
                 upMol = self.getUniqueProtomerMolExtended(maxTautomerAtoms=200, maxSearchTime=2.50)
                 if not upMol:
-                    logger.warning("%s protomer and tautomer generation failed", self.__ccId)
+                    if not self.__quietMode:
+                        logger.warning("%s protomer and tautomer generation failed", self.__ccId)
                 else:
                     self.__oeMol = upMol
                     inchiKey = self.getInChIKey()
@@ -581,7 +582,8 @@ class OeMoleculeFactory(object):
                 if limitPerceptions:
                     # convert the descriptor string into a molecule
                     if not oechem.OEParseSmiles(oeMol, smiles, False, False):
-                        logger.warning("%r parsing input failed for %r string", ccId, molBuildType)
+                        if not self.__quietMode:
+                            logger.warning("%r parsing input failed for %r string", ccId, molBuildType)
                         ok = False
                         if self.__isDefinitionSet and rebuildOnFailure:
                             # Try again with a descriptor rebuild
@@ -592,7 +594,8 @@ class OeMoleculeFactory(object):
                 else:
                     logger.debug("Building with %s", smiles)
                     if not oechem.OESmilesToMol(oeMol, smiles):
-                        logger.warning("%r converting input failed for %r string", ccId, molBuildType)
+                        if not self.__quietMode:
+                            logger.warning("%r converting input failed for %r string", ccId, molBuildType)
                         ok = False
                         if self.__isDefinitionSet and rebuildOnFailure:
                             # Try again with a descriptor rebuild
@@ -607,7 +610,8 @@ class OeMoleculeFactory(object):
                 if limitPerceptions:
                     # convert the InChI string into a molecule
                     if not oechem.OEParseInChI(oeMol, inchi):
-                        logger.warning("%r parsing input failed for InChI string", ccId)
+                        if not self.__quietMode:
+                            logger.warning("%r parsing input failed for InChI string", ccId)
                         ok = False
                         if self.__isDefinitionSet and rebuildOnFailure:
                             # Try again with a descriptor rebuild
@@ -617,7 +621,8 @@ class OeMoleculeFactory(object):
                                 logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
                 else:
                     if not oechem.OEInChIToMol(oeMol, inchi):
-                        logger.warning("%r converting input failed for InChI string", ccId)
+                        if not self.__quietMode:
+                            logger.warning("%r converting input failed for InChI string", ccId)
                         ok = False
                         if self.__isDefinitionSet and rebuildOnFailure:
                             # Try again with a descriptor rebuild
@@ -667,7 +672,8 @@ class OeMoleculeFactory(object):
             # Try to create a missing descriptor if possible.
             if ret is None and molBuildType in ["oe-iso-smiles", "oe-smiles", "inchi"] and fallBackBuildType:
                 try:
-                    logger.info("%r missing descriptor for %r rebuilding using %r", ccId, molBuildType, fallBackBuildType)
+                    if not self.__quietMode:
+                        logger.info("%r missing descriptor for %r rebuilding using %r", ccId, molBuildType, fallBackBuildType)
                     ret = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
                 except Exception as e:
                     logger.exception("%r descriptor rebuild failed using %r with %s", ccId, fallBackBuildType, str(e))

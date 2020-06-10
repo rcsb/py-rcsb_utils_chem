@@ -22,3 +22,4 @@
 17-May-2020 - V0.30 Adjust labeling in search index.
  3-Jun-2020 - V0.31 Add getIndexFilePath() methods to each index provider class.
  9-Jun-2020 - V0.32 Additional ChemCompSearchWrapper() methods to manage dependencies
+10-Jun-2020 - V0.33 Allow file name adjustments to stash and recover methods and further suppress logging in quietMode

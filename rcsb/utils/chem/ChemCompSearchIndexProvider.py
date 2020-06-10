@@ -62,7 +62,10 @@ class ChemCompSearchIndexWorker(object):
         try:
             retList, failList = self.__buildChemCompSearchIndex(procName, dataList, limitPerceptions=limitPerceptions, quietFlag=quietFlag)
             successList = sorted(set(dataList) - set(failList))
-            logger.info("%s built %d search candidates from %d definitions with failures %d", procName, len(retList), len(dataList), len(failList))
+            if failList:
+                logger.info("%s returns %d definitions with failures: %r", procName, len(failList), failList)
+
+            logger.debug("%s built %d search candidates from %d definitions with failures %d", procName, len(retList), len(dataList), len(failList))
         except Exception as e:
             logger.exception("Failing %s for %d data items %s", procName, len(dataList), str(e))
         #
@@ -224,6 +227,8 @@ class ChemCompSearchIndexProvider(object):
         mpu.setOptions(optD)
         mpu.set(workerObj=rWorker, workerMethod="buildRelatedList")
         ok, failList, resultList, _ = mpu.runMulti(dataList=ccIdList, numProc=numProc, numResults=1, chunkSize=maxChunkSize)
+        if failList:
+            logger.info("Index definitions with failures (%d): %r", len(failList), failList)
         logger.info("Multi-proc status %r failures %r result length %r", ok, len(failList), len(resultList[0]))
         # JDW
         rD = {vD["name"]: vD for vD in resultList[0]}
