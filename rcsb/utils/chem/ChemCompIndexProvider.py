@@ -131,7 +131,7 @@ class ChemCompIndexProvider(object):
             ccIdxD = {k: rdCcIdxD[k] for k in sorted(rdCcIdxD.keys())[:molLimit]} if molLimit else rdCcIdxD
         else:
             cmpKwargs = {k: v for k, v in kwargs.items() if k not in ["cachePath", "useCache", "molLimit"]}
-            ccmP = ChemCompMoleculeProvider(cachePath=self.__cachePath, useCache=True, molLimit=molLimit, **cmpKwargs)
+            ccmP = ChemCompMoleculeProvider(cachePath=self.__cachePath, useCache=useCache, molLimit=molLimit, **cmpKwargs)
             ok = ccmP.testCache(minCount=molLimit, logSizes=True)
             if ok:
                 ccIdxD = self.__updateChemCompIndex(ccmP.getMolD(), ccIdxFilePath)
