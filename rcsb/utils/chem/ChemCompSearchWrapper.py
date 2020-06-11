@@ -221,9 +221,10 @@ class ChemCompSearchWrapper(SingletonClass):
         try:
             okT = False
             ok1 = self.setConfig(ccUrlTarget=ccUrlTarget, birdUrlTarget=birdUrlTarget, **kwargs)
-            ok2 = self.updateChemCompIndex()
-            ok3 = self.updateSearchIndex()
-            ok4 = self.updateSearchMoleculeProvider()
+            useCache = kwargs.get("useCache", False)
+            ok2 = self.updateChemCompIndex(useCache=self.useCache)
+            ok3 = self.updateSearchIndex(useCache=self.useCache)
+            ok4 = self.updateSearchMoleculeProvider(useCache=self.useCache)
             okBuild = ok1 and ok2 and ok3 and ok4
             if okBuild:
                 fileU = FileUtil()
