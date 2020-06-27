@@ -25,3 +25,4 @@
 10-Jun-2020 - V0.33 Allow file name adjustments to stash and recover methods and further suppress logging in quietMode
 11-Jun-2020 - V0.34 Maintain the consistent cache behavior
 11-Jun-2020 - V0.35 Allow cache reuse when rebuilding dependencies
+27-Jun-2020 - V0.36 Unify cache management in search and depict wrapper classes

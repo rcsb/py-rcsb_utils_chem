@@ -5,7 +5,7 @@
 # Version: 0.001
 #
 # Updates:
-#
+#  24-Jun-2020 jdw make api follow the style of ChemCompSearchWrapper()
 ##
 """
 Wrapper for chemical component depiction operations.
@@ -54,12 +54,13 @@ class ChemCompDepictWrapper(SingletonClass):
         self.__searchSuccess = 0
         self.__imageCount = 0
 
-    def readConfig(self):
+    def readConfig(self, resetImagePath=True):
         #
         ok = False
         try:
             self.__cachePath = os.environ.get("CHEM_DEPICT_CACHE_PATH", ".")
             configFileName = os.environ.get("CHEM_DEPICT_CONFIG_FILE_NAME", "depict-config.json")
+            #
             configFilePath = os.path.join(self.__cachePath, "config", configFileName)
             configD = self.__mU.doImport(configFilePath, fmt="json")
             logger.debug("configD: %r", configD)
@@ -67,12 +68,52 @@ class ChemCompDepictWrapper(SingletonClass):
                 logger.info("Read version %r sections %r from %s", configD["versionNumber"], list(configD.keys()), configFilePath)
                 ok = True
                 self.__configD = configD
+                #
+                if resetImagePath:
+                    # Allow the configuration to be relocatable.
+                    tS = configD["imageDir"] if "imageDir" in configD else "images"
+                    configD["imageDirPath"] = os.path.join(self.__cachePath, tS)
             else:
                 logger.error("Reading config file fails from path %r", configFilePath)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             ok = False
         return ok
+
+    def setConfig(self, cachePath, **kwargs):
+        """Provide dependencies for rebuilding depict file dependencies.
+
+        Args:
+            cachePath (str): path to cache data files.
+
+            Other options are propagated to configurations of the wrapped classes in __bootstrapDepictConfig()
+
+        """
+        self.__configD = self.__makeBootstrapDepictConfig(cachePath, **kwargs)
+        return len(self.__configD) >= 2
+
+    def __makeBootstrapDepictConfig(self, cachePath, **kwargs):
+        """ Create depict configuration bootstrap file
+        """
+        configD = {}
+        try:
+            storeConfig = kwargs.get("storeConfig", True)
+            os.environ["CHEM_DEPICT_CACHE_PATH"] = os.path.join(cachePath)
+            configDirPath = os.path.join(cachePath, "config")
+            configFilePath = os.path.join(configDirPath, "depict-config.json")
+            #
+            logger.info("Updating depict configuration using %s", configFilePath)
+            #
+            imageDirPath = os.path.join(cachePath, "images")
+            self.__mU.mkdir(imageDirPath)
+            configD = {"versionNumber": 0.20, "imageDir": "images"}
+            if storeConfig:
+                self.__mU.mkdir(configDirPath)
+                self.__mU.doExport(configFilePath, configD, fmt="json", indent=3)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return configD
+        #
 
     def setImageCount(self, imageCount):
         self.__imageCount = imageCount

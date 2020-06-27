@@ -64,7 +64,7 @@ class ChemCompSearchWrapper(SingletonClass):
         self.__startTime = time.time()
         #
         self.__cachePath = kwargs.get("cachePath", os.environ.get("CHEM_SEARCH_CACHE_PATH", "."))
-        self.__ccFileNamePrefix = kwargs.get("ccFilNamePrefix", os.environ.get("CHEM_SEARCH_CC_PREFIX", "cc-full"))
+        self.__ccFileNamePrefix = kwargs.get("ccFileNamePrefix", os.environ.get("CHEM_SEARCH_CC_PREFIX", "cc-full"))
         #
         self.__dependFileName = "ChemCompSearchWrapperData.tar.gz"
         self.__dependTarFilePath = os.path.join(self.__cachePath, self.__dependFileName)
@@ -107,6 +107,7 @@ class ChemCompSearchWrapper(SingletonClass):
         birdUrlTarget = kwargs.get("birdUrlTarget", None)
         cachePath = kwargs.get("cachePath", None)
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", None)
+        logger.info("Bootstrap configuration for prefix %r cc %r bird %r", ccFileNamePrefix, ccUrlTarget, birdUrlTarget)
         # ---
         #  Reasonable values are selected for the remaining options...
         oeFileNamePrefix = "oe-" + ccFileNamePrefix
@@ -169,6 +170,7 @@ class ChemCompSearchWrapper(SingletonClass):
             if storeConfig:
                 configDirPath = os.path.join(cachePath, "config")
                 configFilePath = os.path.join(configDirPath, ccFileNamePrefix + "-config.json")
+                logger.info("Saving configuration bootstrap in %r", configFilePath)
                 self.__mU.mkdir(configDirPath)
                 self.__mU.doExport(configFilePath, configD, fmt="json", indent=3)
         except Exception as e:
