@@ -62,19 +62,27 @@ class ChemCompDepictWrapper(SingletonClass):
             configFileName = os.environ.get("CHEM_DEPICT_CONFIG_FILE_NAME", "depict-config.json")
             #
             configFilePath = os.path.join(self.__cachePath, "config", configFileName)
-            configD = self.__mU.doImport(configFilePath, fmt="json")
+            configD = {}
+            if self.__mU.exists(configFilePath):
+                configD = self.__mU.doImport(configFilePath, fmt="json")
             logger.debug("configD: %r", configD)
             if configD and (len(configD) >= 2) and float(configD["versionNumber"]) > 0.1:
                 logger.info("Read version %r sections %r from %s", configD["versionNumber"], list(configD.keys()), configFilePath)
                 ok = True
-                self.__configD = configD
                 #
                 if resetImagePath:
                     # Allow the configuration to be relocatable.
                     tS = configD["imageDir"] if "imageDir" in configD else "images"
                     configD["imageDirPath"] = os.path.join(self.__cachePath, tS)
+                    configD["versionNumber"] = "0.2"
             else:
-                logger.error("Reading config file fails from path %r", configFilePath)
+                # Handle missing config
+                configD["imageDir"] = "images"
+                configD["imageDirPath"] = os.path.join(self.__cachePath, configD["imageDir"])
+                logger.warning("Reading config file fails from path %r", configFilePath)
+                logger.warning("Using config %r", configD)
+            #
+            self.__configD = configD
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             ok = False
