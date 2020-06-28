@@ -76,11 +76,12 @@ class ChemCompDepictWrapper(SingletonClass):
                     configD["imageDirPath"] = os.path.join(self.__cachePath, tS)
                     configD["versionNumber"] = "0.2"
             else:
-                # Handle missing config
+                # Handle missing config for now
                 configD["imageDir"] = "images"
                 configD["imageDirPath"] = os.path.join(self.__cachePath, configD["imageDir"])
                 logger.warning("Reading config file fails from path %r", configFilePath)
                 logger.warning("Using config %r", configD)
+                ok = True
             #
             self.__configD = configD
         except Exception as e:
