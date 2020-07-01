@@ -27,3 +27,4 @@
 11-Jun-2020 - V0.35 Allow cache reuse when rebuilding dependencies
 27-Jun-2020 - V0.36 Unify cache management in search and depict wrapper classes
 28-Jun-2020 - V0.37 Adding a fallback for missing depict config file
+ 1-Jul-2020 - V0.38 Adjust match option names.
