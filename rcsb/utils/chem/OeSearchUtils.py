@@ -207,8 +207,8 @@ class OeSearchUtils(object):
             fpL = sorted(fpL, key=lambda nTup: nTup.fpScore, reverse=True)
             idxList = [nTup.oeIdx for nTup in fpL]
             idxList = list(OrderedDict.fromkeys(idxList))
-            #
-            if matchOpts not in ["fingerprint-similarity"]:
+            # -- only continue with a non-empty fingerprint result --
+            if matchOpts not in ["fingerprint-similarity"] and idxList:
                 # Save the maximum fp score
                 fpScoreD = {}
                 for fpTup in fpL:

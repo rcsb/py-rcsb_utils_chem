@@ -320,7 +320,8 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         oeMol = oesmP.getMol("004")
         self.assertGreaterEqual(len(list(oeMol.GetAtoms())), 12)
 
-        matchOpts = "graph-relaxed"
+        # matchOpts = "graph-relaxed"
+        matchOpts = "graph-strict"
         missTupL = []
         missedD = {}
         missedFpD = {}
