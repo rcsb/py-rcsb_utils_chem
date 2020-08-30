@@ -147,6 +147,14 @@ class ChemCompIndexProviderTests(unittest.TestCase):
             self.assertTrue(ok)
             # logger.info("%s parsed eD %r typeCounts %r  (%.4f seconds)", ccId, eD, typeCounts, time.time() - startTime)
 
+    def testFormulaParser(self):
+        """Test formula parser ...
+        """
+        mf = MolecularFormula()
+        for fS in ["co", "CO", "NI", "NiI", "Co", "C1Co1"]:
+            eD = mf.parseFormula(fS)
+            logger.info("Formula %s %r", fS, eD)
+
 
 def buildCacheFiles():
     suiteSelect = unittest.TestSuite()
