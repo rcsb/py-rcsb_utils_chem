@@ -1,5 +1,5 @@
 --extra-index-url https://pypi.anaconda.org/OpenEye/simple
+OpenEye-toolkits == 2020.1.0
 mmcif >= 0.57
 rcsb.utils.io >= 0.68
 rcsb.utils.multiproc >= 0.17
-OpenEye-toolkits>=2020.1.0

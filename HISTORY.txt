@@ -30,3 +30,4 @@
  1-Jul-2020 - V0.38 Adjust match option names.
  1-Jul-2020 - V0.39 Avoid exhaustive ss search for negative pre-filter results
 20-Aug-2020 - V0.40 Update dependencies
+29-Sep-2020 - V0.41 Update dependencies
