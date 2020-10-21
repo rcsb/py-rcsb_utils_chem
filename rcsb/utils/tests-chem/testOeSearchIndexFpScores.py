@@ -103,8 +103,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testFingerPrintScoresFull(self):
-        """Fingerprint scores. (full)
-        """
+        """Fingerprint scores. (full)"""
         numMols = 5000
         myKwargs = {
             "cachePath": self.__cachePath,
@@ -198,8 +197,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testSubStructureSearchWithFpFull(self):
-        """Substructure search with fingerprint prefilter. (full)
-        """
+        """Substructure search with fingerprint prefilter. (full)"""
         numMols = 5000
         myKwargs = {
             "cachePath": self.__cachePath,

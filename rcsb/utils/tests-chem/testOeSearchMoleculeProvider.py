@@ -84,8 +84,7 @@ class OeSearchMoleculeProviderTests(unittest.TestCase):
         )
 
     def __testBuildSearchMoleculeCacheFiles(self, **kwargs):
-        """ Test build OE cache files from full component dictionary
-        """
+        """Test build OE cache files from full component dictionary"""
         ccUrlTarget = kwargs.get("ccUrlTarget", None)
         birdUrlTarget = kwargs.get("birdUrlTarget", None)
         molLimit = kwargs.get("molLimit", None)

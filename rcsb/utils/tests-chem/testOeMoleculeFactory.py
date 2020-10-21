@@ -70,8 +70,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
         return ccMolD
 
     def testBuildRelated(self):
-        """Compare constructed molecule with underlying chemical definitions -
-        """
+        """Compare constructed molecule with underlying chemical definitions -"""
         try:
             ccMolD = self.__getChemCompDefs()
             oemf = OeMoleculeFactory()
@@ -90,8 +89,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Troubleshooting test")
     def testSelfConsistency(self):
-        """Compare constructed molecule with underlying chemical definitions -
-        """
+        """Compare constructed molecule with underlying chemical definitions -"""
         try:
             failL = []
             ccMolD = self.__getChemCompDefs()
@@ -144,8 +142,7 @@ class OeMolecularFactoryTests(unittest.TestCase):
             self.fail()
 
     def testRoundTrip(self):
-        """Round trip smiles comparisons -
-        """
+        """Round trip smiles comparisons -"""
         try:
             ccMolD = self.__getChemCompDefs()
             # useCache = True

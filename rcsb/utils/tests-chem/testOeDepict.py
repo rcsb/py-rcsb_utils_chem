@@ -78,7 +78,7 @@ class OeDepictTests(unittest.TestCase):
 
     def testDepictCCIdList(self):
         """Test case -  single OE molecule depiction.
-         labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, abelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=3.0
+        labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, abelBondCIPStereo=True, cellBorders=False, bondDisplayWidth=3.0
         """
         try:
             oeMolTitleList = self.__getMolDepictList(self.__ccIdList)
@@ -98,8 +98,7 @@ class OeDepictTests(unittest.TestCase):
             self.fail()
 
     def testDepictCCIdListLabeled(self):
-        """Test case -  single OE molecule depiction.
-        """
+        """Test case -  single OE molecule depiction."""
         try:
             oeMolTitleList = self.__getMolDepictList(self.__ccIdList)
             for ccId, mol, title in oeMolTitleList:
@@ -131,8 +130,7 @@ class OeDepictTests(unittest.TestCase):
             self.fail()
 
     def testDepictGrid(self):
-        """Test case - depict molecule list  grid.
-        """
+        """Test case - depict molecule list  grid."""
         try:
             oeMolTitleList = self.__getMolDepictList(self.__ccIdList)
             oed = OeDepict()
@@ -148,8 +146,7 @@ class OeDepictTests(unittest.TestCase):
             self.fail()
 
     def testDepictMultiSmall(self):
-        """Test case -  get, read, build OE molecule, and depict the molecule.
-        """
+        """Test case -  get, read, build OE molecule, and depict the molecule."""
         try:
             oeMolTitleList = self.__getMolDepictList(self.__ccIdList)
             oed = OeDepictMultiPage()
@@ -161,8 +158,7 @@ class OeDepictTests(unittest.TestCase):
             self.fail()
 
     def testDepictMultiLarge(self):
-        """Test case -  get, read, build OE molecule, and depict the molecule.
-        """
+        """Test case -  get, read, build OE molecule, and depict the molecule."""
         try:
             oeMolTitleList = self.__getMolDepictList(self.__ccIdListLong)
             oed = OeDepictMultiPage()
@@ -178,8 +174,7 @@ class OeDepictTests(unittest.TestCase):
             self.fail()
 
     def testDepictOneSDF(self):
-        """Test case -  get, read, build OE molecule from SDF file, and depict the molecule.
-        """
+        """Test case -  get, read, build OE molecule from SDF file, and depict the molecule."""
         try:
             imagePath = os.path.join(self.__workPath, "benzene-from-smi.svg")
             sdfPath = os.path.join(self.__dataPath, "ATP.sdf")
@@ -197,8 +192,7 @@ class OeDepictTests(unittest.TestCase):
             self.fail()
 
     def testDepictSMILES(self):
-        """Test case -  create depiction from SMILES descriptor.
-        """
+        """Test case -  create depiction from SMILES descriptor."""
         try:
             imagePath = os.path.join(self.__workPath, "benzene-from-smi.svg")
             oeio = OeIoUtils()

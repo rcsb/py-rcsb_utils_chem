@@ -36,8 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChemCompDepictWrapper(SingletonClass):
-    """ Wrapper for chemical component depiction operations.
-    """
+    """Wrapper for chemical component depiction operations."""
 
     def __init__(self):
         self.__startTime = time.time()
@@ -102,8 +101,7 @@ class ChemCompDepictWrapper(SingletonClass):
         return len(self.__configD) >= 2
 
     def __makeBootstrapDepictConfig(self, cachePath, **kwargs):
-        """ Create depict configuration bootstrap file
-        """
+        """Create depict configuration bootstrap file"""
         configD = {}
         try:
             storeConfig = kwargs.get("storeConfig", True)
@@ -138,8 +136,7 @@ class ChemCompDepictWrapper(SingletonClass):
         return imagePath
 
     def depictMolecule(self, identifier, identifierType, imagePath=None, **kwargs):
-        """Create depiction from InChI, SMILES descriptors or PDB identifier.
-        """
+        """Create depiction from InChI, SMILES descriptors or PDB identifier."""
         try:
             imagePath = imagePath if imagePath else self.__makeImagePath()
             oeio = OeIoUtils()
@@ -209,8 +206,7 @@ class ChemCompDepictWrapper(SingletonClass):
         logger.info("Status at %s (up %.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
     def alignMoleculePair(self, refIdentifier, refIdentifierType, fitIdentifier, fitIdentifierType, imagePath=None, **kwargs):
-        """Create aligned depiction for a target molecule InChI, SMILES descriptors or PDB identifier.
-        """
+        """Create aligned depiction for a target molecule InChI, SMILES descriptors or PDB identifier."""
         try:
             imagePath = imagePath if imagePath else self.__makeImagePath()
             oeio = OeIoUtils()
@@ -243,8 +239,7 @@ class ChemCompDepictWrapper(SingletonClass):
         return None
 
     def __depictAlignedPair(self, oeMolRef, displayIdRef, oeMolFit, displayIdFit, imagePath, **kwargs):
-        """ Depict pairwise MCSS alignment
-        """
+        """Depict pairwise MCSS alignment"""
         try:
             #
             oed = OeDepictMCSAlignPage()

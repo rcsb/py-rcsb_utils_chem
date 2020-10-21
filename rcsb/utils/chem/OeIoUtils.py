@@ -30,8 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 class OeIoUtils(object):
-    """ Utility methods to manage OE specific IO and format conversion operations.
-    """
+    """Utility methods to manage OE specific IO and format conversion operations."""
 
     def __init__(self, **kwargs):
         self.__dirPath = kwargs.get("dirPath", ".")
@@ -42,8 +41,7 @@ class OeIoUtils(object):
         #
 
     def setQuiet(self):
-        """Suppress OE warnings and processing errors
-        """
+        """Suppress OE warnings and processing errors"""
         oechem.OEThrow.SetLevel(oechem.OEErrorLevel_Quiet)
         self.__oeErrorLevel = oechem.OEErrorLevel_Quiet
 
@@ -341,7 +339,7 @@ class OeIoUtils(object):
             return True
 
     def __createOeFastFingerPrintDatabase(self, oeMolDbFilePath, oeFpDbFilePath, fpType="TREE"):
-        """ Create fast search fingerprint database from the input molecular database.
+        """Create fast search fingerprint database from the input molecular database.
 
         Args:
             oeMolDbFilePath (str): path to the input molecular database
@@ -380,7 +378,7 @@ class OeIoUtils(object):
             return self.__loadOeFingerPrintDatabase(oeMolDbFilePath, fpType=fpType)
 
     def __loadOeFingerPrintDatabase(self, oeMolDbFilePath, fpType="TREE"):
-        """ Create conventional search fingerprint database from the input molecular database.
+        """Create conventional search fingerprint database from the input molecular database.
 
         Args:
             oeMolDbFilePath (str): path to the input molecular database
@@ -499,15 +497,23 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return molCount
 
-    def buildOeBinaryMolCache(self, filePath, ccObjD, molBuildType="model-xyz", quietFlag=False, fpTypeList=None, limitPerceptions=False):
-        """Build cache of OEGraphMol() objects from the input chemical component definition list.
+    def buildOeBinaryMolCache(self, filePath, ccObjD, molBuildType="model-xyz", quietFlag=False, fpTypeList=None, limitPerceptions=False, suppressHydrogens=False):
+        """Build cache of OEMol() objects from the input chemical component definition list.
 
         Args:
-            ccObjD (dict): Chemical component dataContainer object dictionary
+            filePath (str): output cache file path
+            ccObjD (dict):  chemical component object dictionary
+            molBuildType (str, optional): [description]. Defaults to "model-xyz".
+            quietFlag (bool, optional): [description]. Defaults to False.
+            fpTypeList (list, optional): fingerprint type list. Defaults to None.
+            limitPerceptions (bool, optional): suppress automatic chemical perceptions. Defaults to False.
+            suppressHydrogens (bool, optional): suppress explicit hydrogen count. Defaults to False.
 
         Returns:
-          (int, int) : chemical component count processed successes and failures
+            (int, int, list): chem comp success count, error count, chem comp identifier failure list
+
         """
+
         try:
             failIdList = []
             ccCount = 0
@@ -528,7 +534,7 @@ class OeIoUtils(object):
                             if not fpOk:
                                 logger.info("Fingerprint generation fails for %r", ccId)
                         if ok:
-                            oeMol = oemf.getMol()
+                            oeMol = oemf.getMol(suppressHydrogens=suppressHydrogens)
                             oechem.OEWriteMolecule(ofs, oeMol)
                             ccCount += 1
                     if not ok or not tId:
@@ -545,14 +551,20 @@ class OeIoUtils(object):
         logger.info("Completed operation at %s (%.4f seconds)", time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - startTime)
         return ccCount, errCount, failIdList
 
-    def buildOeBinaryMolCacheFromIndex(self, filePath, ccIdxD, quietFlag=False, fpTypeList=None, limitPerceptions=False):
+    #
+    def buildOeBinaryMolCacheFromIndex(self, filePath, ccIdxD, quietFlag=False, fpTypeList=None, limitPerceptions=False, suppressHydrogens=False):
         """Build cache of OEGraphMol() objects from the input chemical component search index.
 
         Args:
-            ccIdxD (dict): Chemical component search index
+            filePath (str): output cache file path
+            ccIdxD (dict): search index dictionary
+            quietFlag (bool, optional): suppress OE output. Defaults to False.
+            fpTypeList (list, optional): list of fingerprint types. Defaults to None.
+            limitPerceptions (bool, optional): suppress automatic chemical perceptions. Defaults to False.
+            suppressHydrogens (bool, optional): suppress explicit hydrogen count. Defaults to False.
 
         Returns:
-          (int, int) : chemical component count processed successes and failures
+            (int, int, list): chem comp success count, error count, chem comp identifier failure list
         """
         try:
             failIdList = []
@@ -573,7 +585,7 @@ class OeIoUtils(object):
                         if not fpOk:
                             logger.info("Fingerprint generation fails for %r", searchCcId)
                     if ok:
-                        oeMol = oemf.getMol()
+                        oeMol = oemf.getMol(suppressHydrogens=suppressHydrogens)
                         oechem.OEWriteMolecule(ofs, oeMol)
                         ccCount += 1
                     if not ok:
@@ -670,8 +682,8 @@ class OeIoUtils(object):
         return False
 
     def serializeOe(self, oeMol):
-        """ Create a string representing the content of the current OE molecule.   This
-            serialization uses the OE internal binary format.
+        """Create a string representing the content of the current OE molecule.   This
+        serialization uses the OE internal binary format.
         """
         try:
             oms = oechem.oemolostream()
@@ -685,13 +697,13 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
 
     def deserializeOe(self, oeS):
-        """ Reconstruct an OE molecule from the input string serialization (OE binary).
+        """Reconstruct an OE molecule from the input string serialization (OE binary).
 
-            The deserialized molecule is used to initialize the internal OE molecule
-            within this object.
+        The deserialized molecule is used to initialize the internal OE molecule
+        within this object.
 
-            Returns:
-                list:  OE GraphMol list
+        Returns:
+            list:  OE GraphMol list
         """
         molList = []
         try:

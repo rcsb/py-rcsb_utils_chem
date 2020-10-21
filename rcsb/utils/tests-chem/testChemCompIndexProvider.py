@@ -38,7 +38,7 @@ logger = logging.getLogger()
 
 
 class ChemCompIndexProviderTests(unittest.TestCase):
-    skipFlag = True
+    skipFlag = False
 
     def setUp(self):
         self.__startTime = time.time()
@@ -58,25 +58,21 @@ class ChemCompIndexProviderTests(unittest.TestCase):
         logger.info("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
     def testChemCompIndexCacheFilesAbbrev(self):
-        """ Test construction of full chemical component resource files.
-        """
+        """Test construction of full chemical component resource files."""
         self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, logSizes=False, useCache=False, ccFileNamePrefix="cc-abbrev")
 
     @unittest.skipIf(skipFlag, "Long test")
     def testChemCompIndexCacheFilesFull(self):
-        """ Test construction of full chemical component resource files.
-        """
+        """Test construction of full chemical component resource files."""
         self.__testBuildMoleculeCacheFiles(useCache=False, ccFileNamePrefix="cc-full")
 
     @unittest.skipIf(skipFlag, "Long test")
     def testChemCompIndexCacheFilesFiltered(self):
-        """ Test construction of a filtered subset of chemical component definitions.
-        """
+        """Test construction of a filtered subset of chemical component definitions."""
         self.__testBuildMoleculeCacheFiles(useCache=False, ccFileNamePrefix="cc-filtered")
 
     def __testBuildMoleculeCacheFiles(self, **kwargs):
-        """ Test build chemical component cache files from the input component dictionaries
-        """
+        """Test build chemical component cache files from the input component dictionaries"""
         molLimit = kwargs.get("molLimit", None)
         useCache = kwargs.get("useCache", True)
         logSizes = kwargs.get("logSizes", False)
@@ -94,8 +90,7 @@ class ChemCompIndexProviderTests(unittest.TestCase):
         return ccidxP
 
     def testFormulaMatch(self):
-        """Test formula match   ...
-        """
+        """Test formula match   ..."""
         ccidxP = self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, logSizes=False, useCache=True, ccFileNamePrefix="cc-abbrev")
         ccidxD = ccidxP.getIndex()
         logger.info("Matching formula for %d definitions", len(ccidxD))
@@ -111,8 +106,7 @@ class ChemCompIndexProviderTests(unittest.TestCase):
                 self.assertTrue(ok)
 
     def testFormulaSubsetMatch(self):
-        """Test formula match   ...
-        """
+        """Test formula range match   ..."""
         ccidxP = self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, logSizes=False, useCache=True, ccFileNamePrefix="cc-abbrev")
         startTime = time.time()
         fQueryD = {"C": {"min": 50, "max": 65}}
@@ -127,8 +121,7 @@ class ChemCompIndexProviderTests(unittest.TestCase):
         return False
 
     def testFormulaStringMatch(self):
-        """Test formula match   ...
-        """
+        """Test formula match   ..."""
         mf = MolecularFormula()
         ccidxP = self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, logSizes=False, useCache=True, ccFileNamePrefix="cc-abbrev")
         ccidxD = ccidxP.getIndex()
@@ -148,8 +141,7 @@ class ChemCompIndexProviderTests(unittest.TestCase):
             # logger.info("%s parsed eD %r typeCounts %r  (%.4f seconds)", ccId, eD, typeCounts, time.time() - startTime)
 
     def testFormulaParser(self):
-        """Test formula parser ...
-        """
+        """Test formula parser ..."""
         mf = MolecularFormula()
         for fS in ["co", "CO", "NI", "NiI", "Co", "C1Co1"]:
             eD = mf.parseFormula(fS)

@@ -98,13 +98,11 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         return oesmP, ccIdxD
 
     def testSubStructureSearchExhaustiveAbbrev(self):
-        """Exhaustive substructure search. (abbrev)
-        """
+        """Exhaustive substructure search. (abbrev)"""
         return self.__exhaustiveSubStructureSearch(self.__numMols, **self.__myKwargs)
 
     def __exhaustiveSubStructureSearch(self, numMols, **kwargs):
-        """Exhaustive substructure search.
-        """
+        """Exhaustive substructure search."""
         try:
             limitPerceptions = kwargs.get("limitPerceptions", False)
             buildTypeList = kwargs.get("buildTypeList", ["oe-iso-smiles"])
@@ -145,8 +143,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         return False
 
     def testFingerprintSearchAbbrev(self):
-        """Fingerprint search.
-        """
+        """Fingerprint search."""
         return self.__fingerPrintSearch(self.__numMols, **self.__myKwargs)
 
     def __fingerPrintSearch(self, numMols, **kwargs):

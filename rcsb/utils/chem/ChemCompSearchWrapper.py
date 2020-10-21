@@ -45,20 +45,19 @@ MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts scree
 
 
 class ChemCompSearchWrapper(SingletonClass):
-    """ Wrapper for chemical component search operations.
-    """
+    """Wrapper for chemical component search operations."""
 
     def __init__(self, **kwargs):
-        """ Wrapper class for chemical search/depiction operations.
+        """Wrapper class for chemical search/depiction operations.
 
-            Path and prefix data for wrapper class may be set as keyword arguments
-            as environmental variables.
+        Path and prefix data for wrapper class may be set as keyword arguments
+        as environmental variables.
 
-            Args:
-                cachePath (str): path to top-level cache directory used to store search index file dependencies
-                                 (default environment variable CHEM_SEARCH_CACHE_PATH or ".")
-                ccFileNamePrefix (str): prefix code used to distinguish different subsets of chemical definitions
-                                        (default environment variable CHEM_SEARCH_CC_PREFIX or "cc-full")
+        Args:
+            cachePath (str): path to top-level cache directory used to store search index file dependencies
+                             (default environment variable CHEM_SEARCH_CACHE_PATH or ".")
+            ccFileNamePrefix (str): prefix code used to distinguish different subsets of chemical definitions
+                                    (default environment variable CHEM_SEARCH_CC_PREFIX or "cc-full")
 
         """
         self.__startTime = time.time()
@@ -100,8 +99,7 @@ class ChemCompSearchWrapper(SingletonClass):
         return len(self.__configD) >= 3
 
     def __bootstrapConfig(self, **kwargs):
-        """ Build on-the-fly default configuration for this wrapper class.
-        """
+        """Build on-the-fly default configuration for this wrapper class."""
         # The following few options have no defaults -- and should be specified.
         ccUrlTarget = kwargs.get("ccUrlTarget", None)
         birdUrlTarget = kwargs.get("birdUrlTarget", None)
@@ -211,7 +209,7 @@ class ChemCompSearchWrapper(SingletonClass):
         return ok
 
     def buildDependenices(self, ccUrlTarget, birdUrlTarget, **kwargs):
-        """ Convenience method to build configuration and static dependencies for the chemical search services.
+        """Convenience method to build configuration and static dependencies for the chemical search services.
 
         Args:
             ccUrlTarget (str): path to source concatenated chemical component definition file
@@ -239,7 +237,7 @@ class ChemCompSearchWrapper(SingletonClass):
         return False
 
     def stashDependencies(self, url, dirPath, bundleLabel="A", userName=None, pw=None):
-        """ Store a copy of the bundled search dependencies remotely -
+        """Store a copy of the bundled search dependencies remotely -
 
         Args:
             url (str): URL string for the destination host (e.g. sftp://myserver.net or None for a local file)

@@ -33,8 +33,7 @@ ComponentDescriptors = namedtuple("ComponentDescriptors", "smiles isoSmiles inch
 
 
 class RdMoleculeFactory(object):
-    """ Utility methods for constructing RdKit molecules from chemical component definition objects.
-    """
+    """Utility methods for constructing RdKit molecules from chemical component definition objects."""
 
     def __init__(self, verbose=False):
         self.__verbose = verbose
@@ -95,8 +94,7 @@ class RdMoleculeFactory(object):
         return True
 
     def getMoleculeFeatures(self):
-        """Get the essential features of the constructed rdMol for the input component.
-        """
+        """Get the essential features of the constructed rdMol for the input component."""
         mD = self.__rdMol.GetPropsAsDict()
         logger.debug("mol props %r", mD.items())
         #

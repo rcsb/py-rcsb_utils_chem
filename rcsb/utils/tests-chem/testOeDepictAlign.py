@@ -211,8 +211,7 @@ class OeDepictAlignTests(unittest.TestCase):
         return dL
 
     def testMCSAlignPairDepict(self):
-        """ Test case -  Simple pairwise MCSS alignment  -  Each aligned pair output to a separate image file
-        """
+        """Test case -  Simple pairwise MCSS alignment  -  Each aligned pair output to a separate image file"""
         try:
             oed = OeDepictMCSAlignPage()
             oed.setDisplayOptions(
@@ -236,8 +235,7 @@ class OeDepictAlignTests(unittest.TestCase):
             self.fail()
 
     def testMCSRelaxAlignPairDepict(self):
-        """Test case -  Relaxed pairwise MCSS alignment
-        """
+        """Test case -  Relaxed pairwise MCSS alignment"""
         try:
             oed = OeDepictMCSAlignPage()
             oed.setSearchType(sType="relaxed")
@@ -271,8 +269,7 @@ class OeDepictAlignTests(unittest.TestCase):
             self.fail()
 
     def testMCSAlignFitListDepictMulti(self):
-        """Test case -  List view of pairwise MCS alignment - multipage output
-        """
+        """Test case -  List view of pairwise MCS alignment - multipage output"""
         try:
             oed = OeDepictMCSAlignMultiPage()
             oed.setRefMol(self.__oeMolD[self.__refId.upper()], self.__refId)
@@ -300,8 +297,7 @@ class OeDepictAlignTests(unittest.TestCase):
             self.fail()
 
     def testMCSAlignPairListDepictPortrait(self):
-        """Test case -  List view MCS alignment using pair id list input
-        """
+        """Test case -  List view MCS alignment using pair id list input"""
         try:
             pairList = [(tup[0].upper(), self.__oeMolD[tup[0].upper()], tup[1].upper(), self.__oeMolD[tup[1].upper()]) for tup in self.__pairIdList]
             oed = OeDepictMCSAlignMultiPage()
@@ -330,8 +326,7 @@ class OeDepictAlignTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Large data dependency")
     def testMCSAlignRnaPairListDepict(self):
-        """Test case -  Modified RNA nucleotide alignment with parent nucleotied using pair list input
-        """
+        """Test case -  Modified RNA nucleotide alignment with parent nucleotied using pair list input"""
         try:
             pairList = [(tup[0].upper(), self.__oeMolD[tup[0].upper()], tup[1].upper(), self.__oeMolD[tup[1].upper()]) for tup in self.__rnaPairIdList]
             oed = OeDepictMCSAlignMultiPage()
@@ -352,8 +347,7 @@ class OeDepictAlignTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Large data dependency")
     def testMCSAlignAtomMap(self):
-        """Test case -  match test with return of atom maps
-        """
+        """Test case -  match test with return of atom maps"""
         try:
             pairList = [(tup[0].upper(), self.__oeMolD[tup[0].upper()], tup[1].upper(), self.__oeMolD[tup[1].upper()]) for tup in self.__rnaPairIdList]
             oed = OeMCSAlignUtil()
@@ -371,8 +365,7 @@ class OeDepictAlignTests(unittest.TestCase):
             self.fail()
 
     def testMCSAlignListMultiDepict(self):
-        """Test case -  List view of MCS alignment --- on multi-pages --
-        """
+        """Test case -  List view of MCS alignment --- on multi-pages --"""
         try:
             pairList = [(tup[0].upper(), self.__oeMolD[tup[0].upper()], tup[1].upper(), self.__oeMolD[tup[1].upper()]) for tup in self.__pairIdList]
             oed = OeDepictMCSAlignMultiPage()
@@ -399,8 +392,7 @@ class OeDepictAlignTests(unittest.TestCase):
             self.fail()
 
     def testMCSAlignListDepict(self):
-        """Test case -  List view of MCS alignment on single image -
-        """
+        """Test case -  List view of MCS alignment on single image -"""
         try:
             pairList = [(tup[0].upper(), self.__oeMolD[tup[0].upper()], tup[1].upper(), self.__oeMolD[tup[1].upper()]) for tup in self.__pairIdList]
             oed = OeDepictMCSAlignPage()
@@ -429,8 +421,7 @@ class OeDepictAlignTests(unittest.TestCase):
             self.fail()
 
     def testMCSAlignListDepictSingle(self):
-        """Test case -  View MCS alignment in multiple single image files.
-        """
+        """Test case -  View MCS alignment in multiple single image files."""
         try:
             pairList = [(tup[0].upper(), self.__oeMolD[tup[0].upper()], tup[1].upper(), self.__oeMolD[tup[1].upper()]) for tup in self.__pairIdList]
             oed = OeDepictMCSAlign()
@@ -458,9 +449,9 @@ class OeDepictAlignTests(unittest.TestCase):
     def testMCSAlignPathListDepictSingle(self):
         """Test case -  View MCS alignments in single image files.
 
-                        Input details specified chemical component and image file paths.
+        Input details specified chemical component and image file paths.
 
-                        Image file paths must end with a recognized image format (e.g. svg, png, jpg)
+        Image file paths must end with a recognized image format (e.g. svg, png, jpg)
         """
         try:
             # Use inverse  highlighting of matching/non-matching atoms/bonds -
@@ -519,8 +510,7 @@ class OeDepictAlignTests(unittest.TestCase):
             self.fail()
 
     def testSSAlignListDepictSingle(self):
-        """Test case -  View substructure alignment in multiple single image files.
-        """
+        """Test case -  View substructure alignment in multiple single image files."""
         try:
             pairList = [(tup[0].upper(), self.__oeMolD[tup[0].upper()], tup[1].upper(), self.__oeMolD[tup[1].upper()]) for tup in self.__ssPairIdList]
             oed = OeDepictSubStructureAlign()

@@ -26,8 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class IoUtils(object):
-    """ Utility methods to manage OE specific IO and format conversion operations.
-    """
+    """Utility methods to manage OE specific IO and format conversion operations."""
 
     def __init__(self, **kwargs):
         self.__dirPath = kwargs.get("dirPath", ".")

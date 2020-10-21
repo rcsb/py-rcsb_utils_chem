@@ -72,8 +72,7 @@ class OeDepictFromChemCompTests(unittest.TestCase):
         return ccMolD
 
     def testDepictByBuildType(self):
-        """Compare depictions constructed molecules with various builds from chemical defintions -
-        """
+        """Compare depictions constructed molecules with various builds from chemical defintions -"""
         try:
             ccIdList = self.__ccIdList
             ccMolD = self.__getChemCompDefs()

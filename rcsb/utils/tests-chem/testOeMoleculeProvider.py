@@ -68,8 +68,7 @@ class OeMoleculeProviderTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesSubset(self):
-        """ Test construction of OE resource files for a subset (1K) of full public chemical reference dictionary
-        """
+        """Test construction of OE resource files for a subset (1K) of full public chemical reference dictionary"""
         for molBuildType in ["oe-iso-smiles", "model-xyz", "ideal-xyz"]:
             self.__testBuildMoleculeCacheFiles(
                 molBuildType=molBuildType,
@@ -83,8 +82,7 @@ class OeMoleculeProviderTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesFiltered(self):
-        """ Test construction of OE resource files for a filtered subset of full public chemical reference dictionary
-        """
+        """Test construction of OE resource files for a filtered subset of full public chemical reference dictionary"""
         for molBuildType in ["oe-iso-smiles", "model-xyz", "ideal-xyz"]:
             self.__testBuildMoleculeCacheFiles(
                 molBuildType=molBuildType,
@@ -98,9 +96,9 @@ class OeMoleculeProviderTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesFull(self):
-        """ Test construction of OE resource files for the full public chemical reference dictionary
+        """Test construction of OE resource files for the full public chemical reference dictionary
 
-            For 31K cc's the build time is ~3123 secs (4 procs)
+        For 31K cc's the build time is ~3123 secs (4 procs)
 
         """
         for molBuildType in ["oe-iso-smiles", "model-xyz", "ideal-xyz"]:
@@ -110,8 +108,7 @@ class OeMoleculeProviderTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesFullScreened(self):
-        """ Test construction of OE resource files with screened substructure database for the full public chemical reference dictionary
-        """
+        """Test construction of OE resource files with screened substructure database for the full public chemical reference dictionary"""
         for molBuildType in ["oe-iso-smiles"]:
             self.__testBuildMoleculeCacheFiles(
                 molBuildType=molBuildType,
@@ -122,8 +119,7 @@ class OeMoleculeProviderTests(unittest.TestCase):
             )
 
     def __testBuildMoleculeCacheFiles(self, **kwargs):
-        """ Test build OE cache files from full component dictionary
-        """
+        """Test build OE cache files from full component dictionary"""
         ccUrlTarget = kwargs.get("ccUrlTarget", None)
         birdUrlTarget = kwargs.get("birdUrlTarget", None)
         molLimit = kwargs.get("molLimit", 0)

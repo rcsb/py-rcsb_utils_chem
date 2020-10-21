@@ -59,21 +59,18 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
         logger.info("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
     def testBuildMoleculeCacheFilesAbbrev(self):
-        """Test construction of abbreviated of chemical component definitions from alternate source paths
-        """
+        """Test construction of abbreviated of chemical component definitions from alternate source paths"""
         self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, ccFileNamePrefix="cc-abbrev")
 
     @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesSubset(self):
-        """ Test construction of a subset (1K) of chemical component definitions.
-        """
+        """Test construction of a subset (1K) of chemical component definitions."""
         self.__testBuildMoleculeCacheFiles(molLimit=1000, ccFileNamePrefix="cc-1k")
         #
 
     @unittest.skipIf(skipFlag, "Long test")
     def testSubsetBuildMoleculeCacheFiltered(self):
-        """ Test construction of a filtered selection of chemical component definitions.
-        """
+        """Test construction of a filtered selection of chemical component definitions."""
         mU = MarshalUtil()
         fD = mU.doImport(self.__missedIdsPath, fmt="json")
         filterIdD = {ccId: True for ccId in fD["filteredIdList"]}
@@ -82,8 +79,8 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesFull(self):
-        """ Test construction and reload of full chemical component resource files.
-            Running 151 sec sp macbookpro 6.6G resident mem
+        """Test construction and reload of full chemical component resource files.
+        Running 151 sec sp macbookpro 6.6G resident mem
         """
         self.__testBuildMoleculeCacheFiles(logSizes=True)
         logger.info("Reloading full cache file")
@@ -91,8 +88,7 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
 
     # ----
     def __testBuildMoleculeCacheFiles(self, **kwargs):
-        """ Test build chemical component cache files from the input component dictionaries
-        """
+        """Test build chemical component cache files from the input component dictionaries"""
         try:
             ccUrlTarget = kwargs.get("ccUrlTarget", None)
             birdUrlTarget = kwargs.get("birdUrlTarget", None)

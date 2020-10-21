@@ -20,6 +20,7 @@ import time
 from collections import defaultdict, namedtuple
 
 from rcsb.utils.chem.ChemCompMoleculeProvider import ChemCompMoleculeProvider
+from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 from rcsb.utils.chem.PdbxChemComp import PdbxChemCompDescriptorIt
 from rcsb.utils.chem.PdbxChemComp import PdbxChemCompIt
 from rcsb.utils.chem.PdbxChemComp import PdbxChemCompAtomIt
@@ -34,8 +35,7 @@ MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts scree
 
 
 class ChemCompIndexProvider(object):
-    """Utilities to read and process an index of PDB chemical component definitions.
-    """
+    """Utilities to read and process an index of PDB chemical component definitions."""
 
     def __init__(self, **kwargs):
         #
@@ -96,6 +96,94 @@ class ChemCompIndexProvider(object):
             logger.exception("Failing for %r with %s", typeRangeD, str(e))
         return rL
 
+    def filterMinimumMolecularFormula(self, typeCountD):
+        """Find molecules with the minumum formula composition for the input atom type range query (evaluates min <= ff).
+
+        Args:
+            typeCountD (dict): dictionary of element minimum values {'<element_name>: #}
+
+        Returns:
+            (list):  chemical component identifiers
+        """
+        rL = []
+        try:
+            if not typeCountD:
+                return list(self.__ccIdxD.keys())
+
+            typeQueryS = set(typeCountD.keys())
+            for ccId, idxD in self.__ccIdxD.items():
+                tD = idxD["type-counts"]
+                #
+                if not typeQueryS.issubset(tD):
+                    continue
+                match = True
+                for atomType, minCount in typeCountD.items():
+                    try:
+                        if minCount > tD[atomType]:
+                            match = False
+                            break
+                    except Exception:
+                        match = False
+                        break
+                if match:
+                    rL.append(ccId)
+        except Exception as e:
+            logger.exception("Failing for %r with %s", typeCountD, str(e))
+        return rL
+
+    def filterMinimumFormulaAndFeatures(self, typeCountD, featureCountD):
+        """Find molecules with the minumum formula and feature composition.
+
+        Args:
+            typeCountD (dict): dictionary of element minimum values {'<element_name>: #}
+            featureCountD (dict): dictionary of feature minimum values {'<element_name>: #}
+
+        Returns:
+            (list):  chemical component identifiers
+        """
+        rL = []
+        try:
+            if not typeCountD or not featureCountD:
+                return list(self.__ccIdxD.keys())
+            # ----
+            featureQueryS = set(featureCountD.keys())
+            typeQueryS = set(typeCountD.keys())
+            #
+            for ccId, idxD in self.__ccIdxD.items():
+                tD = idxD["type-counts"]
+                fD = idxD["feature-counts"]
+                #
+                if not typeQueryS.issubset(tD) or not featureQueryS.issubset(fD):
+                    continue
+
+                match = True
+                for atomType, minCount in typeCountD.items():
+                    try:
+                        if minCount > tD[atomType]:
+                            match = False
+                            break
+                    except Exception:
+                        match = False
+                        break
+
+                if not match:
+                    continue
+                #
+                for featureType, minCount in featureCountD.items():
+                    try:
+                        if minCount > fD[featureType]:
+                            match = False
+                            break
+                    except Exception:
+                        match = False
+                        break
+                #
+                if match:
+                    rL.append(ccId)
+        except Exception as e:
+            logger.exception("Failing for %r with %s", typeCountD, str(e))
+        return rL
+
     def getIndex(self):
         return self.__ccIdxD
 
@@ -122,6 +210,7 @@ class ChemCompIndexProvider(object):
         ccIdxD = {}
         useCache = kwargs.get("useCache", True)
         molLimit = kwargs.get("molLimit", 0)
+
         ccIdxFilePath = self.getIndexFilePath()
         #
         if useCache and self.__mU.exists(ccIdxFilePath):
@@ -134,19 +223,23 @@ class ChemCompIndexProvider(object):
             ccmP = ChemCompMoleculeProvider(cachePath=self.__cachePath, useCache=useCache, molLimit=molLimit, **cmpKwargs)
             ok = ccmP.testCache(minCount=molLimit, logSizes=True)
             if ok:
-                ccIdxD = self.__updateChemCompIndex(ccmP.getMolD(), ccIdxFilePath)
-                logger.info("Storing %s with data for %d definitions (status=%r) ", ccIdxFilePath, len(ccIdxD), ok)
+                molBuildType = cmpKwargs.get("molBuildType", "model-xyz")
+                ccIdxD = self.__updateChemCompIndex(ccmP.getMolD(), ccIdxFilePath, molBuildType=molBuildType)
+        #
+        for idxD in ccIdxD.values():
+            idxD["atom-types"] = set(idxD["type-counts"].keys()) if "type-counts" in idxD else set()
+            idxD["feature-types"] = set(idxD["feature-counts"].keys()) if "feature-counts" in idxD else set()
         #
         return ccIdxD
 
-    def __updateChemCompIndex(self, ccObjD, filePath):
+    def __updateChemCompIndex(self, ccObjD, filePath, molBuildType="model-xyz"):
         idxD = {}
         try:
             # Serialized chemical component data index file
             startTime = time.time()
             _, fExt = os.path.splitext(filePath)
             fileFormat = "json" if fExt == ".json" else "pickle"
-            idxD = self.__buildChemCompIndex(ccObjD)
+            idxD = self.__buildChemCompIndex(ccObjD, molBuildType=molBuildType)
             ok = self.__mU.doExport(filePath, idxD, fmt=fileFormat)
             endTime = time.time()
             logger.info("Storing %s with %d raw indexed definitions (status=%r) (%.4f seconds)", filePath, len(idxD), ok, endTime - startTime)
@@ -156,11 +249,11 @@ class ChemCompIndexProvider(object):
         #
         return idxD
 
-    def __buildChemCompIndex(self, cD):
-        """Internal method return a dictionary of extracted chemical component descriptors and formula.
-        """
+    def __buildChemCompIndex(self, cD, molBuildType="model-xyz", doFeatures=True):
+        """Internal method return a dictionary of extracted chemical component descriptors and formula."""
         rD = {}
         try:
+            quietFlag = True
             for _, dataContainer in cD.items():
                 ccIt = iter(PdbxChemCompIt(dataContainer))
                 cc = next(ccIt, None)
@@ -182,11 +275,7 @@ class ChemCompIndexProvider(object):
                     aType = at.getType().upper()
                     typeCounts[aType] += 1
                 #
-                rD[ccId] = {
-                    "formula": formula,
-                    "type-counts": typeCounts,
-                    "ambiguous": ambiguousFlag,
-                }
+                rD[ccId] = {"formula": formula, "type-counts": typeCounts, "ambiguous": ambiguousFlag, "feature-counts": {}}
                 desIt = PdbxChemCompDescriptorIt(dataContainer)
                 for des in desIt:
                     desBuildType = des.getMolBuildType()
@@ -198,6 +287,17 @@ class ChemCompIndexProvider(object):
                         rD[ccId][desBuildType] = descr
                     else:
                         logger.error("%s unexpected descriptor build type %r", ccId, desBuildType)
+                if doFeatures:
+                    oemf = OeMoleculeFactory()
+                    if quietFlag:
+                        oemf.setQuiet()
+                    tId = oemf.setChemCompDef(dataContainer)
+                    if tId != ccId:
+                        logger.error("%s chemical component definition import error", ccId)
+                        continue
+                    ok = oemf.build(molBuildType=molBuildType)
+                    if ok:
+                        rD[ccId]["feature-counts"] = oemf.getFeatureCounts()
 
         except Exception as e:
             logger.exception("Failing with %s", str(e))

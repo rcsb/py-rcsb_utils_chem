@@ -37,8 +37,8 @@ MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts scree
 
 
 class ChemCompSearchIndexWorker(object):
-    """  A skeleton class that implements the interface expected by the multiprocessing
-         for calculating search index candidates --
+    """A skeleton class that implements the interface expected by the multiprocessing
+    for calculating search index candidates --
     """
 
     def __init__(self, ccObjD, **kwargs):
@@ -46,8 +46,8 @@ class ChemCompSearchIndexWorker(object):
         _ = kwargs
 
     def buildRelatedList(self, dataList, procName, optionsD, workingDir):
-        """  Build search candidates for the input list of chemical component definitions
-             and return index feature data.
+        """Build search candidates for the input list of chemical component definitions
+        and return index feature data.
         """
         _ = optionsD
         _ = workingDir
@@ -72,8 +72,7 @@ class ChemCompSearchIndexWorker(object):
         return successList, retList, diagList
 
     def __buildChemCompSearchIndex(self, procName, ccIdList, limitPerceptions=False, quietFlag=False):
-        """Internal method return a dictionary of extracted chemical component descriptors and formula.
-        """
+        """Internal method return a dictionary of extracted chemical component descriptors and formula."""
         rL = []
         fL = []
         try:
@@ -104,8 +103,7 @@ class ChemCompSearchIndexWorker(object):
 
 
 class ChemCompSearchIndexProvider(object):
-    """Utilities to read and process the index of chemical component definitions search targets
-    """
+    """Utilities to read and process the index of chemical component definitions search targets"""
 
     def __init__(self, **kwargs):
         #
@@ -141,7 +139,6 @@ class ChemCompSearchIndexProvider(object):
             cachePath (str): path to the directory containing cache files
             ccIdxFileName (str): serialized chemical component data index file name
 
-
          Returns:
             (list): chemical component data containers
         """
@@ -168,6 +165,10 @@ class ChemCompSearchIndexProvider(object):
                 searchIdxD = self.__updateChemCompSearchIndex(ccmP.getMolD(), searchIdxFilePath, molLimit, limitPerceptions, numProc, maxChunkSize, quietFlag)
                 logger.info("Storing %s with data for %d search candidates (status=%r) ", searchIdxFilePath, len(searchIdxD), ok)
         #
+        #
+        for idxD in searchIdxD.values():
+            idxD["atom-types"] = set(idxD["type-counts"].keys()) if "type-counts" in idxD else set()
+
         return searchIdxD
 
     def __updateChemCompSearchIndex(self, ccObjD, filePath, molLimit, limitPerceptions, numProc, maxChunkSize, quietFlag):
@@ -194,8 +195,7 @@ class ChemCompSearchIndexProvider(object):
         return searchIdxD
 
     def __buildChemCompSearchIndex(self, ccObjD, limitPerceptions=False, molLimit=None):
-        """Internal method return a dictionary of extracted chemical component descriptors and formula.
-        """
+        """Internal method return a dictionary of extracted chemical component descriptors and formula."""
         rD = {}
         try:
             for ii, ccId in enumerate(ccObjD, 1):
@@ -208,7 +208,7 @@ class ChemCompSearchIndexProvider(object):
                 if tId != ccId:
                     logger.error("%s chemical component definition import error", ccId)
                 smiD = oemf.buildRelated(limitPerceptions=limitPerceptions)
-                logger.info("%s related molecular forms %d", ccId, len(smiD))
+                logger.debug("%s related molecular forms %d", ccId, len(smiD))
                 rD.update(smiD)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -252,20 +252,19 @@ class ChemCompSearchIndexProvider(object):
             queryTypeS = set(myTypeRangeD.keys())
             for ccId, idxD in self.__searchIdx.items():
                 tD = idxD["type-counts"]
-                targetTypeS = set(tD.keys())
-                if matchSubset and targetTypeS != queryTypeS:
+                # targetTypeS = set(tD.keys())
+                if not matchSubset and idxD["atom-types"] != queryTypeS:
                     continue
                 #
-                if not queryTypeS.issubset(targetTypeS):
+                if not queryTypeS.issubset(idxD["atom-types"]):
                     continue
                 match = True
                 for atomType, rangeD in myTypeRangeD.items():
-                    if atomType in tD:
-                        # min <= ff <= max
+                    try:
                         if ("min" in rangeD and rangeD["min"] > tD[atomType]) or ("max" in rangeD and rangeD["max"] < tD[atomType]):
                             match = False
                             break
-                    else:
+                    except Exception:
                         match = False
                         break
                 if match:
@@ -273,4 +272,91 @@ class ChemCompSearchIndexProvider(object):
                     rL.append(MatchResults(ccId=ccId, searchType="formula", formula=idxD["formula"]))
         except Exception as e:
             logger.exception("Failing for %r with %s", typeRangeD, str(e))
+        return rL
+
+    def filterMinimumMolecularFormula(self, typeCountD):
+        """Find molecules with the minumum formula composition for the input atom type query (evaluates min <= ff).
+
+        Args:
+            typeCountD (dict): dictionary of element minimum values {'<element_name>: #}
+
+        Returns:
+            (list):  chemical component identifiers
+        """
+        rL = []
+        try:
+            if not typeCountD:
+                return list(self.__searchIdx.keys())
+
+            queryTypeS = set(typeCountD.keys())
+            for ccId, idxD in self.__searchIdx.items():
+                tD = idxD["type-counts"]
+                if not queryTypeS.issubset(tD):
+                    continue
+                match = True
+                for atomType, minCount in typeCountD.items():
+                    try:
+                        if minCount > tD[atomType]:
+                            match = False
+                            break
+                    except Exception:
+                        match = False
+                        break
+                if match:
+                    rL.append(ccId)
+        except Exception as e:
+            logger.exception("Failing for %r with %s", typeCountD, str(e))
+        return rL
+
+    def filterMinimumFormulaAndFeatures(self, typeCountD, featureCountD):
+        """Find molecules with the minumum formula and feature composition.
+
+        Args:
+            typeCountD (dict): dictionary of element minimum values {'<element_name>: #}
+            featureCountD (dict): dictionary of feature minimum values {'<element_name>: #}
+
+        Returns:
+            (list):  chemical component identifiers
+        """
+        rL = []
+        try:
+            if not typeCountD or not featureCountD:
+                return list(self.__searchIdx.keys())
+            # ----
+            featureQueryS = set(featureCountD.keys())
+            typeQueryS = set(typeCountD.keys())
+            #
+            for ccId, idxD in self.__searchIdx.items():
+                tD = idxD["type-counts"]
+                fD = idxD["feature-counts"]
+                #
+                if not typeQueryS.issubset(tD) or not featureQueryS.issubset(fD):
+                    continue
+
+                match = True
+                for atomType, minCount in typeCountD.items():
+                    try:
+                        if minCount > tD[atomType]:
+                            match = False
+                            break
+                    except Exception:
+                        match = False
+                        break
+
+                if not match:
+                    continue
+                #
+                for featureType, minCount in featureCountD.items():
+                    try:
+                        if minCount > fD[featureType]:
+                            match = False
+                            break
+                    except Exception:
+                        match = False
+                        break
+                #
+                if match:
+                    rL.append(ccId)
+        except Exception as e:
+            logger.exception("Failing for %r with %s", typeCountD, str(e))
         return rL

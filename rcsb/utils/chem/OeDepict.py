@@ -40,9 +40,7 @@ class LabelAtoms(oedepict.OEDisplayAtomPropBase):
 
 
 class OeDepictBase(object):
-    """ Base class for 2D depictions in single and multi-page format.
-
-    """
+    """Base class for 2D depictions in single and multi-page format."""
 
     def __init__(self):
         super(OeDepictBase, self).__init__()
@@ -85,7 +83,7 @@ class OeDepictBase(object):
 
     def setMolTitleList(self, oeMolTitleList):
         """Set the list of OE Mols to be depicted as a list of tuples containing
-            [(ccId,oeMol,titleString),(ccId,oeMol,titleString),...]
+        [(ccId,oeMol,titleString),(ccId,oeMol,titleString),...]
         """
         self._molTitleList = oeMolTitleList
 
@@ -129,9 +127,7 @@ class OeDepictBase(object):
 
 class OeDepictMultiPage(OeDepictBase):
 
-    """ Create 2D depictions in multipage format from a list of OE molecules and title strings
-
-    """
+    """Create 2D depictions in multipage format from a list of OE molecules and title strings"""
 
     def __init__(self, useTitle=True):
         super(OeDepictMultiPage, self).__init__()
@@ -204,9 +200,7 @@ class OeDepictMultiPage(OeDepictBase):
 
 class OeDepict(OeDepictBase):
 
-    """ Create 2D depictions in single-page format from a list of OE molecules & title strings
-
-    """
+    """Create 2D depictions in single-page format from a list of OE molecules & title strings"""
 
     def __init__(self, useTitle=True):
         super(OeDepict, self).__init__()
@@ -215,8 +209,7 @@ class OeDepict(OeDepictBase):
         self.__grid = None
 
     def __setupImage(self):
-        """ Internal method to configure a single page image.
-        """
+        """Internal method to configure a single page image."""
         #
         self.__image = oedepict.OEImage(self._params["imageSizeX"], self._params["imageSizeY"])
         self.__grid = oedepict.OEImageGrid(self.__image, self._params["gridRows"], self._params["gridCols"])

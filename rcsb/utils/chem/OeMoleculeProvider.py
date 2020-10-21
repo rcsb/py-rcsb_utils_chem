@@ -28,8 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class OeMoleculeProvider(object):
-    """Utilities build and deliver OE molecule databases from PDB chemical component definition data
-    """
+    """Utilities build and deliver OE molecule databases from PDB chemical component definition data"""
 
     def __init__(self, **kwargs):
         """Utilities build and deliver OE molecule databases from PDB chemical component definition data
@@ -143,7 +142,8 @@ class OeMoleculeProvider(object):
             useCache (bool, optional): flag to use cached files. Defaults to True.
             cachePath (str): path to the top cache directory. Defaults to '.'.
             numProc (int): number processors to engage in screen substructure search database generation.
-            molLimit (int):
+            molLimit (int, optional): limiting number of molecules in data store (default: 0 no limit)
+            suppressHydrogens (bool, optional): flag to suppress explicit hydrogens in the OE data store.
 
         Returns:
             (dict): dictionary of constructed OE molecules
@@ -159,6 +159,7 @@ class OeMoleculeProvider(object):
         molBuildType = kwargs.get("molBuildType", "model-xyz")
         limitPerceptions = kwargs.get("limitPerceptions", False)
         quietFlag = kwargs.get("quietFlag", True)
+        suppressHydrogens = kwargs.get("suppressHydrogens", False)
         logSizes = kwargs.get("logSizes", False)
         fpDbType = "STANDARD"
         #
@@ -178,9 +179,9 @@ class OeMoleculeProvider(object):
             # -------
             startTime = time.time()
             oeCount, errCount, failIdList = oeIo.buildOeBinaryMolCache(
-                oeMolFilePath, ccObjD, molBuildType=molBuildType, quietFlag=quietFlag, fpTypeList=fpTypeList, limitPerceptions=limitPerceptions
+                oeMolFilePath, ccObjD, molBuildType=molBuildType, quietFlag=quietFlag, fpTypeList=fpTypeList, limitPerceptions=limitPerceptions, suppressHydrogens=suppressHydrogens
             )
-            logger.info("Stored %d/%d OeMols created with molBuildType %r (unconverted %d)", oeCount, ccCount, molBuildType, errCount)
+            logger.info("Stored %d/%d OeMols (suppressH = %r) created with molBuildType %r (unconverted %d)", oeCount, ccCount, suppressHydrogens, molBuildType, errCount)
             if failIdList:
                 logger.info("%r failures %r", molBuildType, failIdList)
             endTime = time.time()

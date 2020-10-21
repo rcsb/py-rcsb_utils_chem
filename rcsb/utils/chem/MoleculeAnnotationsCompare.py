@@ -31,20 +31,19 @@ ComponentAtom = namedtuple("ComponentAtom", "name aType isAromatic isChiral CIP 
 ComponentBond = namedtuple("ComponentBond", "iType isAromatic CIP")
 ComponentDescriptors = namedtuple("ComponentDescriptors", "smiles isoSmiles inchi inchiKey")
 ComponentCompare = namedtuple(
-    "ComponentCompare", "ccId refType refInfo tstType tstInfo difDetails difAromaticAtoms difStereoAtoms difTypeBonds difAromaticBonds difSmiles difIsoSmiles difInchi difInchiKey",
+    "ComponentCompare",
+    "ccId refType refInfo tstType tstInfo difDetails difAromaticAtoms difStereoAtoms difTypeBonds difAromaticBonds difSmiles difIsoSmiles difInchi difInchiKey",
 )
 
 
 class MoleculeAnnotationsCompare(object):
-    """ Utilities to compare molecular feature annotations.
-    """
+    """Utilities to compare molecular feature annotations."""
 
     def __init__(self, **kwargs):
         _ = kwargs
 
     def getChemCompFeatures(self, dataContainer, descriptorProgram="OPENEYE", filterHydrogens=False):
-        """Get the essential features of the input chemical component definition.
-        """
+        """Get the essential features of the input chemical component definition."""
         ccIt = iter(PdbxChemCompIt(dataContainer))
         cc = next(ccIt, None)
         formula = cc.getFormulaWithCharge()

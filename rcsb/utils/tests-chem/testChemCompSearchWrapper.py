@@ -68,8 +68,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
     def testAABuildConfiguration(self):
-        """Test case - build configuration -
-        """
+        """Test case - build configuration -"""
         try:
             ccsw = ChemCompSearchWrapper()
             ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif") if not self.__testFlagFull else None
@@ -81,8 +80,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             self.fail()
 
     def testAABuildDependencies(self):
-        """Test case - build all dependencies (convenience method)
-        """
+        """Test case - build all dependencies (convenience method)"""
         try:
             ccsw = ChemCompSearchWrapper()
             ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif") if not self.__testFlagFull else None
@@ -95,8 +93,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
 
     @unittest.skip("Private test")
     def testAABuildDependenciesAndStash(self):
-        """Test case - build, stash and restore dependencies -
-        """
+        """Test case - build, stash and restore dependencies -"""
         try:
             ccsw = ChemCompSearchWrapper()
             ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif") if not self.__testFlagFull else None
@@ -128,8 +125,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             self.fail()
 
     def testAReadConfig(self):
-        """Test read/access configuration
-        """
+        """Test read/access configuration"""
         try:
             ccsw = ChemCompSearchWrapper()
             ok = ccsw.readConfig()
@@ -139,8 +135,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             self.fail()
 
     def testBUpdateChemCompIndex(self):
-        """Test update chemical component/Bird basic index.
-        """
+        """Test update chemical component/Bird basic index."""
         try:
             ccsw = ChemCompSearchWrapper()
             ok = ccsw.readConfig()
@@ -152,8 +147,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             self.fail()
 
     def testCUpdateSearchIndex(self):
-        """Test update search index.
-        """
+        """Test update search index."""
         try:
             ccsw = ChemCompSearchWrapper()
             ok = ccsw.readConfig()
@@ -165,8 +159,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             self.fail()
 
     def testDUpdateSearchMoleculeProvider(self):
-        """Test update of the search molecule provider.
-        """
+        """Test update of the search molecule provider."""
         try:
             ccsw = ChemCompSearchWrapper()
             ok = ccsw.readConfig()
@@ -178,8 +171,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             self.fail()
 
     def testEReloadSearchDatabase(self):
-        """Test reload search databases.
-        """
+        """Test reload search databases."""
         try:
             ccsw = ChemCompSearchWrapper()
             ok = ccsw.readConfig()
@@ -191,8 +183,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             self.fail()
 
     def testZoomMatchDescriptor(self):
-        """Test descriptor matching
-        """
+        """Test descriptor matching"""
         try:
             numMolsTest = 500
             ccsw = ChemCompSearchWrapper()
@@ -235,8 +226,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             self.fail()
 
     def testZoomMatchFormula(self):
-        """Test formula matching
-        """
+        """Test formula matching"""
         try:
             numMolsTest = 500
             ccsw = ChemCompSearchWrapper()
@@ -259,7 +249,12 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                 mOk = self.__resultContains(ccId, rL)
                 self.assertTrue(mOk)
                 logger.info(
-                    "%s (%d) (%d) (%r) (%.4f secs)", ccId, ii, len(rL), mOk and retStatus == 0, time.time() - startTime,
+                    "%s (%d) (%d) (%r) (%.4f secs)",
+                    ccId,
+                    ii,
+                    len(rL),
+                    mOk and retStatus == 0,
+                    time.time() - startTime,
                 )
         except Exception as e:
             logger.exception("Failing with %s", str(e))

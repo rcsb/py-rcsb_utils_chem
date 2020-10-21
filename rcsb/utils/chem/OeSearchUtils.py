@@ -8,7 +8,7 @@
 #
 ##
 """
-Utilities to manage OE specific search operations.
+Utilities to manage OE specific similarity search (match) operations.
 """
 
 __docformat__ = "restructuredtext en"
@@ -32,8 +32,7 @@ MatchResults = namedtuple("MatchResults", "ccId oeMol searchType matchOpts scree
 
 
 class OeSearchUtils(object):
-    """ Utility methods to manage OE specific search operations.
-    """
+    """Utilities to manage OE specific similarity search (match) operations."""
 
     def __init__(self, oemP, fpTypeList=None, screenType=None, numProc=2, verbose=False):
         startTime = time.time()

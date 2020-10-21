@@ -34,8 +34,7 @@ ComponentDescriptors = namedtuple("ComponentDescriptors", "smiles isoSmiles inch
 
 
 class ObMoleculeFactory(object):
-    """ Utility methods for constructing RdKit molecules from chemical component definition objects.
-    """
+    """Utility methods for constructing RdKit molecules from chemical component definition objects."""
 
     def __init__(self, verbose=False):
         self.__verbose = verbose
@@ -76,8 +75,8 @@ class ObMoleculeFactory(object):
     def getMoleculeFeatures(self):
         """Get the essential features of the constructed obMol for the input component.
 
-         OBConversion object, use SetInAndOutFormat(InCode, OutCode).
-         To set a Read Option s, use SetOptions("s", OBConversion::INOPTIONS).
+        OBConversion object, use SetInAndOutFormat(InCode, OutCode).
+        To set a Read Option s, use SetOptions("s", OBConversion::INOPTIONS).
 
         """
         title = self.__pybelMol.title

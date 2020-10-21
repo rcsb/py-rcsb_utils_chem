@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class PdbxCategoryItBase(object):
-    """  Base category iterator class.
-    """
+    """Base category iterator class."""
 
     def __init__(self, dataCategory, func):
         self.__rL = dataCategory.getRowList() if dataCategory else []
@@ -100,9 +99,7 @@ class PdbxChemCompAuditIt(PdbxCategoryItBase):
 
 
 class PdbxChemCompPersist(object):
-    """ Accessor methods chemical component attributes.
-
-    """
+    """Accessor methods chemical component attributes."""
 
     def __init__(self, rowData, attributeNameList):
         self.__rowData = rowData
@@ -201,9 +198,7 @@ class PdbxChemCompPersist(object):
 
 
 class PdbxChemCompAtomPersist(object):
-    """ Accessor methods chemical component atom attributes.
-
-    """
+    """Accessor methods chemical component atom attributes."""
 
     def __init__(self, rowData, attributeNameList):
         self.__rowData = rowData
@@ -292,8 +287,7 @@ class PdbxChemCompAtomPersist(object):
         return (xV is not None) and (yV is not None) and (zV is not None)
 
     def getModelCoordinates(self):
-        """ Returns (x,y,z)
-        """
+        """Returns (x,y,z)"""
         try:
             xV = float(self.__getAttribute("model_Cartn_x"))
             yV = float(self.__getAttribute("model_Cartn_y"))
@@ -303,8 +297,7 @@ class PdbxChemCompAtomPersist(object):
             return (None, None, None)
 
     def getIdealCoordinates(self):
-        """ Returns (x,y,z)
-        """
+        """Returns (x,y,z)"""
         try:
             xV = float(self.__getAttribute("pdbx_model_Cartn_x_ideal"))
             yV = float(self.__getAttribute("pdbx_model_Cartn_y_ideal"))
@@ -318,9 +311,7 @@ class PdbxChemCompAtomPersist(object):
 
 
 class PdbxChemCompBondPersist(object):
-    """ Accessor methods chemical component bond attributes.
-
-    """
+    """Accessor methods chemical component bond attributes."""
 
     def __init__(self, rowData, attributeNameList):
         self.__rowData = rowData
@@ -338,8 +329,7 @@ class PdbxChemCompBondPersist(object):
         return self
 
     def getBond(self):
-        """ Returns (atomI,atomJ) atom ids from the atom list.
-        """
+        """Returns (atomI,atomJ) atom ids from the atom list."""
         return (self.__getAttribute("atom_id_1"), self.__getAttribute("atom_id_2"))
 
     def getType(self):
@@ -380,9 +370,7 @@ class PdbxChemCompBondPersist(object):
 
 
 class PdbxChemCompIdentifierPersist(object):
-    """ Accessor methods chemical component identifier attributes.
-
-    """
+    """Accessor methods chemical component identifier attributes."""
 
     def __init__(self, rowData, attributeNameList):
         self.__rowData = rowData
@@ -400,8 +388,7 @@ class PdbxChemCompIdentifierPersist(object):
         return self
 
     def getIdentifier(self):
-        """ Returns the value of the identifier.
-        """
+        """Returns the value of the identifier."""
         return self.__getAttribute("identifier")
 
     def getType(self):
@@ -418,9 +405,7 @@ class PdbxChemCompIdentifierPersist(object):
 
 
 class PdbxChemCompDescriptorPersist(object):
-    """ Accessor methods chemical component descriptor  attributes.
-
-    """
+    """Accessor methods chemical component descriptor  attributes."""
 
     def __init__(self, rowData, attributeNameList):
         self.__rowData = rowData
@@ -447,8 +432,7 @@ class PdbxChemCompDescriptorPersist(object):
         return self
 
     def getDescriptor(self):
-        """ Returns the value of the descriptor.
-        """
+        """Returns the value of the descriptor."""
         return self.__getAttribute("descriptor")
 
     def getType(self):
@@ -475,9 +459,7 @@ class PdbxChemCompDescriptorPersist(object):
 
 
 class PdbxChemCompAuditPersist(object):
-    """ Accessor methods chemical component audit details.
-
-    """
+    """Accessor methods chemical component audit details."""
 
     def __init__(self, rowData, attributeNameList):
         self.__rowData = rowData
@@ -495,26 +477,21 @@ class PdbxChemCompAuditPersist(object):
         return self
 
     def getActionType(self):
-        """ Returns the value of the action type.
-        """
+        """Returns the value of the action type."""
         return self.__getAttribute("action_type")
 
     def getDate(self):
-        """ Returns the value of audit date.
-        """
+        """Returns the value of audit date."""
         return self.__getAttribute("date")
 
     def getProcessingSite(self):
-        """ Returns the value of processing site.
-        """
+        """Returns the value of processing site."""
         return self.__getAttribute("processing_site")
 
     def getAnnotator(self):
-        """ Returns the value of audit annotator.
-        """
+        """Returns the value of audit annotator."""
         return self.__getAttribute("annotator")
 
     def getDetails(self):
-        """ Returns the value of audit details.
-        """
+        """Returns the value of audit details."""
         return self.__getAttribute("details")

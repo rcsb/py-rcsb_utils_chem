@@ -29,8 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChemCompMoleculeProvider(object):
-    """Utilities to read and serialize the dictionary of PDBx/mmCIF chemical component definitions.
-    """
+    """Utilities to read and serialize the dictionary of PDBx/mmCIF chemical component definitions."""
 
     def __init__(self, **kwargs):
         # Default source target locators

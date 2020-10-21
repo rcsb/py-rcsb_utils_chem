@@ -101,13 +101,11 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         return oesmP, ccIdxD
 
     def testSubStructureSearchExhaustiveAbbrev(self):
-        """Exhaustive substructure search. (abbrev)
-        """
+        """Exhaustive substructure search. (abbrev)"""
         return self.__exhaustiveSubStructureSearch(self.__numMols, **self.__myKwargs)
 
     def __exhaustiveSubStructureSearch(self, numMols, **kwargs):
-        """Exhaustive substructure search.
-        """
+        """Exhaustive substructure search."""
         try:
             limitPerceptions = kwargs.get("limitPerceptions", False)
             buildTypeList = kwargs.get("buildTypeList", ["oe-iso-smiles"])
@@ -136,8 +134,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         return False
 
     def testFingerprintSearchAbbrev(self):
-        """Fingerprint search.
-        """
+        """Fingerprint search."""
         return self.__fingerPrintSearch(self.__numMols, **self.__myKwargs)
 
     def __fingerPrintSearch(self, numMols, **kwargs):
@@ -189,14 +186,12 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         return True
 
     def testFingerPrintScoresAbbrev(self):
-        """Fingerprint scores. (abbreviated)
-        """
+        """Fingerprint scores. (abbreviated)"""
         return self.__fingerPrintScores(self.__numMols, **self.__myKwargs)
 
     @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testFingerPrintScoresFull(self):
-        """Fingerprint scores. (full)
-        """
+        """Fingerprint scores. (full)"""
         numMols = 300000
         myKwargs = {
             "cachePath": self.__cachePath,
@@ -231,7 +226,10 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("Begin finger print score search on %d molecules", numMols)
         # ----
         startTime = time.time()
-        for ii, ccId, in enumerate(list(ccIdxD.keys())[:numMols]):
+        for (
+            ii,
+            ccId,
+        ) in enumerate(list(ccIdxD.keys())[:numMols]):
             ccD = ccIdxD[ccId]
             for buildType in buildTypeList:
                 if buildType in ccD:
@@ -284,14 +282,12 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         return True
 
     def testSubStructureSearchWithFpAbbrev(self):
-        """Substructure search with fingerprint prefilter. (abbreviated data)
-        """
+        """Substructure search with fingerprint prefilter. (abbreviated data)"""
         return self.__sssWithFingerPrintFromDescriptor(self.__numMols, **self.__myKwargs)
 
     @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testSubStructureSearchWithFpFull(self):
-        """Substructure search with fingerprint prefilter. (full)
-        """
+        """Substructure search with fingerprint prefilter. (full)"""
         numMols = 300000
         myKwargs = {
             "cachePath": self.__cachePath,
@@ -329,7 +325,10 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         logger.info("Begin substructure search w/ finger print filter on %d molecules", numMols)
         # ----
         startTime = time.time()
-        for ii, ccId, in enumerate(list(ccIdxD.keys())[:numMols]):
+        for (
+            ii,
+            ccId,
+        ) in enumerate(list(ccIdxD.keys())[:numMols]):
             ccD = ccIdxD[ccId]
             for buildType in buildTypeList:
                 if buildType in ccD:
@@ -381,8 +380,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
         return True
 
     def testSubStructureSearchScreenedAbbrev(self):
-        """Screened substructure search.
-        """
+        """Screened substructure search."""
         myKwargs = {
             "ccUrlTarget": self.__ccUrlTarget,
             "birdUrlTarget": self.__birdUrlTarget,
@@ -398,8 +396,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
 
     @unittest.skipIf(skipFlag, "Long troubleshooting test")
     def testSubStructureSearchScreenedFiltered(self):
-        """Screened substructure search.
-        """
+        """Screened substructure search."""
         numMols = 5000
         myKwargs = {
             "cachePath": self.__cachePath,
@@ -423,7 +420,10 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             #
             missL = []
             numMols = min(len(ccIdxD), numMols) if numMols else len(ccIdxD)
-            for ii, ccId, in enumerate(list(ccIdxD.keys())[:numMols]):
+            for (
+                ii,
+                ccId,
+            ) in enumerate(list(ccIdxD.keys())[:numMols]):
                 ccD = ccIdxD[ccId]
                 for buildType in buildTypeList:
                     if buildType in ccD:

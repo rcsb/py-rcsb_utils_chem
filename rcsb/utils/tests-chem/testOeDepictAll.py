@@ -64,8 +64,7 @@ class OeDepictAllTests(unittest.TestCase):
         return oemp.getOeMolD()
 
     def testDepictAll(self):
-        """Test case -  single OE molecule depiction.
-        """
+        """Test case -  single OE molecule depiction."""
         try:
             for ccId, oeMol in self.__oeMolD.items():
                 imagePath = os.path.join(self.__workPath, "image", ccId[0], ccId + ".svg")

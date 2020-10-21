@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 class OeDepictAlignBase(OeDepictBase):
-    """  Base class for aligned 2D molecular renderings containing molecular
-         object data and common display preferences.
+    """Base class for aligned 2D molecular renderings containing molecular
+    object data and common display preferences.
     """
 
     def __init__(self):
@@ -99,8 +99,8 @@ class OeDepictAlignBase(OeDepictBase):
     def addFitMolList(self, oeMolList, suppressHydrogens=False, imageDirPath=".", imageFilePrefix=None):
         """Set the list of molecules to be compared with reference molecule by MCSS.
 
-           From the input list build the internal pair list (self._pairMolList) of
-           tuples  [(refId,refMol,refTitle,refImagePath,fitId,fitMol,fitTitle,fitImagePath),(),...]
+        From the input list build the internal pair list (self._pairMolList) of
+        tuples  [(refId,refMol,refTitle,refImagePath,fitId,fitMol,fitTitle,fitImagePath),(),...]
         """
         self._pairMolList = []
         try:
@@ -125,8 +125,8 @@ class OeDepictAlignBase(OeDepictBase):
     def setPairMolList(self, pairOeMolList, suppressHydrogens=False, imageDirPath=".", imageFilePrefix=None):
         """Set the pairs of molecules to be compared by MCSS.
 
-           From the input list build the internal pair list (self._pairMolList) of
-           tuples  [(refId,refMol,refTitle,refImagePath,fitId,fitMol,fitTitle,fitImagePath),(),...]
+        From the input list build the internal pair list (self._pairMolList) of
+        tuples  [(refId,refMol,refTitle,refImagePath,fitId,fitMol,fitTitle,fitImagePath),(),...]
         """
         self._pairMolList = []
         try:
@@ -153,8 +153,7 @@ class OeDepictAlignBase(OeDepictBase):
         return self._searchType
 
     def _setupMCSS(self, refmol):
-        """ Internal initialization for the MCSS comparison.
-        """
+        """Internal initialization for the MCSS comparison."""
         # self._mcss = oechem.OEMCSSearch(oechem.OEMCSType_Approximate)
         self._mcss = oechem.OEMCSSearch(oechem.OEMCSType_Exhaustive)
         #
@@ -192,8 +191,7 @@ class OeDepictAlignBase(OeDepictBase):
         # self._mcss.SetMinAtoms(nAtomsRef/2)
 
     def _setupSubStructure(self, refmol):
-        """ Internal initialization for a substructure comparison.
-        """
+        """Internal initialization for a substructure comparison."""
 
         #
         if self._searchType == "default":
@@ -308,10 +306,10 @@ class OeDepictAlignBase(OeDepictBase):
 
 
 class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
-    """ Create 2D depictions of MCSS alignments. Inputs can be in the the form of pairs,
-        lists, and pair lists of molecule object instances.
+    """Create 2D depictions of MCSS alignments. Inputs can be in the the form of pairs,
+    lists, and pair lists of molecule object instances.
 
-        Output images are rendered in a grid layout that can span multiple pages.
+    Output images are rendered in a grid layout that can span multiple pages.
     """
 
     def __init__(self):
@@ -348,8 +346,7 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
         return aM
 
     def __setupImageMulti(self):
-        """ Internal method to configure a multipage image.
-        """
+        """Internal method to configure a multipage image."""
         #
         self.__gridRows = self._params["gridRows"]
         self.__gridCols = self._params["gridCols"]
@@ -362,8 +359,7 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
         self.__newPage()
 
     def __newPage(self):
-        """ Internal method to advance to a new page in a multipage configuration.
-        """
+        """Internal method to advance to a new page in a multipage configuration."""
         rows = self.__gridRows
         cols = self.__gridCols
         self.__image = self.__multi.NewPage()
@@ -378,13 +374,13 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
 
     @timeout(500)
     def __alignListMultiWorker(self, imagePath="multi.pdf", layout="pairs"):
-        """ Working method comparing a reference molecule with a list of fit molecules.
+        """Working method comparing a reference molecule with a list of fit molecules.
 
-            pairMolList = (refId,refMol,refTitle,refImagePath,fitId,fitMol,fitTitle,fitImagePath)
+        pairMolList = (refId,refMol,refTitle,refImagePath,fitId,fitMol,fitTitle,fitImagePath)
 
-            Map of corresponding atoms is returned.
+        Map of corresponding atoms is returned.
 
-            Image Output is in multipage layout.
+        Image Output is in multipage layout.
         """
         #
         self.__setupImageMulti()
@@ -460,10 +456,10 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
 
 
 class OeDepictMCSAlignPage(OeDepictAlignBase):
-    """ Create 2D depictions of MCSS alignments. Inputs can be in the the form of pairs,
-        lists, and pair lists of molecule object instances.
+    """Create 2D depictions of MCSS alignments. Inputs can be in the the form of pairs,
+    lists, and pair lists of molecule object instances.
 
-        Output images are rendered to a single page image with grid layout.
+    Output images are rendered to a single page image with grid layout.
     """
 
     def __init__(self):
@@ -477,8 +473,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         #
 
     def __setupImage(self):
-        """ Internal method to configure a single pair alignment image.
-        """
+        """Internal method to configure a single pair alignment image."""
         #
         self.__image = oedepict.OEImage(self._params["imageSizeX"], self._params["imageSizeY"])
         rows = self._params["gridRows"]
@@ -493,8 +488,8 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         self.__citer = self.__grid.GetCells()
 
     def alignPair(self, imagePath="single-pair.png"):
-        """  Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
-             current _pairMolList.  Display options set for a single grid row with two columns.
+        """Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
+        current _pairMolList.  Display options set for a single grid row with two columns.
         """
         self._params["gridCols"] = 2
         self._params["gridRows"] = 1
@@ -532,13 +527,13 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
 
     # @timeout(15)
     def __alignListWorker(self, imagePath="single.pdf", layout="pairs"):
-        """ Working method comparing a reference molecule with a list of fit molecules.
+        """Working method comparing a reference molecule with a list of fit molecules.
 
-            pairMolList = (refId,refMol,refTitle,refImgPath,fitId,fitMol,fitTitle,fitImgPath)
+        pairMolList = (refId,refMol,refTitle,refImgPath,fitId,fitMol,fitTitle,fitImgPath)
 
-            Map of corresponding atoms is returned.
+        Map of corresponding atoms is returned.
 
-            Output image is a single-page with grid layout.
+        Output image is a single-page with grid layout.
         """
         #
         self.__setupImage()
@@ -609,10 +604,10 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
 
 
 class OeDepictMCSAlign(OeDepictAlignBase):
-    """ Create 2D depictions of MCSS alignments. Inputs can be in the the form of pairs,
-        lists, and pair lists of molecule object instances.
+    """Create 2D depictions of MCSS alignments. Inputs can be in the the form of pairs,
+    lists, and pair lists of molecule object instances.
 
-        Outputs are separate image files with a single diagram per file.
+    Outputs are separate image files with a single diagram per file.
     """
 
     def __init__(self):
@@ -623,8 +618,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         #
 
     def __setupImage(self):
-        """ Internal method to configure a single page image.
-        """
+        """Internal method to configure a single page image."""
         #
         self.__imageRef = oedepict.OEImage(self._params["imageSizeX"], self._params["imageSizeY"])
         self.__imageFit = oedepict.OEImage(self._params["imageSizeX"], self._params["imageSizeY"])
@@ -632,8 +626,8 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         self._assignDisplayOptions()
 
     def alignPair(self):
-        """  Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
-             current _pairMolList.  Display options set for a single grid row with two columns.
+        """Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
+        current _pairMolList.  Display options set for a single grid row with two columns.
         """
         self._pairMolList = []
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
@@ -665,13 +659,13 @@ class OeDepictMCSAlign(OeDepictAlignBase):
 
     @timeout(15)
     def __alignListWorker(self, layout="pairs"):
-        """ Working method comparing a reference molecule with a list of fit molecules.
+        """Working method comparing a reference molecule with a list of fit molecules.
 
-            pairMolList = (refId,refMol,refTitle,refImagePath, fitId,fitMol,fitTitle, fitImagePath)
+        pairMolList = (refId,refMol,refTitle,refImagePath, fitId,fitMol,fitTitle, fitImagePath)
 
-            Map of corresponding atoms is returned.
+        Map of corresponding atoms is returned.
 
-            Writes separate output images for the reference and fit molecules for each comparison pair.
+        Writes separate output images for the reference and fit molecules for each comparison pair.
         """
         #
         atomMap = []
@@ -726,8 +720,8 @@ class OeDepictMCSAlign(OeDepictAlignBase):
 
 
 class OeMCSAlignUtil(OeDepictAlignBase):
-    """ Perform MCSS alignments.  Inputs can be in the the form of pairs,
-        lists, and pair lists of molecule object instances.
+    """Perform MCSS alignments.  Inputs can be in the the form of pairs,
+    lists, and pair lists of molecule object instances.
     """
 
     def __init__(self, maxMatches=2048):
@@ -736,9 +730,9 @@ class OeMCSAlignUtil(OeDepictAlignBase):
         self.__maxMatches = maxMatches
 
     def doAlign(self):
-        """ Test the MCSS comparison between the current reference and fit molecules -
+        """Test the MCSS comparison between the current reference and fit molecules -
 
-            Return list of corresponding atoms on success or an empty list otherwise.
+        Return list of corresponding atoms on success or an empty list otherwise.
         """
         atomMap = []
         self._setupMCSS(self._refMol)
@@ -789,9 +783,9 @@ class OeMCSAlignUtil(OeDepictAlignBase):
         return nL
 
     def doTestAlign(self):
-        """ Test the MCSS comparison between the current reference and fit molecules -
+        """Test the MCSS comparison between the current reference and fit molecules -
 
-            Return list of corresponding atoms on success or an empty list otherwise.
+        Return list of corresponding atoms on success or an empty list otherwise.
         """
         self._minAtomMatchFraction = 0.9
         unique = True
@@ -818,9 +812,9 @@ class OeMCSAlignUtil(OeDepictAlignBase):
         return atomMap
 
     def doAlignWithAnal(self):
-        """ Test the MCSS comparison between the current reference and fit molecules -
+        """Test the MCSS comparison between the current reference and fit molecules -
 
-            Return list of corresponding atoms on success or an empty list otherwise.
+        Return list of corresponding atoms on success or an empty list otherwise.
         """
         self._minAtomMatchFraction = 0.9
         unique = True
@@ -897,11 +891,11 @@ class OeMCSAlignUtil(OeDepictAlignBase):
         return atomMap, uRefAtomList, uRefNList, chgDifRefD, uFitAtomList, uFitNList, chgDifFitD
 
     def doAlignList(self):
-        """ Test MCSS comparison between the current reference molecule with a list of fit molecules.
+        """Test MCSS comparison between the current reference molecule with a list of fit molecules.
 
-            pairMolList = (refId,refMol,refTitle,fitId,fitMol,fitTitle)
+        pairMolList = (refId,refMol,refTitle,fitId,fitMol,fitTitle)
 
-            Map of corresponding atoms is returned.
+        Map of corresponding atoms is returned.
 
         """
         atomMap = []
@@ -927,10 +921,10 @@ class OeMCSAlignUtil(OeDepictAlignBase):
 
 
 class OeDepictSubStructureAlign(OeDepictAlignBase):
-    """ Create 2D depictions of substructure alignments. Inputs can be in the the form of pairs,
-        lists, and pair lists of molecule object instances.
+    """Create 2D depictions of substructure alignments. Inputs can be in the the form of pairs,
+    lists, and pair lists of molecule object instances.
 
-        Outputs are separate image files with a single diagram per file.
+    Outputs are separate image files with a single diagram per file.
     """
 
     def __init__(self):
@@ -941,8 +935,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         #
 
     def __setupImage(self):
-        """ Internal method to configure a single page image.
-        """
+        """Internal method to configure a single page image."""
         #
         self.__imageRef = oedepict.OEImage(self._params["imageSizeX"], self._params["imageSizeY"])
         self.__imageFit = oedepict.OEImage(self._params["imageSizeX"], self._params["imageSizeY"])
@@ -950,8 +943,8 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         self._assignDisplayOptions()
 
     def alignPair(self):
-        """  Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
-             current _pairMolList.  Display options set for a single grid row with two columns.
+        """Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
+        current _pairMolList.  Display options set for a single grid row with two columns.
         """
         self._pairMolList = []
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
@@ -983,13 +976,13 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
 
     @timeout(15)
     def __alignListWorker(self, layout="pairs"):
-        """ Working method comparing a reference molecule with a list of fit molecules.
+        """Working method comparing a reference molecule with a list of fit molecules.
 
-            pairMolList = (refId,refMol,refTitle,refImagePath, fitId,fitMol,fitTitle, fitImagePath)
+        pairMolList = (refId,refMol,refTitle,refImagePath, fitId,fitMol,fitTitle, fitImagePath)
 
-            Map of corresponding atoms is returned.
+        Map of corresponding atoms is returned.
 
-            Writes separate output images for the reference and fit molecules for each comparison pair.
+        Writes separate output images for the reference and fit molecules for each comparison pair.
         """
         #
         atomMap = []

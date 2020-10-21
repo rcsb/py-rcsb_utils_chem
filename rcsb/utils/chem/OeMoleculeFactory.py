@@ -7,6 +7,7 @@
 # Updates:
 # 2-Oct-2019  jdw adapted from OeBuildMol()
 ##
+# pylint: disable=too-many-lines
 """
 Classes to build OE molecule objects from chemical component definition data.
 
@@ -39,8 +40,7 @@ DescriptorInstance = namedtuple("DescriptorInstance", "type program")
 
 
 class OeMoleculeFactory(object):
-    """ Utility methods for constructing OEGraphMols from chemical component definition objects.
-    """
+    """Utility methods for constructing OEGraphMols from chemical component definition objects."""
 
     def __init__(self, verbose=False):
         self.__verbose = verbose
@@ -65,8 +65,7 @@ class OeMoleculeFactory(object):
         self.__descriptor = None
 
     def setQuiet(self):
-        """Suppress OE warnings and processing errors
-        """
+        """Suppress OE warnings and processing errors"""
         oechem.OEThrow.SetLevel(oechem.OEErrorLevel_Quiet)
         self.__oeErrorLevel = oechem.OEErrorLevel_Quiet
         self.__quietMode = True
@@ -95,8 +94,7 @@ class OeMoleculeFactory(object):
         return None
 
     def setOeMol(self, inpOeMol, ccId):
-        """  Load this object with an existing oeMOL()
-        """
+        """Load this object with an existing oeMOL()"""
         self.__oeClear()
         self.__oeMol = oechem.OEGraphMol(inpOeMol)
         self.__ccId = ccId
@@ -111,7 +109,7 @@ class OeMoleculeFactory(object):
         return ccId
 
     def addFingerPrints(self, fpTypeList):
-        """ Add fingerprints (fpType) as data sections in the current molecule.
+        """Add fingerprints (fpType) as data sections in the current molecule.
 
         Args:
             fpTypeList (list): list of fingerprint types [TREE,PATH,MACCS,CIRCULAR,LINGO].
@@ -168,7 +166,7 @@ class OeMoleculeFactory(object):
     def __transferAromaticFlagsOE(self, oeMol):
         """Manually assign/transfer aromatic flags from chemical component definition.
 
-           Must follow other perceptions -
+        Must follow other perceptions -
         """
         atIt = PdbxChemCompAtomIt(self.__dataContainer)
         ccAtomD = {}
@@ -198,9 +196,9 @@ class OeMoleculeFactory(object):
         return oeMol
 
     def updateCIPStereoOE(self, oeMol):
-        """ Manually assign OE CIP stereo perceptions for each atom and bond.
+        """Manually assign OE CIP stereo perceptions for each atom and bond.
 
-            Redundant of oechem.OE3DToInternalStereo(oeMol) -
+        Redundant of oechem.OE3DToInternalStereo(oeMol) -
         """
         for atom in oeMol.GetAtoms():
             cipV = oechem.OEPerceiveCIPStereo(oeMol, atom)
@@ -222,58 +220,60 @@ class OeMoleculeFactory(object):
         return oeMol
 
     def getGraphMolSuppressH(self):
-        """ Return the current constructed OE molecule with hydrogens suppressed.
-        """
+        """Return the current constructed OE molecule with hydrogens suppressed."""
         # OESuppressHydrogens(self.__oeMol, retainPolar=False,retainStereo=True,retainIsotope=True)
         oechem.OESuppressHydrogens(self.__oeMol)
         return self.__oeMol
 
-    def getMol(self):
-        """ Return a copy of the current constructed OE molecule.
-        """
-        return oechem.OEMol(self.__oeMol) if self.__oeMol else None
+    def getMolSuppressH(self):
+        """Return the current constructed OE molecule with hydrogens suppressed."""
+        # OESuppressHydrogens(self.__oeMol, retainPolar=False,retainStereo=True,retainIsotope=True)
+        tMol = oechem.OEMol(self.__oeMol) if self.__oeMol else None
+        if tMol:
+            oechem.OESuppressHydrogens(tMol)
+        #
+        return tMol
+
+    def getMol(self, suppressHydrogens=False):
+        """Return a copy of the current constructed OE molecule."""
+        if suppressHydrogens:
+            return self.getMolSuppressH()
+        else:
+            return oechem.OEMol(self.__oeMol) if self.__oeMol else None
 
     def getGraphMol(self):
-        """ Return a copy of current constructed Graph OE molecule.
-        """
+        """Return a copy of current constructed Graph OE molecule."""
         return oechem.OEGraphMol(self.__oeMol) if self.__oeMol else None
 
     def getCanSMILES(self):
-        """ Return the cannonical SMILES string derived from the current OD molecule.
-        """
+        """Return the cannonical SMILES string derived from the current OD molecule."""
         return oechem.OECreateCanSmiString(self.__oeMol) if self.__oeMol else None
 
     def getIsoSMILES(self):
-        """ Return the cannonical stereo SMILES string derived from the current OE molecule.
-        """
+        """Return the cannonical stereo SMILES string derived from the current OE molecule."""
         return oechem.OECreateIsoSmiString(self.__oeMol) if self.__oeMol else None
 
     def getFormula(self):
-        """ Return the Hill order formulat  derived from the current OE molecule.
-        """
+        """Return the Hill order formulat  derived from the current OE molecule."""
         return oechem.OEMolecularFormula(self.__oeMol) if self.__oeMol else None
 
     def getFormalCharge(self):
         return oechem.OENetCharge(self.__oeMol) if self.__oeMol else 0
 
     def getInChIKey(self):
-        """ Return the InChI key derived from the current OE molecule.
-        """
+        """Return the InChI key derived from the current OE molecule."""
         return oechem.OECreateInChIKey(self.__oeMol) if self.__oeMol else None
 
     def getInChI(self):
-        """ Return the InChI string derived from the current OE molecule.
-        """
+        """Return the InChI string derived from the current OE molecule."""
         return oechem.OECreateInChI(self.__oeMol) if self.__oeMol else None
 
     def getTitle(self):
-        """ Return the title assigned to the current OE molecule
-        """
+        """Return the title assigned to the current OE molecule"""
         return self.__oeMol.GetTitle() if self.__oeMol else None
 
     def getCcId(self):
-        """ Return the CC id of this object -
-        """
+        """Return the CC id of this object -"""
         return self.__ccId
 
     def addSdTags(self):
@@ -291,8 +291,7 @@ class OeMoleculeFactory(object):
             oechem.OESetSDData(self.__oeMol, "FORMULA", formula)
 
     def setSimpleAtomNames(self):
-        """
-        """
+        """"""
         if self.__oeMol:
             for atom in self.__oeMol.GetAtoms():
                 atom.SetIntType(atom.GetAtomicNum())
@@ -300,8 +299,7 @@ class OeMoleculeFactory(object):
             oechem.OETriposAtomNames(self.__oeMol)
 
     def getElementCounts(self, addExplicitHydrogens=False, useSymbol=False):
-        """ Get the dictionary of element counts (eg. eD[iAtNo]=iCount).
-        """
+        """Get the dictionary of element counts (eg. eD[iAtNo]=iCount)."""
         eD = {}
         if self.__oeMol:
             if addExplicitHydrogens:
@@ -322,9 +320,50 @@ class OeMoleculeFactory(object):
         #
         return rD
 
-    def getOeMoleculeFeatures(self, filterHydrogens=False):
-        """Get the essential features of the constructed OEMol for the input component.
+    def getFeatureCounts(self, addExplicitHydrogens=False):
+        """Get the dictionary of simple feature counts
+        (eg. fD= {"rings": #,"rings_ar": #, "bnd_sng": #, "bnd_dbl": #, "bnd_trp: #, "at_ar": #, "at_ch": #})
         """
+        fD = defaultdict(int)
+        if self.__oeMol:
+            try:
+                if addExplicitHydrogens:
+                    if not oechem.OEAddExplicitHydrogens(self.__oeMol):
+                        logger.warning("%s explict hydrogen addition fails", self.__ccId)
+                #
+                tV, _ = oechem.OEDetermineAromaticRingSystems(self.__oeMol)
+                if tV > 0:
+                    fD["rings_ar"] = tV
+
+                tV, _ = oechem.OEDetermineRingSystems(self.__oeMol)
+                if tV > 0:
+                    fD["rings"] = tV
+                #
+                for atom in self.__oeMol.GetAtoms():
+                    if atom.IsAromatic():
+                        fD["at_ar"] += 1
+                    if atom.IsChiral():
+                        fD["at_ch"] += 1
+                #
+                for bond in self.__oeMol.GetBonds():
+                    atI = bond.GetBgn()
+                    atJ = bond.GetEnd()
+                    if atI.IsHydrogen() or atJ.IsHydrogen():
+                        continue
+                    iOrder = bond.GetOrder()
+                    if iOrder == 1:
+                        fD["bnd_sng"] += 1
+                    elif iOrder == 2:
+                        fD["bnd_dbl"] += 1
+                    elif iOrder == 2:
+                        fD["bnd_trp"] += 1
+            except Exception as e:
+                logger.exception("Failing for %r with %s", self.__ccId, str(e))
+        #
+        return fD
+
+    def getOeMoleculeFeatures(self, filterHydrogens=False):
+        """Get the essential features of the constructed OEMol for the input component."""
         formula = self.getFormula()
         # ccId = self.__ccId
         ccId = self.getTitle()
@@ -401,7 +440,7 @@ class OeMoleculeFactory(object):
 
     # ----
     def buildRelated(self, limitPerceptions=False):
-        """ Build the most "authorative" molecule from the chemical component definition and
+        """Build the most "authorative" molecule from the chemical component definition and
         use this as a basis reference descriptors and related protomeric and tautomeric forms.
         This collection is designed to capture the chemical diversity within the component defintion
         as well as other reasonable chemical forms for search purposes.  The collection is returned
@@ -432,6 +471,7 @@ class OeMoleculeFactory(object):
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
+                    fCountD = self.getFeatureCounts()
                     if smiles and inchiKey and smiles not in uniqSmilesD:
                         uniqSmilesD[smiles] = True
                         retD[name] = {
@@ -441,8 +481,9 @@ class OeMoleculeFactory(object):
                             "inchi-key": inchiKey,
                             "formula": formula,
                             "fcharge": fCharge,
-                            "type_counts": eleD,
+                            "type-counts": eleD,
                             "program": oeVersionString,
+                            "feature-counts": fCountD,
                         }
             for buildType in ["oe-smiles", "acdlabs-smiles", "cactvs-smiles"]:
                 ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
@@ -454,6 +495,7 @@ class OeMoleculeFactory(object):
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
+                    fCountD = self.getFeatureCounts()
                     if smiles and inchiKey and smiles not in uniqSmilesD:
                         uniqSmilesD[smiles] = True
                         retD[name] = {
@@ -463,8 +505,9 @@ class OeMoleculeFactory(object):
                             "inchi-key": inchiKey,
                             "formula": formula,
                             "fcharge": fCharge,
-                            "type_counts": eleD,
+                            "type-counts": eleD,
                             "program": oeVersionString,
+                            "feature-counts": fCountD,
                         }
             # --- do charge and tautomer normalization on the model-xyz build
             ok = self.build(molBuildType="model-xyz", setTitle=True, limitPerceptions=limitPerceptions)
@@ -483,6 +526,7 @@ class OeMoleculeFactory(object):
                     formula = self.getFormula()
                     fCharge = self.getFormalCharge()
                     eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
+                    fCountD = self.getFeatureCounts()
                     if smiles and inchiKey and smiles not in uniqSmilesD:
                         uniqSmilesD[smiles] = True
                         retD[name] = {
@@ -492,8 +536,9 @@ class OeMoleculeFactory(object):
                             "inchi-key": inchiKey,
                             "formula": formula,
                             "fcharge": fCharge,
-                            "type_counts": eleD,
+                            "type-counts": eleD,
                             "program": oeVersionString,
+                            "feature-counts": fCountD,
                         }
                     logger.debug("%s begin tautomer search", self.__ccId)
                     tautomerList = self.getTautomerMolList()
@@ -510,6 +555,7 @@ class OeMoleculeFactory(object):
                             formula = self.getFormula()
                             fCharge = self.getFormalCharge()
                             eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
+                            fCountD = self.getFeatureCounts()
                             if smiles and inchiKey and smiles not in uniqSmilesD:
                                 uniqSmilesD[smiles] = True
                                 retD[name] = {
@@ -521,6 +567,7 @@ class OeMoleculeFactory(object):
                                     "fcharge": fCharge,
                                     "type-counts": eleD,
                                     "program": oeVersionString,
+                                    "feature-counts": fCountD,
                                 }
 
         except Exception as e:
@@ -699,8 +746,8 @@ class OeMoleculeFactory(object):
         return ret
 
     def __build2D(self, setTitle=True):
-        """  Build molecule using only atom and bond types, and associated annotations
-             in a chemical component definition.
+        """Build molecule using only atom and bond types, and associated annotations
+        in a chemical component definition.
         """
         try:
             self.__oeClear()
@@ -791,9 +838,9 @@ class OeMoleculeFactory(object):
         return None
 
     def __build3D(self, molBuildType, setTitle=True, useFallBackModelXyz=True):
-        """ Build molecule using only atom and bond types, and aromatic annotations
-            in a chemical component defintion. Use the indicated 3D coordinate data
-            to assign stereochemistry assignments.
+        """Build molecule using only atom and bond types, and aromatic annotations
+        in a chemical component defintion. Use the indicated 3D coordinate data
+        to assign stereochemistry assignments.
         """
         try:
             self.__oeClear()

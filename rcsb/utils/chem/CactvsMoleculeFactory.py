@@ -34,8 +34,7 @@ ComponentDescriptors = namedtuple("ComponentDescriptors", "smiles isoSmiles inch
 
 
 class CactvsMoleculeFactory(object):
-    """ Utility methods for constructing Cactvs molecules from chemical component definition objects.
-    """
+    """Utility methods for constructing Cactvs molecules from chemical component definition objects."""
 
     def __init__(self, cactvsPythonInterpreterPath, workPath, verbose=False):
         self.__cactvsPythonInterpreterPath = cactvsPythonInterpreterPath
@@ -72,8 +71,8 @@ class CactvsMoleculeFactory(object):
     def getMoleculeFeatures(self, aroModel="cactvs"):
         """Get the essential features of the constructed obMol for the input component.
 
-         OBConversion object, use SetInAndOutFormat(InCode, OutCode).
-         To set a Read Option s, use SetOptions("s", OBConversion::INOPTIONS).
+        OBConversion object, use SetInAndOutFormat(InCode, OutCode).
+        To set a Read Option s, use SetOptions("s", OBConversion::INOPTIONS).
 
         """
         jsonFilePath = os.path.join(self.__workPath, self.__ccId + "-cactvs.json")
