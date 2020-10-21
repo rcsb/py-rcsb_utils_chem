@@ -38,7 +38,7 @@ logger = logging.getLogger()
 
 
 class ChemCompIndexProviderTests(unittest.TestCase):
-    skipFlag = False
+    skipFlag = True
 
     def setUp(self):
         self.__startTime = time.time()
