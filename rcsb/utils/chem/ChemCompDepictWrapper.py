@@ -46,8 +46,6 @@ class ChemCompDepictWrapper(SingletonClass):
         self.__configD = None
         self.__cachePath = None
         # ---
-        self.__oesU = None
-        # ---
         self.__statusDescriptorError = -100
         self.__searchError = -200
         self.__searchSuccess = 0

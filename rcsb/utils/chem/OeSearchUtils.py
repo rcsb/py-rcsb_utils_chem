@@ -25,6 +25,7 @@ from collections import OrderedDict
 from openeye import oechem
 from openeye import oegraphsim
 
+from rcsb.utils.chem.OeCommonUtils import OeCommonUtils
 
 logger = logging.getLogger(__name__)
 
@@ -81,20 +82,7 @@ class OeSearchUtils(object):
         retStatus = True
         try:
             # logger.info("Query mol type %r", type(oeQueryMol))
-            if matchOpts in ["default", "strict", "graph-strict", "graph-default"]:
-                # atomexpr = oechem.OEExprOpts_DefaultAtoms
-                # bondexpr = oechem.OEExprOpts_DefaultBonds
-                atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_Aromaticity
-                bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Aromaticity | oechem.OEExprOpts_Chiral
-            elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo"]:
-                atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_FormalCharge
-                bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Chiral
-            elif matchOpts in ["relaxed", "graph-relaxed", "simple"]:
-                atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
-                bondexpr = oechem.OEExprOpts_BondOrder
-            else:
-                logger.error("Unanticipated match options %r", matchOpts)
-            #
+            atomexpr, bondexpr = OeCommonUtils.getAtomBondExprOpts(matchOpts)
             ss = oechem.OESubSearch(oeQueryMol, atomexpr, bondexpr)
             if not ss.IsValid():
                 retStatus = False

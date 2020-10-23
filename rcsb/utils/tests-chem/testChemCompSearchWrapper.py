@@ -204,7 +204,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                 for buildType in self.__buildTypeList:
                     if buildType in ccD:
                         startTime = time.time()
-                        retStatus, ssL, fpL = ccsw.matchByDescriptor(ccD[buildType], buildType)
+                        retStatus, ssL, fpL = ccsw.searchByDescriptor(ccD[buildType], buildType, matchOpts="graph-relaxed")
                         mOk = self.__resultContains(ccId, ssL)
                         self.assertTrue(mOk)
                         #
@@ -217,6 +217,52 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
                             buildType,
                             len(ssCcIdList),
                             len(fpCcIdList),
+                            mOk and retStatus == 0,
+                            ssCcIdList,
+                            time.time() - startTime,
+                        )
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
+    def testZoomSubStructSearch(self):
+        """Test substructure search"""
+        try:
+            numMolsTest = 500
+            ccsw = ChemCompSearchWrapper()
+            ok = ccsw.readConfig()
+            self.assertTrue(ok)
+            ok = ccsw.updateChemCompIndex(useCache=True)
+            self.assertTrue(ok)
+            ccIdx = ccsw.getChemCompIndex()
+            ok = ccsw.updateSearchIndex(useCache=True)
+            self.assertTrue(ok)
+            ok = ccsw.reloadSearchDatabase()
+            self.assertTrue(ok)
+            #
+            logger.debug("ccIdx (%d) keys %r entry %r", len(ccIdx), list(ccIdx.keys())[:10], ccIdx["000"])
+            #
+            logger.info("Dependencies loaded - Starting search test scan of (limit=%r)", numMolsTest)
+            for ii, (ccId, ccD) in enumerate(ccIdx.items(), 1):
+                if numMolsTest and ii > numMolsTest:
+                    break
+                for buildType in self.__buildTypeList:
+                    if buildType in ccD:
+                        startTime = time.time()
+                        retStatus, ssL, _ = ccsw.searchByDescriptor(ccD[buildType], buildType, matchOpts="sub-struct-graph-relaxed")
+                        if retStatus == -100:
+                            logger.warning("Descriptor error continuing...")
+                            continue
+                        mOk = self.__resultContains(ccId, ssL)
+                        self.assertTrue(mOk)
+                        #
+                        ssCcIdList = list(set([t.ccId.split("|")[0] for t in ssL]))
+                        logger.info(
+                            "%s (%d) for buildType %s (%d) (%r) %r (%.4f secs)",
+                            ccId,
+                            ii,
+                            buildType,
+                            len(ssCcIdList),
                             mOk and retStatus == 0,
                             ssCcIdList,
                             time.time() - startTime,

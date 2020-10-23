@@ -41,7 +41,7 @@ setup(
     entry_points={"console_scripts": ["cactvs_annotate_mol=rcsb.utils.chem.cactvsAnnotateMol:main"]},
     #  The following is somewhat flakey --
     dependency_links=["https://pypi.anaconda.org/OpenEye/simple#egg=OpenEye-toolkits-2020.1.0"],
-    install_requires=["mmcif >= 0.59", "rcsb.utils.io >= 0.76", "rcsb.utils.multiproc >= 0.17", "OpenEye-toolkits>=2020.1.0"],
+    install_requires=["mmcif >= 0.59", "rcsb.utils.io >= 0.77", "rcsb.utils.multiproc >= 0.17", "OpenEye-toolkits>=2020.1.0"],
     packages=find_packages(exclude=["rcsb.mock-data", "rcsb.utils.tests-chem", "rcsb.utils.tests-*", "tests.*"]),
     package_data={
         # If any package contains *.md or *.rst ...  files, include them:

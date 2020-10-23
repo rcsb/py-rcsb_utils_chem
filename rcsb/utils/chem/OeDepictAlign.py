@@ -22,6 +22,7 @@ import os.path
 
 from openeye import oechem
 from openeye import oedepict
+from rcsb.utils.chem.OeCommonUtils import OeCommonUtils
 from rcsb.utils.chem.OeDepict import OeDepictBase
 from rcsb.utils.io.decorators import TimeoutException
 from rcsb.utils.io.decorators import timeout
@@ -157,29 +158,8 @@ class OeDepictAlignBase(OeDepictBase):
         # self._mcss = oechem.OEMCSSearch(oechem.OEMCSType_Approximate)
         self._mcss = oechem.OEMCSSearch(oechem.OEMCSType_Exhaustive)
         #
-        if self._searchType in ["default", "graph-strict"]:
-            atomexpr = oechem.OEExprOpts_DefaultAtoms
-            bondexpr = oechem.OEExprOpts_DefaultBonds
-        elif self._searchType in ["relaxed", "graph-relaxed"]:
-            # atomexpr = oechem.OEExprOpts_AtomicNumber
-            atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
-            bondexpr = oechem.OEExprOpts_BondOrder
-            bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_EqSingleDouble
-            # bondexpr = 0
-        elif self._searchType == "exact":
-            atomexpr = oechem.OEExprOpts_ExactAtoms
-            bondexpr = oechem.OEExprOpts_ExactBonds
-            # OEAddExplicitHydrogens(refmol)
-        else:
-            atomexpr = oechem.OEExprOpts_DefaultAtoms
-            bondexpr = oechem.OEExprOpts_DefaultBonds
-        #
-        # atomexpr = oechem.OEExprOpts_AtomicNumber|oechem.OEExprOpts_EqAromatic
-        # bondexpr = 0
-        #
-        # atomexpr = oechem.OEExprOpts_AtomicNumber|oechem.OEExprOpts_Aromaticity
-        # bondexpr = oechem.OEExprOpts_BondOrder|oechem.OEExprOpts_EqNotAromatic
-        #
+        atomexpr, bondexpr = OeCommonUtils.getAtomBondExprOpts(self._searchType)
+
         self._mcss.Init(refmol, atomexpr, bondexpr)
         #
         # self._mcss.SetMCSFunc(OEMCSMaxBondsCompleteCycles())
@@ -194,19 +174,7 @@ class OeDepictAlignBase(OeDepictBase):
         """Internal initialization for a substructure comparison."""
 
         #
-        if self._searchType == "default":
-            atomexpr = oechem.OEExprOpts_DefaultAtoms
-            bondexpr = oechem.OEExprOpts_DefaultBonds
-        elif self._searchType == "relaxed":
-            atomexpr = oechem.OEExprOpts_AtomicNumber
-            bondexpr = 0
-        elif self._searchType == "exact":
-            atomexpr = oechem.OEExprOpts_ExactAtoms
-            bondexpr = oechem.OEExprOpts_ExactBonds
-            # OEAddExplicitHydrogens(refmol)
-        else:
-            atomexpr = oechem.OEExprOpts_DefaultAtoms
-            bondexpr = oechem.OEExprOpts_DefaultBonds
+        atomexpr, bondexpr = OeCommonUtils.getAtomBondExprOpts(self._searchType)
         #
         self._ss = oechem.OESubSearch(refmol, atomexpr, bondexpr)
         #

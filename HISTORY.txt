@@ -32,3 +32,4 @@
 20-Aug-2020 - V0.40 Update dependencies
 29-Sep-2020 - V0.41 Update dependencies
 21-Oct-2020 - V0.42 Separate substructure search in a new module, adjustments for latest black formatting
+23-Oct-2020 - V0.43 Integrate new substructure search with ChemCompSearchWrapper()

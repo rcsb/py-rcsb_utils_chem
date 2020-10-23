@@ -50,7 +50,6 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
         self.__cachePath = os.path.join(HERE, "test-output", "CACHE")
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
-        self.__screenType = "SMARTS"
         self.__numProcPrep = 8
         self.__numProcSearch = 8
         self.__minCount = None
@@ -67,7 +66,7 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
                 "screenTypeList": None,
                 "numProc": self.__numProcPrep,
                 "suppressHydrogens": True,
-                "matchOpts": "relaxed",
+                "matchOpts": "sub-struct-graph-relaxed",
             }
         else:
             self.__myKwargs = {
@@ -82,7 +81,7 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
                 "screenTypeList": None,
                 "numProc": self.__numProcPrep,
                 "suppressHydrogens": True,
-                "matchOpts": "relaxed",
+                "matchOpts": "sub-struct-graph-relaxed",
             }
         #
         logger.debug("Running tests on version %s", __version__)
@@ -100,7 +99,7 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
 
     @unittest.skipIf(not useFull, "Requires full data set")
     def testSubStructureSearchFromIndexSelected(self):
-        matchOpts = self.__myKwargs.get("matchOpts", "relaxed")
+        matchOpts = self.__myKwargs.get("matchOpts", "sub-struct-graph-relaxed")
         numProc = self.__numProcSearch
         oemp = OeSearchMoleculeProvider(**self.__myKwargs)
         ok = oemp.testCache()
@@ -119,17 +118,17 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
             startTime = time.time()
             oeMol = oemp.getMol(ccId)
             #
-            ccIdL = self.__filter(oeMol, ccIdxP, matchOpts=matchOpts)
+            ccIdL = oesU.prefilterIndex(oeMol, ccIdxP, matchOpts=matchOpts)
             logger.info("%s search length %d in (%.4f seconds)", ccId, len(ccIdL), time.time() - startTime)
             #
             retStatus, mL = oesU.searchSubStructure(oeMol, ccIdList=ccIdL, matchOpts=matchOpts, numProc=numProc)
-            logger.info("%s status %r match length %d in (%.4f seconds)", ccId, retStatus, len(mL), time.time() - startTime)
+            logger.info("%s status %r result length %d in (%.4f seconds)", ccId, retStatus, len(mL), time.time() - startTime)
             self.assertTrue(retStatus)
             self.assertTrue(self.__resultContains(ccId, mL))
             # ----
 
     def testSubStructureSearchFromIndexBase(self):
-        matchOpts = self.__myKwargs.get("matchOpts", "relaxed")
+        matchOpts = self.__myKwargs.get("matchOpts", "sub-struct-graph-relaxed")
         numProc = self.__numProcSearch
         oemp = OeSearchMoleculeProvider(**self.__myKwargs)
         ok = oemp.testCache()
@@ -149,38 +148,18 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
             startTime = time.time()
             oeMol = oemp.getMol(ccId)
             #
-            ccIdL = self.__filter(oeMol, ccIdxP, matchOpts=matchOpts)
+            ccIdL = oesU.prefilterIndex(oeMol, ccIdxP, matchOpts=matchOpts)
             logger.info("%s search length %d in (%.4f seconds)", ccId, len(ccIdL), time.time() - startTime)
             #
             retStatus, mL = oesU.searchSubStructure(oeMol, ccIdList=ccIdL, matchOpts=matchOpts, numProc=numProc)
-            logger.info("%s status %r match length %d in (%.4f seconds)", ccId, retStatus, len(mL), time.time() - startTime)
+            logger.info("%s status %r result length %d in (%.4f seconds)", ccId, retStatus, len(mL), time.time() - startTime)
             self.assertTrue(retStatus)
             self.assertTrue(self.__resultContains(ccId, mL))
             # ----
 
-    def __filter(self, oeQueryMol, idxP, matchOpts="relaxed"):
-        oemf = OeMoleculeFactory()
-        oemf.setOeMol(oeQueryMol, "queryTarget")
-        typeCountD = oemf.getElementCounts(useSymbol=True)
-        ccIdL1 = idxP.filterMinimumMolecularFormula(typeCountD)
-        #
-        featureCountD = oemf.getFeatureCounts()
-        # Adjust filter according to search options
-        if matchOpts in matchOpts in ["relaxed", "graph-relaxed", "simple"]:
-            for ky in ["rings_ar", "at_ar", "at_ch"]:
-                featureCountD.pop(ky, None)
-        elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo"]:
-            for ky in ["rings_ar", "at_ar"]:
-                featureCountD.pop(ky, None)
-        elif matchOpts in ["default", "strict", "graph-strict", "graph-default"]:
-            pass
-        ccIdL = idxP.filterMinimumFormulaAndFeatures(typeCountD, featureCountD)
-        logger.info("Formula %d Formula+Feature %d", len(ccIdL1), len(ccIdL))
-        return ccIdL
-
     @unittest.skipIf(not useFull, "Requires full data set")
     def testSubStructureSearchBaseSelected(self):
-        matchOpts = self.__myKwargs.get("matchOpts", "relaxed")
+        matchOpts = self.__myKwargs.get("matchOpts", "sub-struct-graph-relaxed")
         numProc = self.__numProcSearch
         oemp = OeMoleculeProvider(**self.__myKwargs)
         ok = oemp.testCache()
@@ -201,19 +180,19 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
             startTime = time.time()
             oeMol = oemp.getMol(ccId)
             #
-            ccIdL = self.__filter(oeMol, ccIdxP, matchOpts=matchOpts)
+            ccIdL = oesU.prefilterIndex(oeMol, ccIdxP, matchOpts=matchOpts)
 
             logger.info("%s search length %d in (%.4f seconds)", ccId, len(ccIdL), time.time() - startTime)
             #
             retStatus, mL = oesU.searchSubStructure(oeMol, ccIdList=ccIdL, matchOpts=matchOpts, numProc=numProc)
-            logger.info("%s match length %d in (%.4f seconds)", ccId, len(mL), time.time() - startTime)
+            logger.info("%s result length %d in (%.4f seconds)", ccId, len(mL), time.time() - startTime)
             self.assertTrue(retStatus)
             self.assertTrue(self.__resultContains(ccId, mL))
             # ----
 
     def testSubStructureSearchBase(self):
 
-        matchOpts = self.__myKwargs.get("matchOpts", "relaxed")
+        matchOpts = self.__myKwargs.get("matchOpts", "sub-struct-graph-relaxed")
         numProc = self.__numProcSearch
         oemp = OeMoleculeProvider(**self.__myKwargs)
         ok = oemp.testCache()
@@ -233,11 +212,11 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
             # ----
             startTime = time.time()
             oeMol = oemp.getMol(ccId)
-            ccIdL = self.__filter(oeMol, ccIdxP, matchOpts=matchOpts)
+            ccIdL = oesU.prefilterIndex(oeMol, ccIdxP, matchOpts=matchOpts)
             logger.info("%s search length %d in (%.4f seconds)", ccId, len(ccIdL), time.time() - startTime)
             #
             retStatus, mL = oesU.searchSubStructure(oeMol, ccIdList=ccIdL, matchOpts=matchOpts, numProc=numProc)
-            logger.info("%s match length %d in (%.4f seconds)", ccId, len(mL), time.time() - startTime)
+            logger.info("%s result length %d in (%.4f seconds)", ccId, len(mL), time.time() - startTime)
             self.assertTrue(retStatus)
             self.assertTrue(self.__resultContains(ccId, mL))
             # ----

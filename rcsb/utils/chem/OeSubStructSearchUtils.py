@@ -8,7 +8,7 @@
 #
 ##
 """
-Utilities to manage OE specific substructure search operations (exhaustive and formula/feature prefiltered)
+Utilities to manage OE specific substructure search operations (w/ formula/feature prefiltering)
 """
 
 __docformat__ = "restructuredtext en"
@@ -23,6 +23,8 @@ from collections import namedtuple
 
 from openeye import oechem
 
+from rcsb.utils.chem.OeCommonUtils import OeCommonUtils
+from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 from rcsb.utils.multiproc.MultiProcUtil import MultiProcUtil
 
 logger = logging.getLogger(__name__)
@@ -39,20 +41,7 @@ class OeSubStructSearchWorker(object):
         self.__oeMolDb = oeMolDb
         self.__oeQueryMol = oeQueryMol
         self.__matchOpts = matchOpts
-        if matchOpts in ["default", "strict", "graph-strict", "graph-default"]:
-            # atomexpr = oechem.OEExprOpts_DefaultAtoms
-            # bondexpr = oechem.OEExprOpts_DefaultBonds
-            self.__atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_Aromaticity
-            self.__bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Aromaticity | oechem.OEExprOpts_Chiral
-        elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo"]:
-            self.__atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_FormalCharge
-            self.__bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Chiral
-        elif matchOpts in ["relaxed", "graph-relaxed", "simple"]:
-            self.__atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
-            self.__bondexpr = oechem.OEExprOpts_BondOrder
-        else:
-            logger.error("Unanticipated match options %r", matchOpts)
-        #
+        self.__atomexpr, self.__bondexpr = OeCommonUtils.getAtomBondExprOpts(matchOpts)
         #
         _ = kwargs
 
@@ -62,14 +51,15 @@ class OeSubStructSearchWorker(object):
         _ = workingDir
         successList = []
         diagList = []
-        #
+        sL = []
+        # sucessList,resultList,diagList=workerFunc(runList=nextList,procName, optionsD, workingDir)
         try:
-            retStatus, successList = self.__subStructureSearch(self.__oeQueryMol, dataList, reverseFlag=False)
+            retStatus, successList, sL = self.__subStructureSearch(self.__oeQueryMol, dataList, reverseFlag=False)
             logger.debug("%s status %r found %d search candidates from %d definitions ", procName, retStatus, len(successList), len(dataList))
         except Exception as e:
             logger.exception("Failing %s for %d data items %s", procName, len(dataList), str(e))
         #
-        return successList, successList, diagList
+        return successList, successList, sL, diagList
 
     def __subStructureSearch(self, oeQueryMol, idxList, reverseFlag=False):
         """Perform a graph match for the input query molecule on the binary
@@ -86,13 +76,14 @@ class OeSubStructSearchWorker(object):
             [type]: [description]
         """
         hL = []
+        sL = []
         retStatus = True
         try:
             ss = oechem.OESubSearch(oeQueryMol, self.__atomexpr, self.__bondexpr)
             if not ss.IsValid():
                 retStatus = False
                 logger.error("Unable to initialize substructure search!")
-                return retStatus, hL
+                return retStatus, hL, sL
             #
             for idx in idxList:
                 mol = oechem.OEGraphMol()
@@ -102,13 +93,15 @@ class OeSubStructSearchWorker(object):
                     continue
                 oechem.OEPrepareSearch(mol, ss)
                 if ss.SingleMatch(mol) != reverseFlag:
+                    score = float(oeQueryMol.NumAtoms()) / float(mol.NumAtoms())
                     hL.append(idx)
+                    sL.append(score)
             retStatus = True
         except Exception as e:
             retStatus = False
             logger.exception("Failing with %s", str(e))
         #
-        return retStatus, hL
+        return retStatus, hL, sL
 
 
 class OeSubStructSearchUtils(object):
@@ -142,19 +135,49 @@ class OeSubStructSearchUtils(object):
         logger.info("Return status %r", ok)
         return ok
 
+    def prefilterIndex(self, oeQueryMol, idxP, matchOpts="relaxed"):
+        """Filter the full search index base on minimum chemical formula an feature criteria.
+
+        Args:
+            oeQueryMol (object): search target moleculed (OEMol)
+            idxP (object): instance ChemCompSearchIndexProvider()
+            matchOpts (str, optional): search criteria options. Defaults to "default".
+
+        Returns:
+            (list): list of chemical component identifiers in the filtered search space
+        """
+        startTime = time.time()
+        oemf = OeMoleculeFactory()
+        oemf.setOeMol(oeQueryMol, "queryTarget")
+        typeCountD = oemf.getElementCounts(useSymbol=True)
+        # ccIdL1 = idxP.filterMinimumMolecularFormula(typeCountD)
+        #
+        featureCountD = oemf.getFeatureCounts()
+        # Adjust filter according to search options
+        if matchOpts in matchOpts in ["relaxed", "graph-relaxed", "simple", "sub-struct-graph-relaxed"]:
+            for ky in ["rings_ar", "at_ar", "at_ch"]:
+                featureCountD.pop(ky, None)
+        elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo", "sub-struct-graph-relaxed-stereo"]:
+            for ky in ["rings_ar", "at_ar"]:
+                featureCountD.pop(ky, None)
+        elif matchOpts in ["default", "strict", "graph-strict", "graph-default", "sub-struct-graph-strict"]:
+            pass
+        ccIdL = idxP.filterMinimumFormulaAndFeatures(typeCountD, featureCountD)
+        logger.info("Pre-filtering results for formula+feature %d (%.4f seconds)", len(ccIdL), time.time() - startTime)
+        return ccIdL
+
     def searchSubStructure(self, oeQueryMol, idxList=None, ccIdList=None, reverseFlag=False, matchOpts="graph-relaxed", numProc=1):
         if ccIdList:
-            # logger.info("idxTitleD %r", list(self.__oeMolDbTitleD.keys())[:100])
             idxList = [self.__oeMolDbTitleD[ccId] for ccId in ccIdList if ccId in self.__oeMolDbTitleD]
         if numProc == 1:
             return self.__searchSubStructure(oeQueryMol, idxList=idxList, reverseFlag=reverseFlag, matchOpts=matchOpts)
         else:
             return self.__searchSubStructureMulti(oeQueryMol, idxList=idxList, matchOpts=matchOpts, numProc=numProc, maxChunkSize=self.__chunkSize)
 
-    # ## JDW
     def __searchSubStructureMulti(self, oeQueryMol, idxList, matchOpts="graph-relaxed", numProc=2, maxChunkSize=10):
         #
         try:
+            startTime = time.time()
             searchType = "exhaustive-substructure"
             if idxList:
                 searchType = "prefilterd-substructure"
@@ -166,19 +189,18 @@ class OeSubStructSearchUtils(object):
             optD = {"maxChunkSize": maxChunkSize}
             mpu.setOptions(optD)
             mpu.set(workerObj=rWorker, workerMethod="subStructureSearch")
-            _, _, resultList, _ = mpu.runMulti(dataList=idxList, numProc=numProc, numResults=1, chunkSize=maxChunkSize)
-            logger.info("Multi-proc result length %r", len(resultList[0]))
-            for idx in resultList[0]:
+            _, _, resultList, _ = mpu.runMulti(dataList=idxList, numProc=numProc, numResults=2, chunkSize=maxChunkSize)
+            logger.debug("Multi-proc result length %d/%d", len(resultList[0]), len(resultList[1]))
+            for idx, score in zip(resultList[0], resultList[1]):
                 ccId = self.__oeMolDb.GetTitle(idx)
-                hL.append(MatchResults(ccId=ccId, searchType=searchType, matchOpts=matchOpts))
-                # hL.append(ccId)
+                hL.append(MatchResults(ccId=ccId, searchType=searchType, matchOpts=matchOpts, fpScore=score))
             retStatus = True
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             retStatus = False
+        logger.info("Substructure search returns %d (%.4f seconds)", len(hL), time.time() - startTime)
         return retStatus, hL
 
-    # ## JDW
     def __searchSubStructure(self, oeQueryMol, idxList=None, reverseFlag=False, matchOpts="graph-relaxed"):
         """Perform a graph match for the input query molecule on the binary
         database of molecules.  The search optionally restricted to the input index
@@ -195,22 +217,10 @@ class OeSubStructSearchUtils(object):
         """
         hL = []
         retStatus = True
+        startTime = time.time()
         try:
             # logger.info("Query mol type %r", type(oeQueryMol))
-            if matchOpts in ["default", "strict", "graph-strict", "graph-default"]:
-                # atomexpr = oechem.OEExprOpts_DefaultAtoms
-                # bondexpr = oechem.OEExprOpts_DefaultBonds
-                atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_Aromaticity
-                bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Aromaticity | oechem.OEExprOpts_Chiral
-            elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo"]:
-                atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_Chiral | oechem.OEExprOpts_FormalCharge
-                bondexpr = oechem.OEExprOpts_BondOrder | oechem.OEExprOpts_Chiral
-            elif matchOpts in ["relaxed", "graph-relaxed", "simple"]:
-                atomexpr = oechem.OEExprOpts_AtomicNumber | oechem.OEExprOpts_FormalCharge
-                bondexpr = oechem.OEExprOpts_BondOrder
-            else:
-                logger.error("Unanticipated match options %r", matchOpts)
-            #
+            atomexpr, bondexpr = OeCommonUtils.getAtomBondExprOpts(matchOpts)
             ss = oechem.OESubSearch(oeQueryMol, atomexpr, bondexpr)
             if not ss.IsValid():
                 retStatus = False
@@ -230,48 +240,13 @@ class OeSubStructSearchUtils(object):
                     continue
                 oechem.OEPrepareSearch(mol, ss)
                 if ss.SingleMatch(mol) != reverseFlag:
+                    score = float(oeQueryMol.NumAtoms()) / float(mol.NumAtoms())
                     # hL.append(MatchResults(ccId=ccId, oeMol=mol, searchType=searchType, matchOpts=matchOpts))
-                    hL.append(MatchResults(ccId=ccId, searchType=searchType, matchOpts=matchOpts))
+                    hL.append(MatchResults(ccId=ccId, searchType=searchType, matchOpts=matchOpts, fpScore=score))
             retStatus = True
         except Exception as e:
             retStatus = False
             logger.exception("Failing with %s", str(e))
         #
-        return retStatus, hL
-
-    def searchSubStructureScreened(self, qmol, maxMatches=10):
-        """Perform screened substructure search on input query molecule (OEQMol) subject to maxMatches.
-
-        Args:
-            qmol (OEQmol): OE query molecule
-            maxMatches (int, optional): maximum number matches returned . Defaults to 10.
-
-        Returns:
-            bool, list: search return status, list of namedtuple MatchResults.
-        """
-        retStatus = True
-        hL = []
-        try:
-            query = oechem.OESubSearchQuery(qmol, maxMatches)
-            result = oechem.OESubSearchResult()
-            status = self.__ssDb.Search(result, query)
-            statusText = oechem.OESubSearchStatusToName(status)
-            if statusText.upper() != "FINISHED":
-                retStatus = False
-                logger.info("Search failing with status = %r", statusText)
-                return retStatus, hL
-            #
-            if self.__verbose:
-                logger.info("Number of targets  = %d", result.NumTargets())
-                logger.info("Number of screened = %d", result.NumScreened())
-                logger.info("Number of searched = %d", result.NumSearched())
-                logger.info("Number of total matches = %d", result.NumTotalMatches())
-                logger.info("Number of kept  matches = %d ", result.NumMatches())
-            #
-            for index in result.GetMatchIndices():
-                hL.append(MatchResults(ccId=self.__ssDb.GetTitle(index), searchType="screened-substructure"))
-        except Exception as e:
-            retStatus = False
-            logger.exception("Failing with %s", str(e))
-
+        logger.info("Substructure search returns %d (%.4f seconds)", len(hL), time.time() - startTime)
         return retStatus, hL

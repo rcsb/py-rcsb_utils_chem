@@ -53,6 +53,12 @@ class OeIoUtils(object):
             logger.exception("Loading %s failing with %s", ccdFilePath, str(e))
         return rdCcObjL
 
+    def suppressHydrogens(self, oeMol):
+        tMol = oechem.OEMol(oeMol) if oeMol else None
+        if tMol:
+            oechem.OESuppressHydrogens(tMol)
+        return tMol
+
     def chemCompToMol(self, ccdFilePath, molBuildType="model-xyz", quietFlag=False):
         retMolL = []
         try:
@@ -82,7 +88,7 @@ class OeIoUtils(object):
             messageTag (srt, optional): prefix string for error messages. Defaults to None.
 
         Returns:
-            object: OeGraphMol()/OeQmol() object or None for failure
+            str: SMILES string
         """
         try:
             if "SMILES" in descrType.upper() and "ISO" in descrType.upper():

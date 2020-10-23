@@ -31,6 +31,7 @@ from rcsb.utils.chem.MolecularFormula import MolecularFormula
 from rcsb.utils.chem.OeSearchMoleculeProvider import OeSearchMoleculeProvider
 from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeSearchUtils import OeSearchUtils
+from rcsb.utils.chem.OeSubStructSearchUtils import OeSubStructSearchUtils
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 from rcsb.utils.io.SftpUtil import SftpUtil
@@ -72,9 +73,11 @@ class ChemCompSearchWrapper(SingletonClass):
         # ---
         self.__configD = {}
         self.__ccIdxP = None
+        self.__siIdxP = None
         self.__siIdx = {}
         self.__oesmP = None
         self.__oesU = None
+        self.__oesubsU = None
         # ---
         self.__statusDescriptorError = -100
         self.__searchError = -200
@@ -147,6 +150,7 @@ class ChemCompSearchWrapper(SingletonClass):
                 "maxChunkSize": maxChunkSize,
                 "molLimit": molLimit,
                 "logSizes": logSizes,
+                "suppressHydrogens": True,
             }
             ccsiKwargs = {
                 "ccUrlTarget": ccUrlTarget,
@@ -369,6 +373,7 @@ class ChemCompSearchWrapper(SingletonClass):
                 kwargs["useCache"] = useCache
                 siIdxP = ChemCompSearchIndexProvider(**kwargs)
                 ok = siIdxP.testCache()
+                self.__siIdxP = siIdxP if siIdxP else None
                 self.__siIdx = siIdxP.getIndex() if siIdxP and ok else {}
                 logger.info("Search index status %r index len %d", ok, len(self.__siIdx) if self.__siIdx else 0)
         except Exception as e:
@@ -414,11 +419,37 @@ class ChemCompSearchWrapper(SingletonClass):
             fpTypeCuttoffD = self.__configD["oesmpKwargs"]["fpTypeCuttoffD"] if "fpTypeCuttoffD" in self.__configD["oesmpKwargs"] else {}
             fpTypeList = [k for k, v in fpTypeCuttoffD.items()]
             oesU = OeSearchUtils(self.__oesmP, fpTypeList=fpTypeList)
-            ok = oesU.testCache()
-            self.__oesU = oesU if ok else None
+            ok1 = oesU.testCache()
+            self.__oesU = oesU if ok1 else None
+            #
+            oesubsU = OeSubStructSearchUtils(self.__oesmP)
+            ok2 = oesubsU.testCache()
+            self.__oesubsU = oesubsU if ok2 else None
         except Exception as e:
             logger.exception("Failing with %s", str(e))
-        return ok
+        return ok1 and ok2
+
+    def searchByDescriptor(self, descriptor, descriptorType, matchOpts="graph-relaxed", searchId=None):
+        """Wrapper method for descriptor match and descriptor substructure search methods.
+
+        Args:
+            descriptor (str):  molecular descriptor (SMILES, InChI)
+            descriptorType (str): descriptor type (SMILES, InChI
+            matchOpts (str, optional): graph match criteria (graph-relaxed, graph-relaxed-stereo, graph-strict,
+                                       fingerprint-similarity, sub-struct-graph-relaxed, sub-struct-graph-relaxed-stereo,
+                                       sub-struct-graph-strict Defaults to "graph-relaxed")
+            searchId (str, optional): search identifier for logging. Defaults to None.
+
+        Returns:
+            (statusCode, list, list): status, graph match and finger match lists of type (MatchResults)
+                                      -100 descriptor processing error
+                                      -200 search execution error
+                                         0 search execution success
+        """
+        if matchOpts.startswith("sub-struct-"):
+            return self.subStructSearchByDescriptor(descriptor, descriptorType, matchOpts=matchOpts, searchId=searchId)
+        else:
+            return self.matchByDescriptor(descriptor, descriptorType, matchOpts=matchOpts, searchId=searchId)
 
     def matchByDescriptor(self, descriptor, descriptorType, matchOpts="graph-relaxed", searchId=None):
         """Return graph match (w/  finger print pre-filtering) and finger print search results for the
@@ -427,17 +458,19 @@ class ChemCompSearchWrapper(SingletonClass):
         Args:
             descriptor (str):  molecular descriptor (SMILES, InChI)
             descriptorType (str): descriptor type (SMILES, InChI
-            matchOpts (str, optional): graph match criteria (graph-relaxed, graph-relaxed-stereo, graph-strict, fingerprint-similarity). Defaults to "graph-relaxed".
+            matchOpts (str, optional): graph match criteria (graph-relaxed, graph-relaxed-stereo, graph-strict,
+                                       fingerprint-similarity, Defaults to "graph-relaxed")
             searchId (str, optional): search identifier for logging. Defaults to None.
 
         Returns:
             (statusCode, list, list): status, graph match and finger match lists of type (MatchResults)
-                                      -200 descriptor processing error
-                                      -100 search execution error
+                                      -100 descriptor processing error
+                                      -200 search execution error
                                          0 search execution success
         """
         ssL = fpL = []
         retStatus = False
+        statusCode = -200
         try:
             fpTypeCuttoffD = self.__configD["oesmpKwargs"]["fpTypeCuttoffD"] if "fpTypeCuttoffD" in self.__configD["oesmpKwargs"] else {}
             maxFpResults = self.__configD["oesmpKwargs"]["maxFpResults"] if "maxFpResults" in self.__configD["oesmpKwargs"] else 50
@@ -447,6 +480,7 @@ class ChemCompSearchWrapper(SingletonClass):
             messageTag = searchId + ":" + descriptorType
             oeioU = OeIoUtils()
             oeMol = oeioU.descriptorToMol(descriptor, descriptorType, limitPerceptions=limitPerceptions, messageTag=messageTag)
+            oeMol = oeioU.suppressHydrogens(oeMol)
             if not oeMol:
                 logger.warning("descriptor type %r molecule build fails: %r", descriptorType, descriptor)
                 return self.__statusDescriptorError, ssL, fpL
@@ -457,6 +491,47 @@ class ChemCompSearchWrapper(SingletonClass):
             logger.exception("Failing with %s", str(e))
             #
         return statusCode, ssL, fpL
+
+    def subStructSearchByDescriptor(self, descriptor, descriptorType, matchOpts="sub-struct-graph-relaxed", searchId=None):
+        """Return graph match (w/  finger print pre-filtering) and finger print search results for the
+           input desriptor.
+
+        Args:
+            descriptor (str):  molecular descriptor (SMILES, InChI)
+            descriptorType (str): descriptor type (SMILES, InChI)
+            matchOpts (str, optional): graph match criteria (sub-struct-graph-relaxed, sub-struct-graph-relaxed-stereo,
+                                       sub-struct-graph-strict). Defaults to "sub-struct-graph-relaxed".
+            searchId (str, optional): search identifier for logging. Defaults to None.
+
+        Returns:
+            (statusCode, list, list): status, substructure search results of type (MatchResults), empty list placeholder
+                                      -100 descriptor processing error
+                                      -200 search execution error
+                                         0 search execution success
+        """
+        ssL = []
+        retStatus = False
+        statusCode = -200
+        try:
+            limitPerceptions = self.__configD["oesmpKwargs"]["limitPerceptions"] if "limitPerceptions" in self.__configD["oesmpKwargs"] else False
+            numProc = self.__configD["oesmpKwargs"]["numProc"] if "numProc" in self.__configD["oesmpKwargs"] else 4
+            #
+            searchId = searchId if searchId else "query"
+            messageTag = searchId + ":" + descriptorType
+            oeioU = OeIoUtils()
+            oeMol = oeioU.descriptorToMol(descriptor, descriptorType, limitPerceptions=limitPerceptions, messageTag=messageTag)
+            oeMol = oeioU.suppressHydrogens(oeMol)
+            if not oeMol:
+                logger.warning("descriptor type %r molecule build fails: %r", descriptorType, descriptor)
+                return self.__statusDescriptorError, ssL, []
+            #
+            ccIdL = self.__oesubsU.prefilterIndex(oeMol, self.__siIdxP, matchOpts=matchOpts)
+            retStatus, ssL = self.__oesubsU.searchSubStructure(oeMol, ccIdList=ccIdL, matchOpts=matchOpts, numProc=numProc)
+            statusCode = 0 if retStatus else self.__searchError
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            #
+        return statusCode, ssL, []
 
     def matchByFormulaRange(self, elementRangeD, matchSubset=False, searchId=None):
         """Return formula match results for input element range dictionary.
