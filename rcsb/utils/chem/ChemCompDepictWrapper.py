@@ -279,3 +279,51 @@ class ChemCompDepictWrapper(SingletonClass):
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return False
+
+    def toMolFile(self, identifier, identifierType, molfilePath=None, fmt="mol", **kwargs):
+        """Create molfile (fmt) from InChI, SMILES descriptors or PDB identifier."""
+        try:
+            molfilePath = molfilePath if molfilePath else self.__makeMolfilePath(fmt=fmt)
+            oeio = OeIoUtils()
+            if identifierType.lower() in ["smiles"]:
+                oeMol = oeio.smilesToMol(identifier)
+                oeMol.SetTitle("From SMILES")
+            elif identifierType.lower() in ["inchi"]:
+                oeMol = oeio.inchiToMol(identifier)
+                oeMol.SetTitle("From InChI")
+            elif identifierType.lower() in ["identifierpdb"]:
+                ccsw = ChemCompSearchWrapper()
+                oesmP = ccsw.getSearchMoleculeProvider()
+                oeMol = oesmP.getMol(identifier)
+            #
+            ok = self.__toMolFile(oeMol, molfilePath, **kwargs)
+            return molfilePath if ok else None
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return None
+
+    def __toMolFile(self, oeMol, molfilePath, **kwargs):
+        """Write the
+
+        Args:
+            oeMol (object): instance of an OE graph molecule
+            molfilePath (string): file path for molfile (type determined by extension)
+
+        Returns:
+            bool: True for success or False otherwise
+        """
+        try:
+            _ = kwargs
+            oeio = OeIoUtils()
+            oeio.write(molfilePath, oeMol, constantMol=True)
+            return True
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return False
+
+    def __makeMolfilePath(self, fmt="mol"):
+        imageDirPath = self.__configD["imageDirPath"] if self.__configD and "imageDirPath" in self.__configD else "."
+        fileRotateIncrement = self.__configD["fileRotateIncrement"] if self.__configD and "fileRotateIncrement" in self.__configD else 50
+        ic = self.__imageCount % fileRotateIncrement
+        molPath = os.path.join(imageDirPath, "molfile-%s.%s" % (ic, fmt))
+        return molPath
