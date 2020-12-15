@@ -124,6 +124,8 @@ class OeIoUtils(object):
 
         Returns:
             object: OeGraphMol()/OeQmol() object or None for failure
+
+            ifs.SetFlavor(oechem.OEFormat_PDB, oechem.OEIFlavor_PDB_Default | oechem.OEIFlavor_PDB_DATA | oechem.OEIFlavor_PDB_ALTLOC)  # noq
         """
         try:
             if "SMILES" in descrType.upper() and "ISO" in descrType.upper():
@@ -668,6 +670,7 @@ class OeIoUtils(object):
             ofs = oechem.oemolostream()
             ofs.open(filePath)
             logger.info("Writing (fmt=%s) molId %s path %s title %s", fmt, molId, filePath, oeMol.GetTitle())
+            ofs.SetFlavor()
 
             if constantMol:
                 oechem.OEWriteConstMolecule(ofs, oeMol)

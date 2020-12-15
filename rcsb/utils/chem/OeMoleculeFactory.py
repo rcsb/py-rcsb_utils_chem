@@ -439,7 +439,7 @@ class OeMoleculeFactory(object):
         return ccD
 
     # ----
-    def buildRelated(self, limitPerceptions=False):
+    def buildRelated(self, limitPerceptions=False, buildTypeList=None):
         """Build the most "authorative" molecule from the chemical component definition and
         use this as a basis reference descriptors and related protomeric and tautomeric forms.
         This collection is designed to capture the chemical diversity within the component defintion
@@ -454,61 +454,64 @@ class OeMoleculeFactory(object):
             qualifier m = hashlib.sha256(isoSmiles).hexdigest()
         """
         oeVersionString = "OpenEye OEChem %s" % oechem.OEToolkitsGetRelease()
+        btList = buildTypeList if buildTypeList else ["model-xyz", "oe-iso-smiles", "cactvs-iso-smiles", "inchi", "oe-smiles", "acdlabs-smiles", "cactvs-smiles"]
         retD = {}
         if not self.__isDefinitionSet:
             return retD
 
         uniqSmilesD = {}
         try:
-            for buildType in ["model-xyz", "oe-iso-smiles", "cactvs-iso-smiles", "inchi"]:
-                ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
-                if ok:
-                    # name = self.__ccId + "|" + "ref" if buildType == "model-xyz" else self.__ccId + "|" + buildType
-                    inchiKey = self.getInChIKey()
-                    smiles = self.getIsoSMILES()
-                    qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
-                    name = self.__ccId if buildType == "model-xyz" else self.__ccId + "|" + qualifier
-                    formula = self.getFormula()
-                    fCharge = self.getFormalCharge()
-                    eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
-                    fCountD = self.getFeatureCounts()
-                    if smiles and inchiKey and smiles not in uniqSmilesD:
-                        uniqSmilesD[smiles] = True
-                        retD[name] = {
-                            "name": name,
-                            "build-type": buildType,
-                            "smiles": smiles,
-                            "inchi-key": inchiKey,
-                            "formula": formula,
-                            "fcharge": fCharge,
-                            "type-counts": eleD,
-                            "program": oeVersionString,
-                            "feature-counts": fCountD,
-                        }
-            for buildType in ["oe-smiles", "acdlabs-smiles", "cactvs-smiles"]:
-                ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
-                if ok:
-                    inchiKey = self.getInChIKey()
-                    smiles = self.getCanSMILES()
-                    qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
-                    name = self.__ccId + "|" + qualifier
-                    formula = self.getFormula()
-                    fCharge = self.getFormalCharge()
-                    eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
-                    fCountD = self.getFeatureCounts()
-                    if smiles and inchiKey and smiles not in uniqSmilesD:
-                        uniqSmilesD[smiles] = True
-                        retD[name] = {
-                            "name": name,
-                            "build-type": buildType,
-                            "smiles": smiles,
-                            "inchi-key": inchiKey,
-                            "formula": formula,
-                            "fcharge": fCharge,
-                            "type-counts": eleD,
-                            "program": oeVersionString,
-                            "feature-counts": fCountD,
-                        }
+            for buildType in btList:
+                if buildType in ["model-xyz", "oe-iso-smiles", "cactvs-iso-smiles", "inchi"]:
+                    ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
+                    if ok:
+                        # name = self.__ccId + "|" + "ref" if buildType == "model-xyz" else self.__ccId + "|" + buildType
+                        inchiKey = self.getInChIKey()
+                        smiles = self.getIsoSMILES()
+                        qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
+                        name = self.__ccId if buildType == "model-xyz" else self.__ccId + "|" + qualifier
+                        formula = self.getFormula()
+                        fCharge = self.getFormalCharge()
+                        eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
+                        fCountD = self.getFeatureCounts()
+                        if smiles and inchiKey and smiles not in uniqSmilesD:
+                            uniqSmilesD[smiles] = True
+                            retD[name] = {
+                                "name": name,
+                                "build-type": buildType,
+                                "smiles": smiles,
+                                "inchi-key": inchiKey,
+                                "formula": formula,
+                                "fcharge": fCharge,
+                                "type-counts": eleD,
+                                "program": oeVersionString,
+                                "feature-counts": fCountD,
+                            }
+                if buildType in ["oe-smiles", "acdlabs-smiles", "cactvs-smiles"]:
+                    ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
+                    if ok:
+                        inchiKey = self.getInChIKey()
+                        smiles = self.getCanSMILES()
+                        qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
+                        name = self.__ccId + "|" + qualifier
+                        formula = self.getFormula()
+                        fCharge = self.getFormalCharge()
+                        eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
+                        fCountD = self.getFeatureCounts()
+                        if smiles and inchiKey and smiles not in uniqSmilesD:
+                            uniqSmilesD[smiles] = True
+                            retD[name] = {
+                                "name": name,
+                                "build-type": buildType,
+                                "smiles": smiles,
+                                "inchi-key": inchiKey,
+                                "formula": formula,
+                                "fcharge": fCharge,
+                                "type-counts": eleD,
+                                "program": oeVersionString,
+                                "feature-counts": fCountD,
+                            }
+            # ----
             # --- do charge and tautomer normalization on the model-xyz build
             ok = self.build(molBuildType="model-xyz", setTitle=True, limitPerceptions=limitPerceptions)
             if ok:
