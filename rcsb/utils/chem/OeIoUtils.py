@@ -670,8 +670,7 @@ class OeIoUtils(object):
             ofs = oechem.oemolostream()
             ofs.open(filePath)
             logger.info("Writing (fmt=%s) molId %s path %s title %s", fmt, molId, filePath, oeMol.GetTitle())
-            ofs.SetFlavor()
-
+            #
             if constantMol:
                 oechem.OEWriteConstMolecule(ofs, oeMol)
             else:
