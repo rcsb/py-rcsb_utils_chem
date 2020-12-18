@@ -269,16 +269,20 @@ class OeIoUtils(object):
 
         Returns:
             list : list of OeGraphMol() objects
+
         """
         mL = []
         oemf = OeMoleculeFactory()
         try:
-            ifs = oechem.oemolistream(filePath)
-            for mol in ifs.GetOEGraphMols():
-                if use3D:
-                    mL.append(oemf.updateOePerceptions3D(mol, aromaticModel=oechem.OEAroModelOpenEye))
-                else:
-                    mL.append(oemf.updateOePerceptions2D(mol, aromaticModel=oechem.OEAroModelOpenEye))
+            ifs = oechem.oemolistream()
+            if ifs.open(filePath):
+                for tMol in ifs.GetOEGraphMols():
+                    oeMol = oechem.OEGraphMol(tMol)
+                    # if oechem.OEReadMolecule(ifs, oeMol):
+                    if use3D:
+                        mL.append(oemf.updateOePerceptions3D(oeMol, aromaticModel=oechem.OEAroModelOpenEye))
+                    else:
+                        mL.append(oemf.updateOePerceptions2D(oeMol, aromaticModel=oechem.OEAroModelOpenEye))
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return mL
@@ -307,11 +311,12 @@ class OeIoUtils(object):
             if not ifs.openstring(txt):
                 logger.error("Unable open string data for molecule reader")
                 return None
-            for mol in ifs.GetOEGraphMols():
+            for tMol in ifs.GetOEGraphMols():
+                oeMol = oechem.OEGraphMol(tMol)
                 if use3D:
-                    mL.append(oemf.updateOePerceptions3D(mol, aromaticModel=oechem.OEAroModelOpenEye))
+                    mL.append(oemf.updateOePerceptions3D(oeMol, aromaticModel=oechem.OEAroModelOpenEye))
                 else:
-                    mL.append(oemf.updateOePerceptions2D(mol, aromaticModel=oechem.OEAroModelOpenEye))
+                    mL.append(oemf.updateOePerceptions2D(oeMol, aromaticModel=oechem.OEAroModelOpenEye))
 
         except Exception as e:
             logger.exception("Failing with %s", str(e))

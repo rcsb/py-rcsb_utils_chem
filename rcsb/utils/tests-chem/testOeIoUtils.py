@@ -71,7 +71,7 @@ class OeIoUtilsTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
         return ccMolD
 
-    def testIpOps(self):
+    def testIoOps(self):
         """Test IO operation on generated related molecules"""
         try:
             oeIoU = OeIoUtils()
@@ -93,7 +93,42 @@ class OeIoUtilsTests(unittest.TestCase):
                     sdfPath = os.path.join(self.__molfileDirPath, sId + ".mol")
                     oeMol = oeIoU.descriptorToMol(idxD["smiles"], "oe-iso-smiles", limitPerceptions=False, messageTag=None)
                     oeIoU.write(sdfPath, oeMol, constantMol=True, addSdTags=True)
+                # ----
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
 
+    def testRoundTripOps(self):
+        """Test IO operation on generated related molecules"""
+        try:
+            oeIoU = OeIoUtils()
+            mU = MarshalUtil()
+            mU.mkdir(self.__molfileDirPath)
+            ccMolD = self.__getChemCompDefs()
+            oemf = OeMoleculeFactory()
+            for ccId, ccObj in list(ccMolD.items())[:10]:
+                # ----
+                tId = oemf.setChemCompDef(ccObj)
+                self.assertEqual(tId, ccId)
+                relatedIdxD = oemf.buildRelated(limitPerceptions=False)
+                logger.info("%s generated %d molecular forms", ccId, len(relatedIdxD))
+                for sId, idxD in relatedIdxD.items():
+                    logger.info("sId %r smiles %r", sId, idxD["smiles"])
+                    mol2Path = os.path.join(self.__molfileDirPath, sId + ".mol2")
+                    oeMol = oeIoU.descriptorToMol(idxD["smiles"], "oe-iso-smiles", limitPerceptions=False, messageTag=None)
+                    oeIoU.write(mol2Path, oeMol, constantMol=True, addSdTags=True)
+                    tMolL = oeIoU.fileToMols(mol2Path)
+                    #
+                    nextMol2Path = os.path.join(self.__molfileDirPath, sId + "-next.mol2")
+                    oeIoU.write(nextMol2Path, tMolL[0], constantMol=True, addSdTags=True)
+
+                    sdfPath = os.path.join(self.__molfileDirPath, sId + ".mol")
+                    oeMol = oeIoU.descriptorToMol(idxD["smiles"], "oe-iso-smiles", limitPerceptions=False, messageTag=None)
+                    oeIoU.write(sdfPath, oeMol, constantMol=True, addSdTags=True)
+                    #
+                    tMolL = oeIoU.fileToMols(sdfPath)
+                    nextSdfPath = os.path.join(self.__molfileDirPath, sId + "-next.sdf")
+                    oeIoU.write(nextSdfPath, tMolL[0], constantMol=True, addSdTags=True)
                 # ----
         except Exception as e:
             logger.exception("Failing with %s", str(e))

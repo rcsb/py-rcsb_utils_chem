@@ -579,7 +579,7 @@ class OeMoleculeFactory(object):
         return retD
 
     # ----
-    def build(self, molBuildType="model", setTitle=True, limitPerceptions=False, fallBackBuildType="model-xyz", normalize=False):
+    def build(self, molBuildType="model-xyz", setTitle=True, limitPerceptions=False, fallBackBuildType="model-xyz", normalize=False):
         try:
             if molBuildType in ["ideal-xyz", "model-xyz"]:
                 oeMol = self.__build3D(molBuildType=molBuildType, setTitle=setTitle)
