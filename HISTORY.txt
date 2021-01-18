@@ -35,4 +35,5 @@
 23-Oct-2020 - V0.43 Integrate new substructure search with ChemCompSearchWrapper()
 10-Dec-2020 - V0.45 In progress update to py39, add toMolFile() to ChemCompDepictWrapper(), upversion
 15-Dec-2020 - V0.47 Make the build type options adjustable in OeMoleculeFactory.buildRelated(), add tests, upversion
-18-Dec-2020 - V0.48 Corrections in fileToMols() and stringToMols() and add OeMcssSearchUtils() and tests
+18-Dec-2020 - V0.48 Corrections in fileToMols() and stringToMols(), and add OeMcssSearchUtils() and tests
+18-Jan-2021 - V0.49 Add module OeChemCompUtils() and tests, and update dependencies

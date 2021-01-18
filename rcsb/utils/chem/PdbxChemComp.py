@@ -445,7 +445,7 @@ class PdbxChemCompDescriptorPersist(object):
         return self.__getAttribute("program_version")
 
     def getMolBuildType(self):
-        bT = None
+        bT = dType = dProg = None
         try:
             dType = self.getType()
             dProg = self.getProgram()

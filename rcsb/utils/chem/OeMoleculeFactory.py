@@ -74,6 +74,7 @@ class OeMoleculeFactory(object):
         self.__verbose = flag
 
     def setChemCompDef(self, dataContainer):
+        ccId = None
         try:
             if dataContainer.exists("chem_comp"):
                 ccIt = PdbxChemCompIt(dataContainer)
@@ -130,6 +131,7 @@ class OeMoleculeFactory(object):
         ret = True
         for fpType in myFpTypeList:
             if fpType in fpD:
+                fpOk = False
                 tag = "FP_" + fpType
                 fp = oegraphsim.OEFingerPrint()
                 ok = oegraphsim.OEMakeFP(fp, self.__oeMol, fpD[fpType])
@@ -581,6 +583,7 @@ class OeMoleculeFactory(object):
     # ----
     def build(self, molBuildType="model-xyz", setTitle=True, limitPerceptions=False, fallBackBuildType="model-xyz", normalize=False):
         try:
+            oeMol = None
             if molBuildType in ["ideal-xyz", "model-xyz"]:
                 oeMol = self.__build3D(molBuildType=molBuildType, setTitle=setTitle)
             elif molBuildType in ["connection-table"]:
@@ -968,6 +971,8 @@ class OeMoleculeFactory(object):
         return inMol if ok else None
 
     def getUniqueProtomerMolExtended(self, oeMol=None, maxTautomerAtoms=200, maxSearchTime=60):
+        tautomerMolL = []
+        inMol = None
         try:
             inMol = oeMol if oeMol else oechem.OEGraphMol(self.__oeMol)
             oequacpac.OEHypervalentNormalization(inMol)
@@ -992,7 +997,7 @@ class OeMoleculeFactory(object):
             oechem.OEThrow.SetOutputStream(errfs)
             oechem.OEThrow.Clear()
             #
-            tautomerMolL = []
+
             for tautomer in oequacpac.OEEnumerateTautomers(inMol, opts):
                 if "Warning:" in str(errfs.str()):
                     if not self.__quietMode:
