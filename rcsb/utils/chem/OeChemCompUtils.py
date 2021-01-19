@@ -297,8 +297,11 @@ class OeChemCompUtils(object):
             #
             atRow = {}
             atRow["comp_id"] = idCode
+            atRow["atom_id"] = atom.GetName().strip()
+            atRow["alt_atom_id"] = atom.GetName().strip()
+            atRow["type_symbol"] = oechem.OEGetAtomicSymbol(atom.GetAtomicNum())
+            atRow["charge"] = atom.GetFormalCharge()
             (xC, yC, zC) = oeMol.GetCoords(atom)
-            # pdbx_model_Cartn_x_ideal
             if writeIdealXyz:
                 atRow["pdbx_model_Cartn_x_ideal"] = "%0.3f" % xC
                 atRow["pdbx_model_Cartn_y_ideal"] = "%0.3f" % yC
@@ -307,10 +310,6 @@ class OeChemCompUtils(object):
                 atRow["model_Cartn_x"] = "%0.3f" % xC
                 atRow["model_Cartn_y"] = "%0.3f" % yC
                 atRow["model_Cartn_z"] = "%0.3f" % zC
-            atRow["atom_id"] = atom.GetName().strip()
-            atRow["alt_atom_id"] = atom.GetName().strip()
-            atRow["type_symbol"] = oechem.OEGetAtomicSymbol(atom.GetAtomicNum())
-            atRow["charge"] = atom.GetFormalCharge()
             if atom.GetStringData("pdbx_leaving_atom_flag") in ["Y", "N"]:
                 atRow["pdbx_leaving_atom_flag"] = atom.GetStringData("pdbx_leaving_atom_flag")
             else:

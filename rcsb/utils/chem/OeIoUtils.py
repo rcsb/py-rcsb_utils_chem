@@ -46,6 +46,7 @@ class OeIoUtils(object):
         self.__oeErrorLevel = oechem.OEErrorLevel_Quiet
 
     def getComponentDefinitions(self, ccdFilePath):
+        rdCcObjL = []
         try:
             rdCcObjL = self.__mU.doImport(ccdFilePath, fmt="mmcif")
             logger.info("Read %s with %d definitions", ccdFilePath, len(rdCcObjL))
@@ -229,7 +230,7 @@ class OeIoUtils(object):
             object: OeQmol() object or None for failure
 
         """
-        oeQMol = None
+        oeQMol = label = None
         try:
             label = messageTag if messageTag else ""
             tMol = self.descriptorToMol(descr, descrType, limitPerceptions=limitPerceptions, messageTag=messageTag)
@@ -371,9 +372,10 @@ class OeIoUtils(object):
             OEFPType_MACCS166
             OEFPType_Lingo
         """
+        startTime = time.time()
+        ok = False
         try:
             _ = fpType
-            startTime = time.time()
             fpD = {"TREE": oegraphsim.OEFPType_Tree, "CIRCULAR": oegraphsim.OEFPType_Circular, "PATH": oegraphsim.OEFPType_Path}
             myFpType = fpD[fpType] if fpType in fpD else oegraphsim.OEFPType_Tree
             opts = oegraphsim.OECreateFastFPDatabaseOptions(oegraphsim.OEGetFPType(myFpType))
@@ -410,8 +412,8 @@ class OeIoUtils(object):
         """
         fpDb = None
         ok = False
+        startTime = time.time()
         try:
-            startTime = time.time()
             fpD = {
                 "TREE": oegraphsim.OEFPType_Tree,
                 "CIRCULAR": oegraphsim.OEFPType_Circular,
@@ -526,12 +528,12 @@ class OeIoUtils(object):
             (int, int, list): chem comp success count, error count, chem comp identifier failure list
 
         """
-
+        ok = False
+        startTime = time.time()
+        failIdList = []
+        ccCount = 0
+        errCount = 0
         try:
-            failIdList = []
-            ccCount = 0
-            errCount = 0
-            startTime = time.time()
             ofs = oechem.oemolostream()
             ofs.SetFormat(oechem.OEFormat_OEB)
             if ofs.open(filePath):
@@ -579,11 +581,11 @@ class OeIoUtils(object):
         Returns:
             (int, int, list): chem comp success count, error count, chem comp identifier failure list
         """
+        failIdList = []
+        ccCount = 0
+        errCount = 0
+        startTime = time.time()
         try:
-            failIdList = []
-            ccCount = 0
-            errCount = 0
-            startTime = time.time()
             ofs = oechem.oemolostream()
             ofs.SetFormat(oechem.OEFormat_OEB)
             if ofs.open(filePath):
@@ -674,7 +676,7 @@ class OeIoUtils(object):
             self.__mU.mkdir(os.path.dirname(filePath))
             ofs = oechem.oemolostream()
             ofs.open(filePath)
-            logger.info("Writing (fmt=%s) molId %s path %s title %s", fmt, molId, filePath, oeMol.GetTitle())
+            logger.debug("Writing (fmt=%s) molId %s path %s title %s", fmt, molId, filePath, oeMol.GetTitle())
             #
             if constantMol:
                 oechem.OEWriteConstMolecule(ofs, oeMol)
