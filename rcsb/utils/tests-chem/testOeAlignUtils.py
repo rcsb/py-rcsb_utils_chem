@@ -61,7 +61,7 @@ class OeAlignUtilsTests(unittest.TestCase):
             logger.info("Ref path %s", refPath)
             oed.setFitPath(fitPath)
             logger.info("Fit path %s", fitPath)
-            (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL) = oed.doAlignMcss(minFrac=0.9)
+            (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL, _) = oed.doAlignMcss(minFrac=0.9)
             self.assertEqual(nAtomsRef, nAtomsFit)
             self.assertEqual(nAtomsRef, len(atomMapL))
             self.assertEqual(refFD["InChIKey"], fitFD["InChIKey"])
@@ -89,8 +89,7 @@ class OeAlignUtilsTests(unittest.TestCase):
                 logger.info("Fit path %s", fitPath)
                 oed.setFitPath(fitPath, title=ccId, suppressHydrogens=False, fType="sdf", importType="2D")
                 #
-
-                (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL) = oed.doAlignMcss(minFrac=minFrac, useExhaustive=True)
+                (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL, _) = oed.doAlignMcss(minFrac=minFrac, useExhaustive=True)
                 self.assertEqual(nAtomsRef, nAtomsFit)
                 self.assertGreaterEqual(nAtomsRef, len(atomMapL) * minFrac)
                 self.assertEqual(refFD["SMILES"], fitFD["SMILES"])
@@ -116,7 +115,7 @@ class OeAlignUtilsTests(unittest.TestCase):
                 logger.info("Fit path %s", refPath)
                 oed.setFitPath(fitPath, title=None, suppressHydrogens=False, fType="sdf", importType="2D")
                 #
-                (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL) = oed.doAlignSs(unique=True)
+                (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL, _) = oed.doAlignSs(unique=True)
                 self.assertEqual(nAtomsRef, nAtomsFit)
                 self.assertEqual(nAtomsRef, len(atomMapL))
                 self.assertEqual(refFD["SMILES"], fitFD["SMILES"])
