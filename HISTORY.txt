@@ -38,3 +38,4 @@
 18-Dec-2020 - V0.48 Corrections in fileToMols() and stringToMols(), and add OeMcssSearchUtils() and tests
 18-Jan-2021 - V0.49 Add module OeChemCompUtils() and tests, and update dependencies
 18-Jan-2021 - V0.50 Reorder chem_comp_atom data items in OeChemCompUtils()
+26-Jan-2021 - V0.51 Add module ChemCompAlignUtils() and update dependencies

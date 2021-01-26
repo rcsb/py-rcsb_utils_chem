@@ -600,6 +600,9 @@ class OeIoUtils(object):
                         if not fpOk:
                             logger.info("Fingerprint generation fails for %r", searchCcId)
                     if ok:
+                        if not suppressHydrogens:
+                            oemf.addExplicitHydrogens()
+                            oemf.setSimpleAtomNames()
                         oeMol = oemf.getMol(suppressHydrogens=suppressHydrogens)
                         oechem.OEWriteMolecule(ofs, oeMol)
                         ccCount += 1

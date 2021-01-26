@@ -292,13 +292,21 @@ class OeMoleculeFactory(object):
         if formula:
             oechem.OESetSDData(self.__oeMol, "FORMULA", formula)
 
+    def addExplicitHydrogens(self):
+        return oechem.OEAddExplicitHydrogens(self.__oeMol)
+
     def setSimpleAtomNames(self):
         """"""
-        if self.__oeMol:
-            for atom in self.__oeMol.GetAtoms():
-                atom.SetIntType(atom.GetAtomicNum())
-                atom.SetType(oechem.OEGetAtomicSymbol(atom.GetAtomicNum()))
-            oechem.OETriposAtomNames(self.__oeMol)
+        try:
+            if self.__oeMol:
+                for atom in self.__oeMol.GetAtoms():
+                    atom.SetIntType(atom.GetAtomicNum())
+                    atom.SetType(oechem.OEGetAtomicSymbol(atom.GetAtomicNum()))
+                oechem.OETriposAtomNames(self.__oeMol)
+                return True
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return False
 
     def getElementCounts(self, addExplicitHydrogens=False, useSymbol=False):
         """Get the dictionary of element counts (eg. eD[iAtNo]=iCount)."""

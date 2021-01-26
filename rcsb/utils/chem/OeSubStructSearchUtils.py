@@ -176,14 +176,15 @@ class OeSubStructSearchUtils(object):
 
     def __searchSubStructureMulti(self, oeQueryMol, idxList, matchOpts="graph-relaxed", numProc=2, maxChunkSize=10):
         #
+        hL = []
+        startTime = time.time()
         try:
-            startTime = time.time()
             searchType = "exhaustive-substructure"
             if idxList:
                 searchType = "prefilterd-substructure"
             idxList = idxList if idxList else list(range(self.__oeMolDb.GetMaxMolIdx()))
             #
-            hL = []
+
             rWorker = OeSubStructSearchWorker(oeQueryMol, self.__oeMolDb, matchOpts=matchOpts)
             mpu = MultiProcUtil(verbose=True)
             optD = {"maxChunkSize": maxChunkSize}

@@ -1,11 +1,12 @@
 ##
-# File:  OeMcssSearchUtils.py
+# File:  OeAlignUtils.py
 # Date:  17-Dec-2020  J. Westbrook
 #
 # Updates:
+#  22-Jan-2021 jdw rename to OeAlignUtils() and add substructure mode
 ##
 """
-Utilities for performing MCSS comparisons.
+Utilities for performing substructure and maximum common substructure molecular alignments.
 """
 
 __docformat__ = "restructuredtext en"
@@ -28,9 +29,9 @@ from rcsb.utils.io.MarshalUtil import MarshalUtil
 logger = logging.getLogger(__name__)
 
 
-class OeMcssSearchUtils(object):
-    """Perform MCSS comparisons.  Targets can be chemical component identifiers
-    or paths to chemical component definition files.  Inputs can be in the the form of pairs,
+class OeAlignUtils(object):
+    """Perform substructure and maximum common substructure molecular alignments.  Targets can be chemical component
+    identifiers or paths to chemical component definition files.  Inputs can be in the the form of pairs,
     lists, and pair lists of chemical component definitions.
 
     """
@@ -57,6 +58,7 @@ class OeMcssSearchUtils(object):
         self.__fitFD = {}
         #
         self.__mcss = None
+        self.__ss = None
         self.__refPath = None
         self.__fitPath = None
 
@@ -87,7 +89,7 @@ class OeMcssSearchUtils(object):
         else:
             self.__refmol.SetTitle(self.__refId)
             self.__refTitle = None
-        self.__setupMCSS(self.__refmol)
+        # self.__setupMCSS(self.__refmol)
 
     def setRefPath(self, ccPath, title=None, suppressHydrogens=False, fType="CC", importType="2D"):
         """Set the query molecule for MCSS comparison using the input file path.
@@ -105,11 +107,11 @@ class OeMcssSearchUtils(object):
         if fType in ["CC"]:
             (self.__refId, self.__refmol, self.__refFD) = self.getCCDefFile(ccPath, suppressHydrogens=suppressHydrogens)
         else:
-            (self.__refId, self.__refmol, self.__refFD) = self.__getMiscFile(ccPath, suppressHydrogens=suppressHydrogens, importType=importType)
+            (self.__refId, self.__refmol, self.__refFD) = self.__getMiscFile(ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title)
 
         if self.__verbose:
-            logger.info("Derived ref ID     = %s", self.__refId)
-            logger.info("SMILES (stereo)  = %s", self.__refFD["SMILES_STEREO"])
+            logger.debug("Derived ref ID     = %s", self.__refId)
+            logger.debug("SMILES (stereo)  = %s", self.__refFD["SMILES_STEREO"])
         #
         # Insert title here -
         if title is not None:
@@ -119,7 +121,7 @@ class OeMcssSearchUtils(object):
             self.__refmol.SetTitle(self.__refId)
             self.__refTitle = None
 
-        self.__setupMCSS(self.__refmol)
+        # self.__setupMCSS(self.__refmol)
 
     def setFitId(self, ccId, title=None, suppressHydrogens=False, cachePath="/data/components/ligand-dict-v3"):
         """Set the ID of the target/library molecule for MCSS comparison."""
@@ -137,17 +139,35 @@ class OeMcssSearchUtils(object):
             self.__fitmol.SetTitle(self.__fitId)
             self.__fitTitle = None
 
-    def setFitPath(self, ccPath, title=None, suppressHydrogens=False):
-        """Set the path of the target/library molecule for MCSS comparison."""
-        (self.__fitId, self.__fitmol, self.__fitFD) = self.getCCDefFile(ccPath, suppressHydrogens=suppressHydrogens)
+    def setFitPath(self, ccPath, title=None, suppressHydrogens=False, fType="CC", importType="2D"):
+        """Set the path to the target/library molecule for MCSS comparison using the input file path.
+
+        The file type is either 'CC' for a chemical component definition or another file type
+        supported by OE toolkit assumed to have a conventional file extension for this type.
+
+        A title is optionally provided otherwise the component Id will be used.
+
+        The hydrogen flag can be used to perform the MCSS using only heavy atoms.
+        """
+        self.__fitPath = ccPath
+        if fType in ["CC"]:
+            (self.__fitId, self.__fitmol, self.__fitFD) = self.getCCDefFile(ccPath, suppressHydrogens=suppressHydrogens)
+        else:
+            (self.__fitId, self.__fitmol, self.__fitFD) = self.__getMiscFile(ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title)
+
+        if self.__verbose:
+            logger.debug("Derived fit ID     = %s", self.__fitId)
+            logger.debug("SMILES (stereo)  = %s", self.__fitFD["SMILES_STEREO"])
+        #
+        # Insert title here -
         if title is not None:
             self.__fitmol.SetTitle(title)
             self.__fitTitle = title
         else:
-            self.__fitmol.SetTitle(self.__fitId)
+            self.__fitmol.SetTitle(self.__refId)
             self.__fitTitle = None
 
-    def setFitIdList(self, ccIdList, cachePath="/data/components/ligand-dict-v3"):
+    def __setFitIdList(self, ccIdList, cachePath="/data/components/ligand-dict-v3"):
         """Set the list of IDs to be compared with reference molecule by MCSS.
 
         From the input ID list build the internal pair list of
@@ -166,7 +186,7 @@ class OeMcssSearchUtils(object):
             fitTitle = fitId + "/" + refId
             self.__pairTupleList.append((refId, refPath, refTitle, fitId, fitPath, fitTitle))
 
-    def setPairIdList(self, pairIdList, cachePath="/data/components/ligand-dict-v3"):
+    def __setPairIdList(self, pairIdList, cachePath="/data/components/ligand-dict-v3"):
         """Set the list of ID pais to be aligned by MCSS.
 
         From the input ID list build the internal pair list of
@@ -218,7 +238,7 @@ class OeMcssSearchUtils(object):
 
         return (ccId, tMol, fD)
 
-    def __getMiscFile(self, filePath, suppressHydrogens=False, importType="2D"):
+    def __getMiscFile(self, filePath, suppressHydrogens=False, importType="2D", title=None):
         """Fetch a miscellaneous chemical file (ccPath) and build OE molecules
         for comparison.
 
@@ -227,15 +247,18 @@ class OeMcssSearchUtils(object):
             oeioU = OeIoUtils()
             oeMolL = oeioU.fileToMols(filePath, use3D=importType == "3D")
             oeMol = oeMolL[0]
-            ccId = oeMol.GetTitle()
+
+            ccId = title if title else oeMol.GetTitle()
+            if title:
+                oeMol.SetTitle(ccId)
             #
             oemf = OeMoleculeFactory()
             oemf.setOeMol(oeMol, ccId)
             #
             fD = oemf.getOeMoleculeFeatures()
             if self.__verbose:
-                logger.info("+OeMCSS.__getMiscFile()")
-                logger.info("  Title              = %s", oemf.getTitle())
+                logger.info("  Title              = %s", title)
+                logger.info("  Title OEMF         = %s", oemf.getTitle())
                 logger.info("  SMILES             = %s", oemf.getCanSMILES())
                 logger.info("  SMILES (stereo)    = %s", oemf.getIsoSMILES())
                 logger.info("  Formula (Hill)     = %s", oemf.getFormula())
@@ -253,7 +276,7 @@ class OeMcssSearchUtils(object):
                 for ii, atm in enumerate(tMol.GetAtoms()):
                     xyzL = oechem.OEFloatArray(3)
                     tMol.GetCoords(atm, xyzL)
-                    molXyzL.append((ii, atm.GetIdx(), atm.GetAtomicNum(), atm.GetName(), atm.GetType(), "%.3f" % xyzL[0], "%.3f" % xyzL[1], "%.3f" % xyzL[2]))
+                    molXyzL.append((ii, atm.GetIdx(), atm.GetAtomicNum(), atm.GetName(), atm.GetType(), xyzL[0], xyzL[1], xyzL[2]))
             fD = {}
             fD = {
                 "Formula": oemf.getFormula(),
@@ -277,37 +300,51 @@ class OeMcssSearchUtils(object):
 
         return None, None, None
 
-    def __setupMCSS(self, refmol):
+    def __setupMCSS(self, refmol, useExhaustive=True):
         """Internal initialization for the MCSS comparison."""
         #
-        self.__mcss = oechem.OEMCSSearch(oechem.OEMCSType_Exhaustive)
-        # self.__mcss = oechem.OEMCSSearch(oechem.OEMCSType_Approximate)
+        mode = oechem.OEMCSType_Exhaustive if useExhaustive else oechem.OEMCSType_Approximate
+        self.__mcss = oechem.OEMCSSearch(mode)
         atomexpr, bondexpr = OeCommonUtils.getAtomBondExprOpts(self.__searchType)
         self.__mcss.Init(refmol, atomexpr, bondexpr)
-        logger.info("Initialize MCSS (%r)", self.__searchType)
+        if self.__verbose:
+            logger.info("Initialize MCSS (%r)", self.__searchType)
+
+    def __setupSubStructure(self, refmol):
+        """Internal initialization for a substructure comparison."""
+        #
+        atomexpr, bondexpr = OeCommonUtils.getAtomBondExprOpts(self.__searchType)
+        self.__ss = oechem.OESubSearch(refmol, atomexpr, bondexpr)
+        if self.__verbose:
+            logger.info("Initialize SS (%r)", self.__searchType)
 
     @timeout(100)
-    def doAlign(self, unique=True, minFrac=1.0):
-        """Test the MCSS comparison between current reference and fit molecules -
+    def doAlignSs(self, unique=True):
+        """Test the SS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
         """
-        atomMap = []
+        atomMapL = []
+        fitAtomExtraL = []
         #
         nAtomsRef = self.__refmol.NumAtoms()
         nAtomsFit = self.__fitmol.NumAtoms()
-        minAtoms = int(min(nAtomsRef, nAtomsFit) * minFrac)
         # -------
-        self.__mcss.SetMCSFunc(oechem.OEMCSMaxAtoms())
-        self.__mcss.SetMinAtoms(minAtoms)
         oechem.OEAddExplicitHydrogens(self.__refmol)
         oechem.OEAddExplicitHydrogens(self.__fitmol)
+        fitAtD = {}
+        for at in self.__fitmol.GetAtoms():
+            fitAtD[at.GetIdx()] = (at.GetName(), at.GetAtomicNum())
+
+        #
+        logger.debug("nAtomsRef %d nAtomsFit %d", nAtomsRef, nAtomsFit)
         #
         # --------
-        miter = self.__mcss.Match(self.__fitmol, unique)
+        self.__setupSubStructure(self.__refmol)
+        miter = self.__ss.Match(self.__fitmol, unique)
         if miter.IsValid():
             match = miter.Target()
             for mAt in match.GetAtoms():
-                atomMap.append(
+                atomMapL.append(
                     (
                         self.__refId,
                         mAt.pattern.GetIdx(),
@@ -319,4 +356,49 @@ class OeMcssSearchUtils(object):
                         mAt.target.GetName(),
                     )
                 )
-        return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMap)
+                fitAtD.pop(mAt.target.GetIdx())
+            logger.debug("fitAtD %r", fitAtD)
+        fitAtomExtraL = list(fitAtD.values())
+        return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomExtraL)
+
+    @timeout(100)
+    def doAlignMcss(self, unique=True, minFrac=1.0, useExhaustive=True):
+        """Test the MCSS comparison between current reference and fit molecules -
+        Return list of corresponding atoms on success or an empty list otherwise.
+        """
+        atomMapL = []
+        fitAtomExtraL = []
+        #
+        nAtomsRef = self.__refmol.NumAtoms()
+        nAtomsFit = self.__fitmol.NumAtoms()
+        fitAtD = {}
+        for at in self.__fitmol.GetAtoms():
+            fitAtD[at.GetIdx()] = (at.GetName(), at.GetAtomicNum())
+        minAtoms = int(min(nAtomsRef, nAtomsFit) * minFrac)
+        # -------
+        self.__setupMCSS(self.__refmol, useExhaustive=useExhaustive)
+        self.__mcss.SetMCSFunc(oechem.OEMCSMaxAtoms())
+        self.__mcss.SetMinAtoms(minAtoms)
+        oechem.OEAddExplicitHydrogens(self.__refmol)
+        oechem.OEAddExplicitHydrogens(self.__fitmol)
+        #
+        # --------
+        miter = self.__mcss.Match(self.__fitmol, unique)
+        if miter.IsValid():
+            match = miter.Target()
+            for mAt in match.GetAtoms():
+                atomMapL.append(
+                    (
+                        self.__refId,
+                        mAt.pattern.GetIdx(),
+                        mAt.pattern.GetAtomicNum(),
+                        mAt.pattern.GetName(),
+                        self.__fitId,
+                        mAt.target.GetIdx(),
+                        mAt.target.GetAtomicNum(),
+                        mAt.target.GetName(),
+                    )
+                )
+                fitAtD.pop(mAt.target.GetIdx())
+        fitAtomExtraL = list(fitAtD.values())
+        return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomExtraL)

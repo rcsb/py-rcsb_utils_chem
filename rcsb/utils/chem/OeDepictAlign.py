@@ -26,6 +26,7 @@ from rcsb.utils.chem.OeCommonUtils import OeCommonUtils
 from rcsb.utils.chem.OeDepict import OeDepictBase
 from rcsb.utils.io.decorators import TimeoutException
 from rcsb.utils.io.decorators import timeout
+from rcsb.utils.io.FileUtil import FileUtil
 
 logger = logging.getLogger(__name__)
 
@@ -417,6 +418,8 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
                 logger.debug("mcss match completed for refId %s fitId %s total map length %d", refId, fitId, len(atomMap))
 
         logger.debug("writing image %s", imagePath)
+        fU = FileUtil()
+        fU.mkdirForFile(imagePath)
         oedepict.OEWriteMultiPageImage(imagePath, self.__multi)
         logger.debug("completed with map lenth %d", len(atomMap))
         #
@@ -475,6 +478,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         return aM
 
     def alignPairList(self, imagePath="single-pair-list.png"):
+        aM = []
         self._params["gridCols"] = 2
         try:
             aM = self.__alignListWorker(imagePath=imagePath, layout="pairs")
@@ -485,6 +489,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         return aM
 
     def alignOneWithList(self, imagePath="single-list.png"):
+        aM = []
         try:
             aM = self.__alignListWorker(imagePath=imagePath, layout="list")
         except TimeoutException:
@@ -567,6 +572,8 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
                 for mAt in match.GetAtoms():
                     atomMap.append((refId, mAt.pattern.GetName(), fitId, mAt.target.GetName()))
 
+        fU = FileUtil()
+        fU.mkdirForFile(imagePath)
         oedepict.OEWriteImage(imagePath, self.__image)
         return atomMap
 
@@ -597,6 +604,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         """Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
         current _pairMolList.  Display options set for a single grid row with two columns.
         """
+        aM = []
         self._pairMolList = []
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
         try:
@@ -608,6 +616,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         return aM
 
     def alignPairList(self):
+        aM = []
         try:
             aM = self.__alignListWorker(layout="pairs")
         except TimeoutException:
@@ -617,6 +626,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         return aM
 
     def alignOneWithList(self):
+        aM = []
         try:
             aM = self.__alignListWorker(layout="list")
         except TimeoutException:
@@ -638,6 +648,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         #
         atomMap = []
         firstOne = True
+        fU = FileUtil()
 
         for (refId, refMol, _, refImagePath, fitId, fitMol, fitTitle, fitImagePath) in self._pairMolList:
             #
@@ -674,11 +685,13 @@ class OeDepictMCSAlign(OeDepictAlignBase):
                     else:
                         refdisp = oedepict.OE2DMolDisplay(refMol, self._opts)
                     oedepict.OERenderMolecule(self.__imageRef, refdisp)
+                    fU.mkdirForFile(refImagePath)
                     oedepict.OEWriteImage(refImagePath, self.__imageRef)
 
                 # Depict fit molecule with MCS highlighting
                 fitdisp = self._setHighlightStyleFit(matchObj=match, fitMol=fitMol)
                 oedepict.OERenderMolecule(self.__imageFit, fitdisp)
+                fU.mkdirForFile(fitImagePath)
                 oedepict.OEWriteImage(fitImagePath, self.__imageFit)
 
                 for mAt in match.GetAtoms():
@@ -888,6 +901,56 @@ class OeMCSAlignUtil(OeDepictAlignBase):
         return atomMap
 
 
+class OeSubStructureAlignUtil(OeDepictAlignBase):
+    """Perform substructure alignments.  Inputs can be in the the form of pairs,
+    lists, and pair lists of molecule object instances.
+    """
+
+    def __init__(self):
+        super(OeSubStructureAlignUtil, self).__init__()
+        #
+        self.__unique = True
+
+    def doAlign(self):
+        """Test the MCSS comparison between the current reference and fit molecules -
+
+        Return list of corresponding atoms on success or an empty list otherwise.
+        """
+        atomMap = []
+        self._setupSubStructure(self._refMol)
+        #
+        unique = self.__unique
+        self._miter = self._ss.Match(self._fitMol, unique)
+        if self._miter.IsValid():
+            match = self._miter.Target()
+            for mAt in match.GetAtoms():
+                atomMap.append((self._refId, mAt.pattern.GetName(), self._fitId, mAt.target.GetName()))
+
+        return atomMap
+
+    def doAlignList(self):
+        """Test MCSS comparison between the current reference molecule with a list of fit molecules.
+
+        pairMolList = (refId,refMol,refTitle,fitId,fitMol,fitTitle)
+
+        Map of corresponding atoms is returned.
+
+        """
+        atomMap = []
+        unique = self.__unique
+        for (refId, refMol, _, _, fitId, fitMol, _, _) in self._pairMolList:
+            #
+            self._setupSubStructure(refMol)
+            #
+            self._miter = self._ss.Match(fitMol, unique)
+            if self._miter.IsValid():
+                match = self._miter.Target()
+                for mAt in match.GetAtoms():
+                    atomMap.append((refId, mAt.pattern.GetName(), fitId, mAt.target.GetName()))
+
+        return atomMap
+
+
 class OeDepictSubStructureAlign(OeDepictAlignBase):
     """Create 2D depictions of substructure alignments. Inputs can be in the the form of pairs,
     lists, and pair lists of molecule object instances.
@@ -914,6 +977,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         """Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
         current _pairMolList.  Display options set for a single grid row with two columns.
         """
+        aM = []
         self._pairMolList = []
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
         try:
@@ -925,6 +989,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         return aM
 
     def alignPairList(self):
+        aM = []
         try:
             aM = self.__alignListWorker(layout="pairs")
         except TimeoutException:
@@ -934,6 +999,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         return aM
 
     def alignOneWithList(self):
+        aM = []
         try:
             aM = self.__alignListWorker(layout="list")
         except TimeoutException:
@@ -955,7 +1021,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         #
         atomMap = []
         firstOne = True
-
+        fU = FileUtil()
         for (refId, refMol, _, refImagePath, fitId, fitMol, fitTitle, fitImagePath) in self._pairMolList:
             #
             self.__setupImage()
@@ -991,11 +1057,13 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
                         refdisp = oedepict.OE2DMolDisplay(refMol, self._opts)
                     logger.info("writing %r", refImagePath)
                     oedepict.OERenderMolecule(self.__imageRef, refdisp)
+                    fU.mkdirForFile(refImagePath)
                     oedepict.OEWriteImage(refImagePath, self.__imageRef)
 
                 # Depict fit molecule with SS highlighting
                 fitdisp = self._setHighlightStyleFit(matchObj=match, fitMol=fitMol)
                 oedepict.OERenderMolecule(self.__imageFit, fitdisp)
+                fU.mkdirForFile(fitImagePath)
                 oedepict.OEWriteImage(fitImagePath, self.__imageFit)
 
                 for mAt in match.GetAtoms():
