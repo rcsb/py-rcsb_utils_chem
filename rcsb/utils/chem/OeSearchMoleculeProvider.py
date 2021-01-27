@@ -121,7 +121,7 @@ class OeSearchMoleculeProvider(object):
                 oeIo = OeIoUtils()
                 self.__oeMolD = oeIo.readOeBinaryMolCache(os.path.join(self.__dirPath, self.__getOeSearchMolFileName()))
                 logger.info("Loading OE binary molecule cache length %d (%.4f seconds)", len(self.__oeMolD), time.time() - startTime)
-            return self.__oeMolD[searchCcId]
+            return self.__oeMolD[searchCcId] if searchCcId in self.__oeMolD else None
         except Exception as e:
             logger.exception("Get molecule %r failing with %s", searchCcId, str(e))
         return None
