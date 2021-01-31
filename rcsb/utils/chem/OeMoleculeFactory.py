@@ -37,6 +37,7 @@ ComponentAtom = namedtuple("ComponentAtom", "name aType isAromatic isChiral CIP 
 ComponentBond = namedtuple("ComponentBond", "iType isAromatic CIP")
 ComponentDescriptors = namedtuple("ComponentDescriptors", "smiles isoSmiles inchi inchiKey")
 DescriptorInstance = namedtuple("DescriptorInstance", "type program")
+ComponentAtomDetails = namedtuple("ComponentAtomDetails", "atIdx atNo atName atType x y z atFormalCharge")
 
 
 class OeMoleculeFactory(object):
@@ -1021,3 +1022,35 @@ class OeMoleculeFactory(object):
         #
         outMol = tautomerMolL[0] if tautomerMolL else None
         return outMol if outMol and outMol != inMol else None
+
+    def getAtomDetails(self, xyzType="model"):
+        """Return a list of essential atom details...
+
+        Args:
+             xyzType (str, optional):  model or ideal default: model.
+
+        Returns:
+          (list): [(ordinal, AtomicNum, atom Name, atom type, x, y, z, formal charge)]
+
+        """
+        aL = []
+        try:
+            atomIt = PdbxChemCompAtomIt(self.__dataContainer)
+            for ii, ccAt in enumerate(atomIt):
+                atName = ccAt.getName()
+                atType = ccAt.getType()
+                atNo = ccAt.getAtNo()
+                fc = ccAt.getFormalCharge()
+                cTup = None
+                if (xyzType == "model") and ccAt.hasModelCoordinates():
+                    cTup = ccAt.getModelCoordinates()
+                elif (xyzType == "ideal") and ccAt.hasIdealCoordinates():
+                    cTup = ccAt.getIdealCoordinates()
+                elif (xyzType == "ideal") and ccAt.hasModelCoordinates():
+                    cTup = ccAt.getModelCoordinates()
+                else:
+                    pass
+                aL.append(ComponentAtomDetails(atIdx=ii + 1, atNo=atNo, atName=atName, atType=atType, x=cTup[0], y=cTup[1], z=cTup[2], atFormalCharge=fc))
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return aL

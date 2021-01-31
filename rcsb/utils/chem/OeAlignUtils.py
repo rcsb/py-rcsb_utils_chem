@@ -17,6 +17,7 @@ __license__ = "Apache 2.0"
 
 import logging
 import os
+from collections import namedtuple
 
 from openeye import oechem
 
@@ -27,6 +28,10 @@ from rcsb.utils.io.decorators import timeout
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 
 logger = logging.getLogger(__name__)
+
+ComponentAtomDetails = namedtuple("ComponentAtomDetails", "atIdx atNo atName atType x y z atFormalCharge")
+AlignAtomMap = namedtuple("AlignAtomMap", "refId refAtIdx refAtNo refAtName fitId fitAtIdx fitAtNo fitAtName")
+AlignAtomUnMapped = namedtuple("AlignAtomUnMapped", "fitId fitAtIdx fitAtNo fitAtType fitAtName fitAtFormalCharge x y z fitNeighbors")
 
 
 class OeAlignUtils(object):
@@ -49,8 +54,6 @@ class OeAlignUtils(object):
         self.__fitTitle = None
         #
         self.__pairTupleList = []
-        #
-        self.__minAtomMatchFraction = 0.50
         #
         self.__searchType = "relaxed"
         #
@@ -235,6 +238,7 @@ class OeAlignUtils(object):
             tMol = oemf.getMol()
 
         fD["OEMOL"] = tMol
+        fD["xyz"] = oemf.getAtomDetails(xyzType="model")
 
         return (ccId, tMol, fD)
 
@@ -273,10 +277,21 @@ class OeAlignUtils(object):
 
             molXyzL = []
             if importType == "3D":
-                for ii, atm in enumerate(tMol.GetAtoms()):
+                for atm in tMol.GetAtoms():
                     xyzL = oechem.OEFloatArray(3)
                     tMol.GetCoords(atm, xyzL)
-                    molXyzL.append((ii, atm.GetIdx(), atm.GetAtomicNum(), atm.GetName(), atm.GetType(), xyzL[0], xyzL[1], xyzL[2]))
+                    molXyzL.append(
+                        ComponentAtomDetails(
+                            atIdx=atm.GetIdx(),
+                            atNo=atm.GetAtomicNum(),
+                            atName=atm.GetName(),
+                            atType=atm.GetType(),
+                            x=xyzL[0],
+                            y=xyzL[1],
+                            z=xyzL[2],
+                            atFormalCharge=atm.GetFormalCharge(),
+                        )
+                    )
             fD = {}
             fD = {
                 "Formula": oemf.getFormula(),
@@ -286,12 +301,11 @@ class OeAlignUtils(object):
                 "InChIKey": oemf.getInChIKey(),
                 "xyz": molXyzL,
             }
-
-            for ii, atm in enumerate(tMol.GetAtoms()):
+            for atm in tMol.GetAtoms():
                 xyzL = oechem.OEFloatArray(3)
                 tMol.GetCoords(atm, xyzL)
                 if self.__verbose:
-                    logger.debug("atom  %d %s %s %s %s %r", ii, atm.GetIdx(), atm.GetAtomicNum(), atm.GetName(), atm.GetType(), xyzL)
+                    logger.debug("atom  %s %s %s %s %r", atm.GetIdx(), atm.GetAtomicNum(), atm.GetName(), atm.GetType(), xyzL)
 
             fD["OEMOL"] = tMol
             return (ccId, tMol, fD)
@@ -324,7 +338,7 @@ class OeAlignUtils(object):
         Return list of corresponding atoms on success or an empty list otherwise.
         """
         atomMapL = []
-        fitAtomExtraL = []
+        fitAtomUnMappedL = []
         #
         nAtomsRef = self.__refmol.NumAtoms()
         nAtomsFit = self.__fitmol.NumAtoms()
@@ -332,8 +346,25 @@ class OeAlignUtils(object):
         oechem.OEAddExplicitHydrogens(self.__refmol)
         oechem.OEAddExplicitHydrogens(self.__fitmol)
         fitAtD = {}
+        #
         for at in self.__fitmol.GetAtoms():
-            fitAtD[at.GetIdx()] = (at.GetName(), at.GetAtomicNum())
+            nAtL = at.GetAtoms()
+            neighbors = [nAt.GetName() for nAt in nAtL]
+            atType = oechem.OEGetAtomicSymbol(at.GetAtomicNum())
+            xyzL = oechem.OEFloatArray(3)
+            self.__fitmol.GetCoords(at, xyzL)
+            fitAtD[at.GetIdx()] = AlignAtomUnMapped(
+                fitId=self.__fitId,
+                fitAtIdx=at.GetIdx(),
+                fitAtName=at.GetName(),
+                fitAtType=atType,
+                fitAtNo=at.GetAtomicNum(),
+                fitAtFormalCharge=at.GetFormalCharge(),
+                x=xyzL[0],
+                y=xyzL[1],
+                z=xyzL[2],
+                fitNeighbors=neighbors,
+            )
 
         #
         logger.debug("nAtomsRef %d nAtomsFit %d", nAtomsRef, nAtomsFit)
@@ -345,21 +376,21 @@ class OeAlignUtils(object):
             match = miter.Target()
             for mAt in match.GetAtoms():
                 atomMapL.append(
-                    (
-                        self.__refId,
-                        mAt.pattern.GetIdx(),
-                        mAt.pattern.GetAtomicNum(),
-                        mAt.pattern.GetName(),
-                        self.__fitId,
-                        mAt.target.GetIdx(),
-                        mAt.target.GetAtomicNum(),
-                        mAt.target.GetName(),
+                    AlignAtomMap(
+                        refId=self.__refId,
+                        refAtIdx=mAt.pattern.GetIdx(),
+                        refAtNo=mAt.pattern.GetAtomicNum(),
+                        refAtName=mAt.pattern.GetName(),
+                        fitId=self.__fitId,
+                        fitAtIdx=mAt.target.GetIdx(),
+                        fitAtNo=mAt.target.GetAtomicNum(),
+                        fitAtName=mAt.target.GetName(),
                     )
                 )
                 fitAtD.pop(mAt.target.GetIdx())
             logger.debug("fitAtD %r", fitAtD)
-        fitAtomExtraL = list(fitAtD.values())
-        return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomExtraL)
+        fitAtomUnMappedL = list(fitAtD.values())
+        return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomUnMappedL)
 
     @timeout(100)
     def doAlignMcss(self, unique=True, minFrac=1.0, useExhaustive=True):
@@ -367,13 +398,29 @@ class OeAlignUtils(object):
         Return list of corresponding atoms on success or an empty list otherwise.
         """
         atomMapL = []
-        fitAtomExtraL = []
+        fitAtomUnMappedL = []
         #
         nAtomsRef = self.__refmol.NumAtoms()
         nAtomsFit = self.__fitmol.NumAtoms()
         fitAtD = {}
         for at in self.__fitmol.GetAtoms():
-            fitAtD[at.GetIdx()] = (at.GetName(), at.GetAtomicNum())
+            nAtL = at.GetAtoms()
+            neighbors = [nAt.GetName() for nAt in nAtL]
+            atType = oechem.OEGetAtomicSymbol(at.GetAtomicNum())
+            xyzL = oechem.OEFloatArray(3)
+            self.__fitmol.GetCoords(at, xyzL)
+            fitAtD[at.GetIdx()] = AlignAtomUnMapped(
+                fitId=self.__fitId,
+                fitAtIdx=at.GetIdx(),
+                fitAtName=at.GetName(),
+                fitAtType=atType,
+                fitAtNo=at.GetAtomicNum(),
+                fitAtFormalCharge=at.GetFormalCharge(),
+                x=xyzL[0],
+                y=xyzL[1],
+                z=xyzL[2],
+                fitNeighbors=neighbors,
+            )
         minAtoms = int(min(nAtomsRef, nAtomsFit) * minFrac)
         # -------
         self.__setupMCSS(self.__refmol, useExhaustive=useExhaustive)
@@ -387,18 +434,19 @@ class OeAlignUtils(object):
         if miter.IsValid():
             match = miter.Target()
             for mAt in match.GetAtoms():
+
                 atomMapL.append(
-                    (
-                        self.__refId,
-                        mAt.pattern.GetIdx(),
-                        mAt.pattern.GetAtomicNum(),
-                        mAt.pattern.GetName(),
-                        self.__fitId,
-                        mAt.target.GetIdx(),
-                        mAt.target.GetAtomicNum(),
-                        mAt.target.GetName(),
+                    AlignAtomMap(
+                        refId=self.__refId,
+                        refAtIdx=mAt.pattern.GetIdx(),
+                        refAtNo=mAt.pattern.GetAtomicNum(),
+                        refAtName=mAt.pattern.GetName(),
+                        fitId=self.__fitId,
+                        fitAtIdx=mAt.target.GetIdx(),
+                        fitAtNo=mAt.target.GetAtomicNum(),
+                        fitAtName=mAt.target.GetName(),
                     )
                 )
                 fitAtD.pop(mAt.target.GetIdx())
-        fitAtomExtraL = list(fitAtD.values())
-        return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomExtraL)
+        fitAtomUnMappedL = list(fitAtD.values())
+        return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomUnMappedL)

@@ -66,8 +66,8 @@ class OeAlignUtilsTests(unittest.TestCase):
             self.assertEqual(nAtomsRef, len(atomMapL))
             self.assertEqual(refFD["InChIKey"], fitFD["InChIKey"])
             if len(atomMapL) > 0:
-                for (rCC, rIdx, rAtNum, rAt, fCC, fIdx, fAtNum, fAt) in atomMapL:
-                    logger.debug("%5s %5s %5s %-5s %5s %5s %5s %-5s", rCC, rIdx, rAtNum, rAt, fCC, fIdx, fAtNum, fAt)
+                for alm in atomMapL:
+                    logger.debug("%5s %5s %5s %-5s %5s %5s %5s %-5s", alm.refId, alm.refAtIdx, alm.refAtNo, alm.refAtName, alm.fitId, alm.fitAtIdx, alm.fitAtNo, alm.fitAtName)
 
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -94,8 +94,9 @@ class OeAlignUtilsTests(unittest.TestCase):
                 self.assertGreaterEqual(nAtomsRef, len(atomMapL) * minFrac)
                 self.assertEqual(refFD["SMILES"], fitFD["SMILES"])
                 if len(atomMapL) > 0:
-                    for (rCC, rIdx, rAtNum, rAt, fCC, fIdx, fAtNum, fAt) in atomMapL:
-                        logger.debug("%5s %5s %5s %-5s %5s %5s %5s %-5s", rCC, rIdx, rAtNum, rAt, fCC, fIdx, fAtNum, fAt)
+                    for alm in atomMapL:
+                        logger.debug("%5s %5s %5s %-5s %5s %5s %5s %-5s", alm.refId, alm.refAtIdx, alm.refAtNo, alm.refAtName, alm.fitId, alm.fitAtIdx, alm.fitAtNo, alm.fitAtName)
+
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
@@ -120,8 +121,8 @@ class OeAlignUtilsTests(unittest.TestCase):
                 self.assertEqual(nAtomsRef, len(atomMapL))
                 self.assertEqual(refFD["SMILES"], fitFD["SMILES"])
                 if len(atomMapL) > 0:
-                    for (rCC, rIdx, rAtNum, rAt, fCC, fIdx, fAtNum, fAt) in atomMapL:
-                        logger.debug("%5s %5s %5s %-5s %5s %5s %5s %-5s", rCC, rIdx, rAtNum, rAt, fCC, fIdx, fAtNum, fAt)
+                    for alm in atomMapL:
+                        logger.debug("%5s %5s %5s %-5s %5s %5s %5s %-5s", alm.refId, alm.refAtIdx, alm.refAtNo, alm.refAtName, alm.fitId, alm.fitAtIdx, alm.fitAtNo, alm.fitAtName)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
