@@ -41,3 +41,4 @@
 26-Jan-2021 - V0.51 Add module ChemCompAlignUtils() and update dependencies
 27-Jan-2021 - V0.52 Adjustments to error handling in OeSearchMoleculeProvider()
 31-Jan-2021 - V0.53 API adjustments in OeAlignUtils() to export feature coordinates/formal charge for cif/OE molecules
+ 1-Feb-2021 - V0.54 Fix initialization for missing coordinates OeMoleculeFactory.getAtomDetails()

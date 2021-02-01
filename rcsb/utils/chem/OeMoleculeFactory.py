@@ -1041,7 +1041,7 @@ class OeMoleculeFactory(object):
                 atType = ccAt.getType()
                 atNo = ccAt.getAtNo()
                 fc = ccAt.getFormalCharge()
-                cTup = None
+                cTup = (None, None, None)
                 if (xyzType == "model") and ccAt.hasModelCoordinates():
                     cTup = ccAt.getModelCoordinates()
                 elif (xyzType == "ideal") and ccAt.hasIdealCoordinates():
