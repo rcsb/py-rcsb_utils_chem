@@ -39,6 +39,7 @@ class OeAlignUtilsTests(unittest.TestCase):
         self.__verbose = True
         #
         self.__dataPath = os.path.join(HERE, "test-data")
+        self.__workPath = os.path.join(HERE, "test-output")
         self.__startTime = time.time()
         logger.debug("Running tests on version %s", __version__)
         logger.info("Starting %s at %s", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()))
@@ -55,7 +56,7 @@ class OeAlignUtilsTests(unittest.TestCase):
         try:
             refPath = os.path.join(self.__dataPath, "001.cif")
             fitPath = os.path.join(self.__dataPath, "001.cif")
-            oed = OeAlignUtils(verbose=self.__verbose)
+            oed = OeAlignUtils(workPath=self.__workPath, verbose=self.__verbose)
             oed.setSearchType(sType="relaxed")
             oed.setRefPath(refPath)
             logger.info("Ref path %s", refPath)
@@ -81,7 +82,7 @@ class OeAlignUtilsTests(unittest.TestCase):
                 refPath = os.path.join(self.__dataPath, "%s.cif" % ccId)
                 fitPath = os.path.join(self.__dataPath, "%s.sdf" % ccId)
 
-                oed = OeAlignUtils(verbose=self.__verbose)
+                oed = OeAlignUtils(workPath=self.__workPath, verbose=self.__verbose)
                 oed.setSearchType(sType="relaxed")
                 logger.info("Ref path %s", refPath)
                 oed.setRefPath(refPath, title=ccId, suppressHydrogens=False, fType="CC", importType="3D")
@@ -108,7 +109,7 @@ class OeAlignUtilsTests(unittest.TestCase):
                 refPath = os.path.join(self.__dataPath, "%s.cif" % ccId)
                 fitPath = os.path.join(self.__dataPath, "%s.sdf" % ccId)
 
-                oed = OeAlignUtils(verbose=self.__verbose)
+                oed = OeAlignUtils(workPath=self.__workPath, verbose=self.__verbose)
                 oed.setSearchType(sType="strict")
                 logger.info("Ref path %s", fitPath)
                 oed.setRefPath(refPath)

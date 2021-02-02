@@ -42,7 +42,7 @@ class OeAlignUtils(object):
 
     """
 
-    def __init__(self, verbose=True):
+    def __init__(self, workPath=None, verbose=True):
         #
         self.__verbose = verbose
         #
@@ -65,6 +65,7 @@ class OeAlignUtils(object):
         self.__ss = None
         self.__refPath = None
         self.__fitPath = None
+        self.__workPath = workPath if workPath else "."
 
     def setSearchType(self, sType="relaxed"):
         self.__searchType = sType
