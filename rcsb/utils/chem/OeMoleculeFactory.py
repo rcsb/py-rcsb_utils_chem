@@ -414,8 +414,8 @@ class OeMoleculeFactory(object):
                     cipStereo = "?"
 
                 #
-                if cipStereo and cipStereo not in ["S", "R"]:
-                    logger.error("%s (%s): Unexpected atom CIP stereo setting %r", ccId, atName, cipStereo)
+                if cipStereo and aType == "C" and cipStereo not in ["S", "R"]:
+                    logger.error("%s (%s): Unexpected perceived atom CIP stereo setting %r", ccId, atName, cipStereo)
             #
             ccAtomD[atName] = ComponentAtom(name=atName, aType=aType, isAromatic=isAromatic, isChiral=isChiral, CIP=cipStereo, fCharge=iCharge)
             ccAtomIdD[atId] = atName
@@ -442,7 +442,7 @@ class OeMoleculeFactory(object):
                         cipStereo = "?"
 
             if cipStereo and cipStereo not in ["E", "Z"]:
-                logger.error("%s (%s %s): Unexpected bond CIP stereo setting %r", ccId, atNameI, atNameJ, cipStereo)
+                logger.error("%s (%s %s): Unexpected perceived bond CIP stereo setting %r", ccId, atNameI, atNameJ, cipStereo)
             #
             ccBondD[(atNameI, atNameJ)] = ComponentBond(iType=iType, isAromatic=isAromatic, CIP=cipStereo)
         #
