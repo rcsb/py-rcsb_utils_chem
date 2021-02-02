@@ -4,6 +4,7 @@
 #
 # Updates:
 #  22-Jan-2021 jdw rename to OeAlignUtils() and add substructure mode
+#   2-Feb-2021 jdw suppress OE warnings unless verbose mode is set
 ##
 """
 Utilities for performing substructure and maximum common substructure molecular alignments.
@@ -217,6 +218,8 @@ class OeAlignUtils(object):
         mU = MarshalUtil()
         rdCcObjL = mU.doImport(ccFilePath, fmt="mmcif")
         oemf = OeMoleculeFactory()
+        if not self.__verbose:
+            oemf.setQuiet()
         ccId = oemf.setChemCompDef(rdCcObjL[0])
         oemf.build(molBuildType=molBuildType)
 
@@ -257,6 +260,8 @@ class OeAlignUtils(object):
                 oeMol.SetTitle(ccId)
             #
             oemf = OeMoleculeFactory()
+            if not self.__verbose:
+                oemf.setQuiet()
             oemf.setOeMol(oeMol, ccId)
             #
             fD = oemf.getOeMoleculeFeatures()
@@ -332,7 +337,7 @@ class OeAlignUtils(object):
         if self.__verbose:
             logger.info("Initialize SS (%r)", self.__searchType)
 
-    @timeout(100)
+    @timeout(200)
     def doAlignSs(self, unique=True):
         """Test the SS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
@@ -392,7 +397,7 @@ class OeAlignUtils(object):
         fitAtomUnMappedL = list(fitAtD.values())
         return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomUnMappedL)
 
-    @timeout(100)
+    @timeout(200)
     def doAlignMcss(self, unique=True, minFrac=1.0, useExhaustive=True):
         """Test the MCSS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
