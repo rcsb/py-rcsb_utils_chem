@@ -46,3 +46,4 @@
  2-Feb-2021 - V0.56 Make OE warnings optional in OeAlignUtils().
  2-Feb-2021 - V0.57 Add working path to OeAlignUtils().
  3-Feb-2021 - V0.58 Add search criteria relaxed-stereo-sdeq and relaxed-sdeq
+ 4-Feb-2021 - V0.59 Increase timeout in OeAlignUtils() and add return atom counts for molecule setters.

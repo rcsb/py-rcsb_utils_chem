@@ -94,7 +94,8 @@ class OeAlignUtils(object):
         else:
             self.__refmol.SetTitle(self.__refId)
             self.__refTitle = None
-        # self.__setupMCSS(self.__refmol)
+
+        return self.__refmol.NumAtoms() if self.__refmol else 0
 
     def setRefPath(self, ccPath, title=None, suppressHydrogens=False, fType="CC", importType="2D"):
         """Set the query molecule for MCSS comparison using the input file path.
@@ -126,7 +127,7 @@ class OeAlignUtils(object):
             self.__refmol.SetTitle(self.__refId)
             self.__refTitle = None
 
-        # self.__setupMCSS(self.__refmol)
+        return self.__refmol.NumAtoms() if self.__refmol else 0
 
     def setFitId(self, ccId, title=None, suppressHydrogens=False, cachePath="/data/components/ligand-dict-v3"):
         """Set the ID of the target/library molecule for MCSS comparison."""
@@ -143,6 +144,7 @@ class OeAlignUtils(object):
         else:
             self.__fitmol.SetTitle(self.__fitId)
             self.__fitTitle = None
+        return self.__fitmol.NumAtoms() if self.__fitmol else 0
 
     def setFitPath(self, ccPath, title=None, suppressHydrogens=False, fType="CC", importType="2D"):
         """Set the path to the target/library molecule for MCSS comparison using the input file path.
@@ -171,6 +173,7 @@ class OeAlignUtils(object):
         else:
             self.__fitmol.SetTitle(self.__refId)
             self.__fitTitle = None
+        return self.__fitmol.NumAtoms() if self.__fitmol else 0
 
     def __setFitIdList(self, ccIdList, cachePath="/data/components/ligand-dict-v3"):
         """Set the list of IDs to be compared with reference molecule by MCSS.
@@ -338,7 +341,7 @@ class OeAlignUtils(object):
         if self.__verbose:
             logger.info("Initialize SS (%r)", self.__searchType)
 
-    @timeout(200)
+    @timeout(300)
     def doAlignSs(self, unique=True):
         """Test the SS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
@@ -398,7 +401,7 @@ class OeAlignUtils(object):
         fitAtomUnMappedL = list(fitAtD.values())
         return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomUnMappedL)
 
-    @timeout(200)
+    @timeout(300)
     def doAlignMcss(self, unique=True, minFrac=1.0, useExhaustive=True):
         """Test the MCSS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
