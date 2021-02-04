@@ -45,3 +45,4 @@
  1-Feb-2021 - V0.55 Adjust reporting of undefined CIP stereochemistry for non-carbon atoms.
  2-Feb-2021 - V0.56 Make OE warnings optional in OeAlignUtils().
  2-Feb-2021 - V0.57 Add working path to OeAlignUtils().
+ 3-Feb-2021 - V0.58 Add search criteria relaxed-stereo-sdeq and relaxed-sdeq
