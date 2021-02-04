@@ -219,7 +219,7 @@ class OeAlignUtils(object):
 
         """
         #
-        mU = MarshalUtil()
+        mU = MarshalUtil(workPath=self.__workPath)
         rdCcObjL = mU.doImport(ccFilePath, fmt="mmcif")
         oemf = OeMoleculeFactory()
         if not self.__verbose:
