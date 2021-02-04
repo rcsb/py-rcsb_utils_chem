@@ -341,7 +341,7 @@ class OeAlignUtils(object):
         if self.__verbose:
             logger.info("Initialize SS (%r)", self.__searchType)
 
-    @timeout(300)
+    @timeout(120)
     def doAlignSs(self, unique=True):
         """Test the SS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
@@ -401,7 +401,7 @@ class OeAlignUtils(object):
         fitAtomUnMappedL = list(fitAtD.values())
         return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomUnMappedL)
 
-    @timeout(300)
+    @timeout(120)
     def doAlignMcss(self, unique=True, minFrac=1.0, useExhaustive=True):
         """Test the MCSS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
