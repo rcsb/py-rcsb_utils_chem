@@ -49,3 +49,5 @@
  4-Feb-2021 - V0.59 Increase timeout in OeAlignUtils() and add return atom counts for molecule setters.
  4-Feb-2021 - V0.60 Add working path for MarshalUtil() in OeAlignUtils()
  4-Feb-2021 - V0.61 Reduce timeout to 120s in OeAlignUtils()
+ 2-Mar-2021 - V0.62 Updating a search criteria, adding multipage substructure alignment depiction,
+                    and new comparison searchtests with depiction.
