@@ -7,7 +7,7 @@
 #  13-Mar-2020 jdw Add formula index search method.
 ##
 """
-Utilities to read and process an index of PDB chemical component definitions.
+Utilities to read and process a search index of PDB chemical component definitions.
 """
 __docformat__ = "restructuredtext en"
 __author__ = "John Westbrook"

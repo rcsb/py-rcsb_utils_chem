@@ -87,15 +87,16 @@ class OeSubStructSearchWorker(object):
             #
             for idx in idxList:
                 mol = oechem.OEGraphMol()
+                ccId = self.__oeMolDb.GetTitle(idx)
                 if not self.__oeMolDb.GetMolecule(mol, idx):
-                    ccId = self.__oeMolDb.GetTitle(idx)
                     logger.error("Unable to read molecule %r at index %r", ccId, idx)
                     continue
                 oechem.OEPrepareSearch(mol, ss)
                 if ss.SingleMatch(mol) != reverseFlag:
                     score = float(oeQueryMol.NumAtoms()) / float(mol.NumAtoms())
                     hL.append(idx)
-                    sL.append(score)
+                    sL.append((idx, score))
+                    # logger.info("%s queryAtoms %d molAtoms %d score %.4f", ccId, oeQueryMol.NumAtoms(), mol.NumAtoms(), score)
             retStatus = True
         except Exception as e:
             retStatus = False
@@ -135,13 +136,14 @@ class OeSubStructSearchUtils(object):
         logger.info("Return status %r", ok)
         return ok
 
-    def prefilterIndex(self, oeQueryMol, idxP, matchOpts="relaxed"):
+    def prefilterIndex(self, oeQueryMol, idxP, matchOpts="relaxed", skipFeatures=False):
         """Filter the full search index base on minimum chemical formula an feature criteria.
 
         Args:
             oeQueryMol (object): search target moleculed (OEMol)
             idxP (object): instance ChemCompSearchIndexProvider()
             matchOpts (str, optional): search criteria options. Defaults to "default".
+            skipFeatures (bool, optional): skip feature filters. Defaults to False.
 
         Returns:
             (list): list of chemical component identifiers in the filtered search space
@@ -152,12 +154,12 @@ class OeSubStructSearchUtils(object):
         typeCountD = oemf.getElementCounts(useSymbol=True)
         # ccIdL1 = idxP.filterMinimumMolecularFormula(typeCountD)
         #
-        featureCountD = oemf.getFeatureCounts()
+        featureCountD = oemf.getFeatureCounts() if not skipFeatures else {}
         # Adjust filter according to search options
         if matchOpts in matchOpts in ["relaxed", "graph-relaxed", "simple", "sub-struct-graph-relaxed"]:
             for ky in ["rings_ar", "at_ar", "at_ch"]:
                 featureCountD.pop(ky, None)
-        elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo", "sub-struct-graph-relaxed-stereo"]:
+        elif matchOpts in ["relaxed-stereo", "graph-relaxed-stereo", "sub-struct-graph-relaxed-stereo", "graph-relaxed-stereo-sdeq", "sub-struct-graph-relaxed-stereo-sdeq"]:
             for ky in ["rings_ar", "at_ar"]:
                 featureCountD.pop(ky, None)
         elif matchOpts in ["default", "strict", "graph-strict", "graph-default", "sub-struct-graph-strict"]:
@@ -192,7 +194,7 @@ class OeSubStructSearchUtils(object):
             mpu.set(workerObj=rWorker, workerMethod="subStructureSearch")
             _, _, resultList, _ = mpu.runMulti(dataList=idxList, numProc=numProc, numResults=2, chunkSize=maxChunkSize)
             logger.debug("Multi-proc result length %d/%d", len(resultList[0]), len(resultList[1]))
-            for idx, score in zip(resultList[0], resultList[1]):
+            for idx, score in resultList[1]:
                 ccId = self.__oeMolDb.GetTitle(idx)
                 hL.append(MatchResults(ccId=ccId, searchType=searchType, matchOpts=matchOpts, fpScore=score))
             retStatus = True
@@ -241,8 +243,7 @@ class OeSubStructSearchUtils(object):
                     continue
                 oechem.OEPrepareSearch(mol, ss)
                 if ss.SingleMatch(mol) != reverseFlag:
-                    score = float(oeQueryMol.NumAtoms()) / float(mol.NumAtoms())
-                    # hL.append(MatchResults(ccId=ccId, oeMol=mol, searchType=searchType, matchOpts=matchOpts))
+                    score = float(oeQueryMol.NumAtoms()) / float(oeQueryMol.NumAtoms())
                     hL.append(MatchResults(ccId=ccId, searchType=searchType, matchOpts=matchOpts, fpScore=score))
             retStatus = True
         except Exception as e:

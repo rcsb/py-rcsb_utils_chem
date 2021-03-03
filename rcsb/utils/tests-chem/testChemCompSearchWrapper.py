@@ -57,6 +57,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
             os.environ["CHEM_SEARCH_CACHE_PATH"] = os.path.join(self.__cachePath)
             os.environ["CHEM_SEARCH_CC_PREFIX"] = "cc-abbrev"
         #
+        self.__numMolsTest = 20
         logger.debug("Running tests on version %s", __version__)
         logger.info("Starting %s at %s", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()))
 
@@ -185,7 +186,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
     def testZoomMatchDescriptor(self):
         """Test descriptor matching"""
         try:
-            numMolsTest = 500
+            numMolsTest = self.__numMolsTest
             ccsw = ChemCompSearchWrapper()
             ok = ccsw.readConfig()
             self.assertTrue(ok)
@@ -228,7 +229,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
     def testZoomSubStructSearch(self):
         """Test substructure search"""
         try:
-            numMolsTest = 500
+            numMolsTest = self.__numMolsTest
             ccsw = ChemCompSearchWrapper()
             ok = ccsw.readConfig()
             self.assertTrue(ok)
@@ -274,7 +275,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
     def testZoomMatchFormula(self):
         """Test formula matching"""
         try:
-            numMolsTest = 500
+            numMolsTest = self.__numMolsTest
             ccsw = ChemCompSearchWrapper()
             ok = ccsw.readConfig()
             self.assertTrue(ok)

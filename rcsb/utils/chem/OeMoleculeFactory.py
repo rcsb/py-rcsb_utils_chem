@@ -452,7 +452,7 @@ class OeMoleculeFactory(object):
     # ----
     def buildRelated(self, limitPerceptions=False, buildTypeList=None):
         """Build the most "authorative" molecule from the chemical component definition and
-        use this as a basis reference descriptors and related protomeric and tautomeric forms.
+        use this as a basis for reference descriptors and related protomeric and tautomeric forms.
         This collection is designed to capture the chemical diversity within the component defintion
         as well as other reasonable chemical forms for search purposes.  The collection is returned
         as a nested dictionary of conventionally identified SMILES descriptors.
@@ -600,14 +600,19 @@ class OeMoleculeFactory(object):
             elif molBuildType in ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]:
                 oeMol = self.__buildFromDescriptor(self.__ccId, molBuildType, limitPerceptions=limitPerceptions, fallBackBuildType=fallBackBuildType)
             #
-            if normalize:
+            if oeMol:
+                numparts, _ = oechem.OEDetermineComponents(oeMol)
+                if numparts > 1:
+                    oeMol = None
+            #
+            if normalize and oeMol:
                 nMol = self.getUniqueProtomerMol(oeMol)
                 self.__oeMol = nMol if nMol else oeMol
             else:
                 self.__oeMol = oeMol
             return oeMol is not None
         except Exception as e:
-            logger.info("Failing with %s", str(e))
+            logger.info("%s failing with %s", self.__ccId, str(e))
         return False
 
     def __buildFromDescriptor(self, ccId, molBuildType, setTitle=True, limitPerceptions=False, fallBackBuildType="model-xyz", rebuildOnFailure=False):
@@ -715,7 +720,7 @@ class OeMoleculeFactory(object):
             logger.error("%r failing with %s", self.__ccId, str(e))
         return ok
 
-    def __getDescriptor(self, ccId, molBuildType, fallBackBuildType="model-xyz"):
+    def __getDescriptor(self, ccId, molBuildType, fallBackBuildType="model-xyz", excludeDisconnected=True):
         if molBuildType not in ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]:
             logger.error("%s unexpected molBuildType %r", ccId, molBuildType)
             return None
@@ -731,6 +736,11 @@ class OeMoleculeFactory(object):
                 if molBuildType.upper() == desBuildType.upper():
                     ret = desText.strip()
             #
+            if excludeDisconnected and ret and ("smiles" in molBuildType) and ("." in ret):
+                ret = None
+                logger.debug("%s disconnected molecule (%s) %r", ccId, molBuildType, ret)
+                return ret
+            #
             # Try to create a missing descriptor if possible.
             if ret is None and molBuildType in ["oe-iso-smiles", "oe-smiles", "inchi"] and fallBackBuildType:
                 try:
@@ -740,6 +750,10 @@ class OeMoleculeFactory(object):
                 except Exception as e:
                     logger.exception("%r descriptor rebuild failed using %r with %s", ccId, fallBackBuildType, str(e))
 
+            if excludeDisconnected and ret and ("smiles" in molBuildType) and ("." in ret):
+                ret = None
+                logger.debug("%s disconnected molecule (%s) %r", ccId, molBuildType, ret)
+            #
         return ret
 
     def __rebuildDescriptor(self, ccId, molBuildType, fallBackBuildType="ideal-xyz"):

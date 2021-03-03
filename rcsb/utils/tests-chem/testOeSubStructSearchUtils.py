@@ -26,8 +26,6 @@ import unittest
 from rcsb.utils.chem import __version__
 from rcsb.utils.chem.ChemCompIndexProvider import ChemCompIndexProvider
 from rcsb.utils.chem.ChemCompSearchIndexProvider import ChemCompSearchIndexProvider
-from rcsb.utils.chem.OeDepictAlign import OeDepictMCSAlignPage
-from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 from rcsb.utils.chem.OeMoleculeProvider import OeMoleculeProvider
 from rcsb.utils.chem.OeSearchMoleculeProvider import OeSearchMoleculeProvider
 from rcsb.utils.chem.OeSubStructSearchUtils import OeSubStructSearchUtils
@@ -222,33 +220,6 @@ class OeSubStructSearchUtilsTests(unittest.TestCase):
             # ----
 
     #  ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------
-
-    def __displayAlignedDescriptorPair(self, ccId, descrRef, buildTypeRef, descrFit, buildTypeFit, title=None, limitPerceptions=True):
-        oemfRef = OeMoleculeFactory()
-        oemfRef.setDescriptor(descrRef, buildTypeRef, ccId)
-        oemfRef.build(molBuildType=buildTypeRef, limitPerceptions=limitPerceptions)
-        oeMolRef = oemfRef.getMol()
-        #
-        oemfFit = OeMoleculeFactory()
-        oemfFit.setDescriptor(descrFit, buildTypeFit, ccId)
-        oemfFit.build(molBuildType=buildTypeFit, limitPerceptions=limitPerceptions)
-        oeMolFit = oemfFit.getMol()
-        #
-        oed = OeDepictMCSAlignPage()
-        oed.setSearchType(sType="graph-relaxed", minAtomMatchFraction=0.50)
-        oed.setDisplayOptions(
-            labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, highlightStyleFit="ballAndStickInverse", bondDisplayWidth=0.5
-        )
-        oed.setRefMol(oeMolRef, ccId)
-        oed.setFitMol(oeMolFit, ccId)
-        myTitle = title if title else buildTypeRef + "-" + buildTypeFit
-        imgPath = os.path.join(self.__workPath, myTitle + "-" + ccId + ".svg")
-        logger.info("Using image path %r", imgPath)
-        aML = oed.alignPair(imagePath=imgPath)
-        if aML:
-            logger.info("%s aligned image path %r", ccId, imgPath)
-            for (rCC, rAt, tCC, tAt) in aML:
-                logger.debug("%5s %-5s %5s %-5s", rCC, rAt, tCC, tAt)
 
 
 def exhaustiveSubStructureSearch():

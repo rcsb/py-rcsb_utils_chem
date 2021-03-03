@@ -67,8 +67,8 @@ class OeDepictBase(object):
             "pageOrientation": "landscape",
             "highlightStyleRef": "none",
             "highlightStyleFit": "ballAndStick",
-            "highLightMatchColorRef": "blue",
-            "highLightMatchColorFit": "blue",
+            "highLightMatchColorRef": "green",
+            "highLightMatchColorFit": "green",
             "highLightNotMatchColorRef": "pink",
             "highLightNotMatchColorFit": "pink",
         }

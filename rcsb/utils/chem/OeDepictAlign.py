@@ -1048,7 +1048,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
                 match = self._miter.Target()
                 oedepict.OEPrepareAlignedDepiction(fitMol, self._ss.GetPattern(), match)
 
-                # Depict reference molecule with MCS highlighting
+                # Depict reference molecule with SS highlighting
                 if (firstOne and layout in ["list"]) or layout in ["pairs"]:
                     firstOne = False
                     if layout in ["pairs"]:
@@ -1069,4 +1069,156 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
                 for mAt in match.GetAtoms():
                     atomMap.append((refId, mAt.pattern.GetName(), fitId, mAt.target.GetName()))
 
+        return atomMap
+
+
+#  --
+class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
+    """Create 2D depictions of substructure alignments. Inputs can be in the the form of pairs,
+    lists, and pair lists of molecule object instances.
+
+    Output images are rendered in a grid layout that can span multiple pages.
+    """
+
+    def __init__(self):
+        super(OeDepictSubStructureAlignMultiPage, self).__init__()
+        self.__grid = None
+        self.__gridRows = None
+        self.__gridCols = None
+        self.__multi = None
+        self.__image = None
+        self.__citer = None
+        #
+
+    def alignPairListMulti(self, imagePath="multi.pdf"):
+        aM = []
+        self._params["gridCols"] = 2
+        try:
+            aM = self.__alignListMultiWorker(imagePath=imagePath, layout="pairs")
+        except TimeoutException:
+            logger.info("Timeout exception")
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+
+        return aM
+
+    def alignOneWithListMulti(self, imagePath="multi.pdf"):
+        aM = []
+        try:
+            aM = self.__alignListMultiWorker(imagePath=imagePath, layout="list")
+        except TimeoutException:
+            logger.info("Timeout exception")
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+
+        return aM
+
+    def __setupImageMulti(self):
+        """Internal method to configure a multipage image."""
+        #
+        self.__gridRows = self._params["gridRows"]
+        self.__gridCols = self._params["gridCols"]
+        #
+        if self._params["pageOrientation"] == "landscape":
+            self.__multi = oedepict.OEMultiPageImageFile(oedepict.OEPageOrientation_Landscape, oedepict.OEPageSize_US_Letter)
+        else:
+            self.__multi = oedepict.OEMultiPageImageFile(oedepict.OEPageOrientation_Portrait, oedepict.OEPageSize_US_Letter)
+
+        self.__newPage()
+
+    def __newPage(self):
+        """Internal method to advance to a new page in a multipage configuration."""
+        rows = self.__gridRows
+        cols = self.__gridCols
+        self.__image = self.__multi.NewPage()
+        self.__grid = oedepict.OEImageGrid(self.__image, rows, cols)
+        self.__grid.SetCellGap(self._params["cellGap"])
+        self.__grid.SetMargins(self._params["cellMargin"])
+        logger.debug("Num columns %d", self.__grid.NumCols())
+        logger.debug("Num rows    %d", self.__grid.NumRows())
+        self._opts = oedepict.OE2DMolDisplayOptions(self.__grid.GetCellWidth(), self.__grid.GetCellHeight(), oedepict.OEScale_AutoScale)
+        self._assignDisplayOptions()
+        self.__citer = self.__grid.GetCells()
+
+    @timeout(500)
+    def __alignListMultiWorker(self, imagePath="multi.pdf", layout="pairs"):
+        """Working method comparing a reference molecule with a list of fit molecules.
+
+        pairMolList = (refId,refMol,refTitle,refImagePath,fitId,fitMol,fitTitle,fitImagePath)
+
+        Map of corresponding atoms is returned.
+
+        Image Output is in multipage layout.
+        """
+        #
+        self.__setupImageMulti()
+        #
+        atomMap = []
+        firstOne = True
+        iCount = 0
+        for (refId, refMol, _, _, fitId, fitMol, fitTitle, _) in self._pairMolList:
+            iCount += 1
+            #
+            oedepict.OEPrepareDepiction(refMol)
+            self._setupSubStructure(refMol)
+            #
+            #
+            fitMol.SetTitle(fitTitle)
+            oedepict.OEPrepareDepiction(fitMol)
+            #
+            # nAtomsRef = refMol.NumAtoms()
+            # nAtomsFit = fitMol.NumAtoms()
+            # minAtoms = min(nAtomsRef, nAtomsFit)
+            # mcssMinAtoms = int(minAtoms * self._minAtomMatchFraction)
+            # self._mcss.SetMinAtoms(mcssMinAtoms)
+
+            # scaling
+            refscale = oedepict.OEGetMoleculeScale(refMol, self._opts)
+            fitscale = oedepict.OEGetMoleculeScale(refMol, self._opts)
+            self._opts.SetScale(min(refscale, fitscale))
+
+            unique = True
+            self._miter = self._ss.Match(fitMol, unique)
+            logger.debug("ss match completed for refId %s fitId %s", refId, fitId)
+            if self._miter.IsValid():
+                match = self._miter.Target()
+                oedepict.OEPrepareAlignedDepiction(fitMol, self._ss.GetPattern(), match)
+
+                # Depict reference molecule with SS highlighting
+                if (firstOne and layout in ["list"]) or layout in ["pairs"]:
+                    firstOne = False
+                    if layout in ["pairs"]:
+                        refdisp = self._setHighlightStyleRef(matchObj=match, refMol=self._ss.GetPattern())
+                    else:
+                        refdisp = oedepict.OE2DMolDisplay(refMol, self._opts)
+                    if not self.__citer.IsValid():
+                        self.__newPage()
+                    cell = self.__citer.Target()
+                    self.__citer.Next()
+                    oedepict.OERenderMolecule(cell, refdisp)
+                    if self._params["cellBorders"]:
+                        oedepict.OEDrawBorder(cell, oedepict.OEPen(oedepict.OEBlackPen))
+
+                # Depict fit molecule with SS highlighting
+                fitdisp = self._setHighlightStyleFit(matchObj=match, fitMol=fitMol)
+                if not self.__citer.IsValid():
+                    self.__newPage()
+                cell = self.__citer.Target()
+                self.__citer.Next()
+                oedepict.OERenderMolecule(cell, fitdisp)
+
+                if self._params["cellBorders"]:
+                    oedepict.OEDrawBorder(cell, oedepict.OEPen(oedepict.OEBlackPen))
+
+                for mAt in match.GetAtoms():
+                    atomMap.append((refId, mAt.pattern.GetName(), fitId, mAt.target.GetName()))
+
+                logger.debug("mcss match completed for refId %s fitId %s total map length %d", refId, fitId, len(atomMap))
+
+        logger.debug("writing image %s", imagePath)
+        fU = FileUtil()
+        fU.mkdirForFile(imagePath)
+        oedepict.OEWriteMultiPageImage(imagePath, self.__multi)
+        logger.debug("completed with map lenth %d", len(atomMap))
+        #
         return atomMap

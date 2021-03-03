@@ -43,7 +43,8 @@ class OeDepictAlignTests(unittest.TestCase):
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         #
-        self.__idList = ["000", "001", "002", "003", "004", "0K3"]
+        # self.__idList = ["000", "001", "002", "003", "004", "0K3"]
+        self.__idList = ["000", "001", "002", "004", "0K3"]
         self.__refId = "000"
         self.__pairIdList = [("000", "000"), ("001", "001"), ("002", "002"), ("002", "003"), ("004", "0K3")]
         #
@@ -260,6 +261,7 @@ class OeDepictAlignTests(unittest.TestCase):
                     bondDisplayWidth=1.0,
                 )
                 aML = oed.alignPair(imagePath=fName)
+                logger.debug("refId %r fitId %r aML %r", self.__refId, fitTup[1], len(aML))
                 self.assertGreater(len(aML), 1)
                 if aML:
                     for (rCC, rAt, tCC, tAt) in aML:
