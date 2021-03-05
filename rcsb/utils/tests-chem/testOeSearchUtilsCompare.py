@@ -40,7 +40,7 @@ logger.setLevel(logging.INFO)
 
 
 class OeSubStructSearchCompareTests(unittest.TestCase):
-    useFull = False
+    useFull = True
 
     def setUp(self):
 

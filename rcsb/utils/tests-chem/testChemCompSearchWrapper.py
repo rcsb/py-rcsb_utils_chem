@@ -1,7 +1,7 @@
 ##
-# File:    OeSearchIndexUtilsTests.py
+# File:    ChemCompSearchWrapperTests.py
 # Author:  J. Westbrook
-# Date:    1-Oct-2019
+# Date:    1-Oct-2020
 # Version: 0.001
 #
 # Update:
@@ -39,7 +39,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-class OeSearchIndexUtilsTests(unittest.TestCase):
+class ChemCompSearchWrapperTests(unittest.TestCase):
     def setUp(self):
         self.__startTime = time.time()
         self.__workPath = os.path.join(HERE, "test-output")
@@ -316,7 +316,7 @@ class OeSearchIndexUtilsTests(unittest.TestCase):
 
 def fullSearchTests():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeSearchIndexUtilsTests("testMatchSmiles"))
+    suiteSelect.addTest(ChemCompSearchWrapperTests("testMatchSmiles"))
     return suiteSelect
 
 
