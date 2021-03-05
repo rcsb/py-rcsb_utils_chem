@@ -51,3 +51,4 @@
  4-Feb-2021 - V0.61 Reduce timeout to 120s in OeAlignUtils()
  2-Mar-2021 - V0.62 Updating a search criteria, adding multipage substructure alignment depiction,
                     and new comparison searchtests with depiction.
+ 5-Mar-2021 - V0.63 Add BatchChemSearch() module and associated tests
