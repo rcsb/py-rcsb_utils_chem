@@ -6,6 +6,7 @@
 #
 # Updates:
 # 2-Oct-2019  jdw adapted from OeBuildMol()
+# 8-Mar-2021  jdw add parts filter (see: oecheminfo.py/parts2mols.py)
 ##
 # pylint: disable=too-many-lines
 """
@@ -21,6 +22,7 @@ __license__ = "Apache 2.0"
 import hashlib
 import logging
 from collections import defaultdict, namedtuple
+from operator import itemgetter
 
 from openeye import oechem
 from openeye import oegraphsim
@@ -110,6 +112,28 @@ class OeMoleculeFactory(object):
         self.__descriptor = descriptor
         return ccId
 
+    def filterLargestPart(self):
+        """Keep only the largest portion of a disconnected molecule.
+
+        Returns:
+            (int, int): number of atoms on the largest component, number of components
+        """
+        try:
+            numparts, partlist = oechem.OEDetermineComponents(self.__oeMol)
+            pred = oechem.OEPartPredAtom(partlist)
+            molL = []
+            for iPart in range(1, numparts + 1):
+                pred.SelectPart(iPart)
+                partMol = oechem.OEGraphMol()
+                oechem.OESubsetMol(partMol, self.__oeMol, pred)
+                molL.append((partMol, partMol.NumAtoms()))
+            molL = sorted(molL, key=itemgetter(1), reverse=True)
+            self.__oeMol = molL[0]
+            return molL[0][1], len(molL)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return 0, 0
+
     def addFingerPrints(self, fpTypeList):
         """Add fingerprints (fpType) as data sections in the current molecule.
 
@@ -165,6 +189,26 @@ class OeMoleculeFactory(object):
         if aromaticModel is not None:
             oechem.OEAssignAromaticFlags(oeMol, aromaticModel)
         return oeMol
+
+    def getParts(self, oeMol):
+        """Return the list of molecular parts.
+
+        Returns:
+            (list): [oeMol, ... ]
+        """
+        molL = []
+        try:
+            numparts, partlist = oechem.OEDetermineComponents(oeMol)
+            pred = oechem.OEPartPredAtom(partlist)
+            for iPart in range(1, numparts + 1):
+                pred.SelectPart(iPart)
+                partMol = oechem.OEGraphMol()
+                oechem.OESubsetMol(partMol, oeMol, pred)
+                molL.append(oechem.OEGraphMol(partMol))
+            return sorted(molL, key=lambda t: t.NumAtoms(), reverse=True)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+        return [oeMol]
 
     def __transferAromaticFlagsOE(self, oeMol):
         """Manually assign/transfer aromatic flags from chemical component definition.

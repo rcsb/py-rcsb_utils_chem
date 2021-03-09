@@ -52,3 +52,4 @@
  2-Mar-2021 - V0.62 Updating a search criteria, adding multipage substructure alignment depiction,
                     and new comparison searchtests with depiction.
  5-Mar-2021 - V0.63 Add BatchChemSearch() module and associated tests
+ 8-Mar-2021 - V0.64 Add option (largestPart) to read/process the largest connected part in fileToMols()/OeMoleculeFactory()

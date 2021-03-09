@@ -262,7 +262,7 @@ class OeIoUtils(object):
             logger.exception("Failing with %s", str(e))
         return None
 
-    def fileToMols(self, filePath, use3D=False):
+    def fileToMols(self, filePath, use3D=False, largestPart=False):
         """Parse the input path returning a list of molecule objects (OeGraphMol).
 
         Args:
@@ -280,6 +280,11 @@ class OeIoUtils(object):
                 for tMol in ifs.GetOEGraphMols():
                     oeMol = oechem.OEGraphMol(tMol)
                     # if oechem.OEReadMolecule(ifs, oeMol):
+                    if largestPart:
+                        molL = oemf.getParts(oeMol)
+                        if len(molL) > 0:
+                            oeMol = molL[0]
+                            logger.info("Using largest bonded molecule part (%d/%d)", len(molL), oeMol.NumAtoms())
                     if use3D:
                         mL.append(oemf.updateOePerceptions3D(oeMol, aromaticModel=oechem.OEAroModelOpenEye))
                     else:

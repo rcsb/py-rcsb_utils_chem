@@ -146,7 +146,7 @@ class OeAlignUtils(object):
             self.__fitTitle = None
         return self.__fitmol.NumAtoms() if self.__fitmol else 0
 
-    def setFitPath(self, ccPath, title=None, suppressHydrogens=False, fType="CC", importType="2D"):
+    def setFitPath(self, ccPath, title=None, suppressHydrogens=False, fType="CC", importType="2D", largestPart=False):
         """Set the path to the target/library molecule for MCSS comparison using the input file path.
 
         The file type is either 'CC' for a chemical component definition or another file type
@@ -160,7 +160,9 @@ class OeAlignUtils(object):
         if fType in ["CC"]:
             (self.__fitId, self.__fitmol, self.__fitFD) = self.getCCDefFile(ccPath, suppressHydrogens=suppressHydrogens)
         else:
-            (self.__fitId, self.__fitmol, self.__fitFD) = self.__getMiscFile(ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title)
+            (self.__fitId, self.__fitmol, self.__fitFD) = self.__getMiscFile(
+                ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title, largestPart=largestPart
+            )
 
         if self.__verbose:
             logger.debug("Derived fit ID     = %s", self.__fitId)
@@ -249,14 +251,15 @@ class OeAlignUtils(object):
 
         return (ccId, tMol, fD)
 
-    def __getMiscFile(self, filePath, suppressHydrogens=False, importType="2D", title=None):
+    def __getMiscFile(self, filePath, suppressHydrogens=False, importType="2D", title=None, largestPart=False):
         """Fetch a miscellaneous chemical file (ccPath) and build OE molecules
         for comparison.
 
         """
         try:
             oeioU = OeIoUtils()
-            oeMolL = oeioU.fileToMols(filePath, use3D=importType == "3D")
+            oeMolL = oeioU.fileToMols(filePath, use3D=importType == "3D", largestPart=largestPart)
+            logger.info("Read (%d) from %s ", len(oeMolL), filePath)
             oeMol = oeMolL[0]
 
             ccId = title if title else oeMol.GetTitle()
