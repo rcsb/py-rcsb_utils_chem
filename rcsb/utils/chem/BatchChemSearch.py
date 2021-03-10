@@ -100,6 +100,7 @@ class BatchChemSearch(object):
         """
         self.__startTime = time.time()
         #
+        self.__useCache = kwargs.get("useCache", True)
         self.__numProc = kwargs.get("numProc", 6)
         self.__chunkSize = kwargs.get("chunkSize", 50)
         #
@@ -115,8 +116,10 @@ class BatchChemSearch(object):
         #
 
     def __reload(self):
-        ccsw = ChemCompSearchWrapper()
-        ok1 = ccsw.setConfig(self.__ccUrlTarget, self.__birdUrlTarget, ccFileNamePrefix=self.__ccFileNamePrefix)
+        ccsw = ChemCompSearchWrapper(cachePath=self.__cachePath)
+        ok1 = ccsw.setConfig(
+            self.__ccUrlTarget, self.__birdUrlTarget, ccFileNamePrefix=self.__ccFileNamePrefix, useCache=self.__useCache, numProc=self.__numProc, maxChunkSize=self.__chunkSize
+        )
         ok2 = ccsw.readConfig()
         ok3 = ccsw.reloadSearchDatabase()
         return ccsw if ok1 and ok2 and ok3 else None

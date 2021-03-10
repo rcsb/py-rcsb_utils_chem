@@ -53,3 +53,4 @@
                     and new comparison searchtests with depiction.
  5-Mar-2021 - V0.63 Add BatchChemSearch() module and associated tests
  8-Mar-2021 - V0.64 Add option (largestPart) to read/process the largest connected part in fileToMols()/OeMoleculeFactory()
+ 9-Mar-2021 - V0.65 Add methods to import oeMol directly into OeAlignUtils(), add method to get CIF container object from OeChemCompUtils()

@@ -57,6 +57,9 @@ class OeChemCompUtils(object):
             ok = False
         return ok
 
+    def getContainerList(self):
+        return self.__containerList
+
     def addOeMol(self, ccId, oeMol, missingModelXyz=True, writeIdealXyz=False):
         """Add the input oeMol to the current PDBx data container as a chemical component definition.
 

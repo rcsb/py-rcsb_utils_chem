@@ -122,6 +122,7 @@ class ChemCompSearchWrapper(SingletonClass):
             maxProc = os.cpu_count()
             numProc = min(numProc, maxProc)
             maxChunkSize = kwargs.get("maxChunkSize", 50)
+
             #
             logger.debug("+++ >>> Assigning numProc as %d", numProc)
             #

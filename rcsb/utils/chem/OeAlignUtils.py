@@ -5,6 +5,7 @@
 # Updates:
 #  22-Jan-2021 jdw rename to OeAlignUtils() and add substructure mode
 #   2-Feb-2021 jdw suppress OE warnings unless verbose mode is set
+#   9-Mar-2021 jdw add setRefObj/setFitObj methods for setting molecule objects directly
 ##
 """
 Utilities for performing substructure and maximum common substructure molecular alignments.
@@ -97,7 +98,7 @@ class OeAlignUtils(object):
 
         return self.__refmol.NumAtoms() if self.__refmol else 0
 
-    def setRefPath(self, ccPath, title=None, suppressHydrogens=False, fType="CC", importType="2D"):
+    def setRefPath(self, ccPath, title=None, molBuildType="model-xyz", suppressHydrogens=False, fType="CC", importType="2D"):
         """Set the query molecule for MCSS comparison using the input file path.
 
         The file type is either ['CC'] for a chemical component definition or another file type
@@ -111,10 +112,34 @@ class OeAlignUtils(object):
         """
         self.__refPath = ccPath
         if fType in ["CC"]:
-            (self.__refId, self.__refmol, self.__refFD) = self.getCCDefFile(ccPath, suppressHydrogens=suppressHydrogens)
+            (self.__refId, self.__refmol, self.__refFD) = self.getCCDefFile(ccPath, molBuildType=molBuildType, suppressHydrogens=suppressHydrogens)
         else:
             (self.__refId, self.__refmol, self.__refFD) = self.__getMiscFile(ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title)
 
+        if self.__verbose:
+            logger.debug("Derived ref ID     = %s", self.__refId)
+            logger.debug("SMILES (stereo)  = %s", self.__refFD["SMILES_STEREO"])
+        #
+        # Insert title here -
+        if title is not None:
+            self.__refmol.SetTitle(title)
+            self.__refTitle = title
+        else:
+            self.__refmol.SetTitle(self.__refId)
+            self.__refTitle = None
+
+        return self.__refmol.NumAtoms() if self.__refmol else 0
+
+    def setRefObj(self, ccObj, title=None, molBuildType="model-xyz", suppressHydrogens=False):
+        """Set the query molecule for MCSS comparison using the input chemical component definition object.
+
+        Once the reference molecule is built, the MCSS calculation is initialized.
+
+        A title is optionally provided otherwise the component Id will be used.
+
+        The hydrogen flag can be used to perform the MCSS using only heavy atoms.
+        """
+        (self.__refId, self.__refmol, self.__refFD) = self.getCCDefObj(ccObj, molBuildType=molBuildType, suppressHydrogens=suppressHydrogens)
         if self.__verbose:
             logger.debug("Derived ref ID     = %s", self.__refId)
             logger.debug("SMILES (stereo)  = %s", self.__refFD["SMILES_STEREO"])
@@ -146,7 +171,7 @@ class OeAlignUtils(object):
             self.__fitTitle = None
         return self.__fitmol.NumAtoms() if self.__fitmol else 0
 
-    def setFitPath(self, ccPath, title=None, suppressHydrogens=False, fType="CC", importType="2D", largestPart=False):
+    def setFitPath(self, ccPath, title=None, molBuildType="model-xyz", suppressHydrogens=False, fType="CC", importType="2D", largestPart=False):
         """Set the path to the target/library molecule for MCSS comparison using the input file path.
 
         The file type is either 'CC' for a chemical component definition or another file type
@@ -158,12 +183,33 @@ class OeAlignUtils(object):
         """
         self.__fitPath = ccPath
         if fType in ["CC"]:
-            (self.__fitId, self.__fitmol, self.__fitFD) = self.getCCDefFile(ccPath, suppressHydrogens=suppressHydrogens)
+            (self.__fitId, self.__fitmol, self.__fitFD) = self.getCCDefFile(ccPath, molBuildType=molBuildType, suppressHydrogens=suppressHydrogens)
         else:
             (self.__fitId, self.__fitmol, self.__fitFD) = self.__getMiscFile(
                 ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title, largestPart=largestPart
             )
 
+        if self.__verbose:
+            logger.debug("Derived fit ID     = %s", self.__fitId)
+            logger.debug("SMILES (stereo)  = %s", self.__fitFD["SMILES_STEREO"])
+        #
+        # Insert title here -
+        if title is not None:
+            self.__fitmol.SetTitle(title)
+            self.__fitTitle = title
+        else:
+            self.__fitmol.SetTitle(self.__refId)
+            self.__fitTitle = None
+        return self.__fitmol.NumAtoms() if self.__fitmol else 0
+
+    def setFitObj(self, ccObj, title=None, molBuildType="model-xyz", suppressHydrogens=False):
+        """Set the object for the target/library molecule for MCSS comparison using the input file path.
+
+        A title is optionally provided otherwise the component Id will be used.
+
+        The hydrogen flag can be used to perform the MCSS using only heavy atoms.
+        """
+        (self.__fitId, self.__fitmol, self.__fitFD) = self.getCCDefObj(ccObj, molBuildType=molBuildType, suppressHydrogens=suppressHydrogens)
         if self.__verbose:
             logger.debug("Derived fit ID     = %s", self.__fitId)
             logger.debug("SMILES (stereo)  = %s", self.__fitFD["SMILES_STEREO"])
@@ -227,6 +273,37 @@ class OeAlignUtils(object):
         if not self.__verbose:
             oemf.setQuiet()
         ccId = oemf.setChemCompDef(rdCcObjL[0])
+        oemf.build(molBuildType=molBuildType)
+
+        if self.__verbose:
+            logger.info("  CCId               = %s", ccId)
+            logger.info("  Title              = %s", oemf.getTitle())
+            logger.info("  SMILES             = %s", oemf.getCanSMILES())
+            logger.info("  SMILES (stereo)    = %s", oemf.getIsoSMILES())
+            logger.info("  Formula (Hill)     = %s", oemf.getFormula())
+            logger.info("  InChI key          = %s", oemf.getInChIKey())
+            logger.info("  InChI              = %s", oemf.getInChI())
+
+        fD = {}
+        fD = {"Formula": oemf.getFormula(), "SMILES": oemf.getCanSMILES(), "SMILES_STEREO": oemf.getIsoSMILES(), "InChI": oemf.getInChI(), "InChIKey": oemf.getInChIKey()}
+
+        if suppressHydrogens:
+            tMol = oemf.getGraphMolSuppressH()
+        else:
+            tMol = oemf.getMol()
+
+        fD["OEMOL"] = tMol
+        fD["xyz"] = oemf.getAtomDetails(xyzType="model")
+
+        return (ccId, tMol, fD)
+
+    def getCCDefObj(self, dataContainer, molBuildType="model-xyz", suppressHydrogens=False):
+        """Build OE molecule from the input chemical component definition object."""
+        #
+        oemf = OeMoleculeFactory()
+        if not self.__verbose:
+            oemf.setQuiet()
+        ccId = oemf.setChemCompDef(dataContainer)
         oemf.build(molBuildType=molBuildType)
 
         if self.__verbose:
