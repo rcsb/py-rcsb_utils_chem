@@ -60,7 +60,7 @@ class OeChemCompUtils(object):
     def getContainerList(self):
         return self.__containerList
 
-    def addOeMol(self, ccId, oeMol, missingModelXyz=True, writeIdealXyz=False):
+    def addOeMol(self, ccId, oeMol, missingModelXyz=True, writeIdealXyz=False, skipAnnotations=False):
         """Add the input oeMol to the current PDBx data container as a chemical component definition.
 
         Args:
@@ -77,7 +77,7 @@ class OeChemCompUtils(object):
             ccIdU = str(ccId).strip().upper()
             curContainer = DataContainer(ccIdU)
             #
-            rowD = self.__makeChemCompCategory(ccIdU, oeMol, site="RCSB", missingModelXyz=missingModelXyz)
+            rowD = self.__makeChemCompCategory(ccIdU, oeMol, site="RCSB", missingModelXyz=missingModelXyz, skipAnnotations=skipAnnotations)
             aCat = DataCategory("chem_comp", list(rowD.keys()), [rowD])
             curContainer.append(aCat)
             #
@@ -89,13 +89,14 @@ class OeChemCompUtils(object):
             aCat = DataCategory("chem_comp_bond", list(rowDL[0].keys()), rowDL)
             curContainer.append(aCat)
             #
-            rowDL = self.__makeChemCompDescriptorCategory(ccIdU, oeMol)
-            aCat = DataCategory("pdbx_chem_comp_descriptor", list(rowDL[0].keys()), rowDL)
-            curContainer.append(aCat)
-            #
-            rowDL = self.__makeChemCompIdentifierCategory(ccIdU, oeMol)
-            aCat = DataCategory("pdbx_chem_comp_identifier", list(rowDL[0].keys()), rowDL)
-            curContainer.append(aCat)
+            if not skipAnnotations:
+                rowDL = self.__makeChemCompDescriptorCategory(ccIdU, oeMol)
+                aCat = DataCategory("pdbx_chem_comp_descriptor", list(rowDL[0].keys()), rowDL)
+                curContainer.append(aCat)
+                #
+                rowDL = self.__makeChemCompIdentifierCategory(ccIdU, oeMol)
+                aCat = DataCategory("pdbx_chem_comp_identifier", list(rowDL[0].keys()), rowDL)
+                curContainer.append(aCat)
             #
             rowD = self.__makeChemCompAuditRow(ccIdU)
             aCat = DataCategory("pdbx_chem_comp_audit", list(rowD.keys()), [rowD])
@@ -239,14 +240,18 @@ class OeChemCompUtils(object):
         #
         return rowL
 
-    def __makeChemCompCategory(self, ccId, oeMol, site="RCSB", missingModelXyz=False):
+    def __makeChemCompCategory(self, ccId, oeMol, site="RCSB", missingModelXyz=False, skipAnnotations=False):
         #
         lt = time.strftime("%Y-%m-%d", time.localtime())
         formula = oechem.OEMolecularFormula(oeMol)
         charge = self.__getFormalCharge(oeMol)
         fW = oechem.OECalculateMolecularWeight(oeMol)
-        style = oeiupac.OEGetIUPACNamStyle("systematic")
-        name = oeiupac.OEToUTF8(oeiupac.OECreateIUPACName(oeMol, style))
+        #
+        if skipAnnotations:
+            name = ccId
+        else:
+            style = oeiupac.OEGetIUPACNamStyle("systematic")
+            name = oeiupac.OEToUTF8(oeiupac.OECreateIUPACName(oeMol, style))
         #
         ccRow = {}
         ccRow["id"] = ccId
