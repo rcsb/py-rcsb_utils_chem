@@ -21,13 +21,14 @@ __version__ = "V0.01"
 import logging
 import time
 
+
 from openeye import oechem
 from openeye import oeiupac
 
 from mmcif.api.DataCategory import DataCategory
 from mmcif.api.PdbxContainers import DataContainer
 from rcsb.utils.io.MarshalUtil import MarshalUtil
-
+from rcsb.utils.io.decorators import timeout, TimeoutException
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ class OeChemCompUtils(object):
     def getContainerList(self):
         return self.__containerList
 
+    @timeout(10)
     def addOeMol(self, ccId, oeMol, missingModelXyz=True, writeIdealXyz=False, skipAnnotations=False):
         """Add the input oeMol to the current PDBx data container as a chemical component definition.
 
@@ -86,8 +88,9 @@ class OeChemCompUtils(object):
             curContainer.append(aCat)
             #
             rowDL = self.__makeChemCompBondCategory(ccIdU, oeMol)
-            aCat = DataCategory("chem_comp_bond", list(rowDL[0].keys()), rowDL)
-            curContainer.append(aCat)
+            if rowDL:
+                aCat = DataCategory("chem_comp_bond", list(rowDL[0].keys()), rowDL)
+                curContainer.append(aCat)
             #
             if not skipAnnotations:
                 rowDL = self.__makeChemCompDescriptorCategory(ccIdU, oeMol)
@@ -104,6 +107,8 @@ class OeChemCompUtils(object):
             #
             self.__containerList.append(curContainer)
             return True
+        except TimeoutException as e:
+            raise TimeoutException from e
         except Exception as e:
             logger.exception("Failing %r with %s", ccId, str(e))
             #

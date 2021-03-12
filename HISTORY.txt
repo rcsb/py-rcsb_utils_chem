@@ -55,3 +55,4 @@
  8-Mar-2021 - V0.64 Add option (largestPart) to read/process the largest connected part in fileToMols()/OeMoleculeFactory()
  9-Mar-2021 - V0.65 Add methods to import oeMol directly into OeAlignUtils(), add method to get CIF container object from OeChemCompUtils()
 11-Mar-2021 - V0.66 Add option to skip annotations in OeChemCompUtils()
+11-Mar-2021 - V0.67 Add timeout decorator to method addOeMol() OeChemCompUtils()
