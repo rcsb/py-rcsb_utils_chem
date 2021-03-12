@@ -1094,11 +1094,11 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
         self.__citer = None
         #
 
-    def alignPairListMulti(self, imagePath="multi.pdf"):
+    def alignPairListMulti(self, imagePath="multi.pdf", maxMatches=10):
         aM = []
         self._params["gridCols"] = 2
         try:
-            aM = self.__alignListMultiWorker(imagePath=imagePath, layout="pairs")
+            aM = self.__alignListMultiWorker(imagePath=imagePath, layout="pairs", maxMatches=maxMatches)
         except TimeoutException:
             logger.info("Timeout exception")
         except Exception as e:
@@ -1106,10 +1106,10 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
 
         return aM
 
-    def alignOneWithListMulti(self, imagePath="multi.pdf"):
+    def alignOneWithListMulti(self, imagePath="multi.pdf", maxMatches=10):
         aM = []
         try:
-            aM = self.__alignListMultiWorker(imagePath=imagePath, layout="list")
+            aM = self.__alignListMultiWorker(imagePath=imagePath, layout="list", maxMatches=maxMatches)
         except TimeoutException:
             logger.info("Timeout exception")
         except Exception as e:
