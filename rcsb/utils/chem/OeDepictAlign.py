@@ -906,10 +906,11 @@ class OeSubStructureAlignUtil(OeDepictAlignBase):
     lists, and pair lists of molecule object instances.
     """
 
-    def __init__(self):
+    def __init__(self, unique=True, maxMatches=10):
         super(OeSubStructureAlignUtil, self).__init__()
         #
-        self.__unique = True
+        self.__unique = unique
+        self.__maxMatches = maxMatches
 
     def doAlign(self):
         """Test the MCSS comparison between the current reference and fit molecules -
@@ -920,6 +921,7 @@ class OeSubStructureAlignUtil(OeDepictAlignBase):
         self._setupSubStructure(self._refMol)
         #
         unique = self.__unique
+        self._ss.SetMaxMatches(self.__maxMatches)
         self._miter = self._ss.Match(self._fitMol, unique)
         if self._miter.IsValid():
             match = self._miter.Target()
@@ -942,6 +944,7 @@ class OeSubStructureAlignUtil(OeDepictAlignBase):
             #
             self._setupSubStructure(refMol)
             #
+            self._ss.SetMaxMatches(self.__maxMatches)
             self._miter = self._ss.Match(fitMol, unique)
             if self._miter.IsValid():
                 match = self._miter.Target()
@@ -973,7 +976,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         self._opts = oedepict.OE2DMolDisplayOptions(self.__imageRef.GetWidth(), self.__imageRef.GetHeight(), oedepict.OEScale_AutoScale)
         self._assignDisplayOptions()
 
-    def alignPair(self):
+    def alignPair(self, maxMatches=10):
         """Depict a single aligned ref/fit molecule pair or the first ref/fit molecule pair on the
         current _pairMolList.  Display options set for a single grid row with two columns.
         """
@@ -981,27 +984,27 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         self._pairMolList = []
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
         try:
-            aM = self.__alignListWorker(layout="pairs")
+            aM = self.__alignListWorker(layout="pairs", maxMatches=maxMatches)
         except TimeoutException:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
-    def alignPairList(self):
+    def alignPairList(self, maxMatches=10):
         aM = []
         try:
-            aM = self.__alignListWorker(layout="pairs")
+            aM = self.__alignListWorker(layout="pairs", maxMatches=maxMatches)
         except TimeoutException:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
-    def alignOneWithList(self):
+    def alignOneWithList(self, maxMatches=10):
         aM = []
         try:
-            aM = self.__alignListWorker(layout="list")
+            aM = self.__alignListWorker(layout="list", maxMatches=maxMatches)
         except TimeoutException:
             logger.info("Timeout exception")
         except Exception as e:
@@ -1009,7 +1012,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         return aM
 
     @timeout(15)
-    def __alignListWorker(self, layout="pairs"):
+    def __alignListWorker(self, layout="pairs", maxMatches=10):
         """Working method comparing a reference molecule with a list of fit molecules.
 
         pairMolList = (refId,refMol,refTitle,refImagePath, fitId,fitMol,fitTitle, fitImagePath)
@@ -1043,6 +1046,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
             self._opts.SetScale(min(refscale, fitscale))
             #
             unique = True
+            self._ss.SetMaxMatches(maxMatches)
             self._miter = self._ss.Match(fitMol, unique)
             if self._miter.IsValid():
                 match = self._miter.Target()
@@ -1141,7 +1145,7 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
         self.__citer = self.__grid.GetCells()
 
     @timeout(500)
-    def __alignListMultiWorker(self, imagePath="multi.pdf", layout="pairs"):
+    def __alignListMultiWorker(self, imagePath="multi.pdf", layout="pairs", maxMatches=10):
         """Working method comparing a reference molecule with a list of fit molecules.
 
         pairMolList = (refId,refMol,refTitle,refImagePath,fitId,fitMol,fitTitle,fitImagePath)
@@ -1178,6 +1182,7 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
             self._opts.SetScale(min(refscale, fitscale))
 
             unique = True
+            self._ss.SetMaxMatches(maxMatches)
             self._miter = self._ss.Match(fitMol, unique)
             logger.debug("ss match completed for refId %s fitId %s", refId, fitId)
             if self._miter.IsValid():
