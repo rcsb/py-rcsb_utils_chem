@@ -185,9 +185,7 @@ class OeAlignUtils(object):
         if fType in ["CC"]:
             (self.__fitId, self.__fitmol, self.__fitFD) = self.getCCDefFile(ccPath, molBuildType=molBuildType, suppressHydrogens=suppressHydrogens)
         else:
-            (self.__fitId, self.__fitmol, self.__fitFD) = self.__getMiscFile(
-                ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title, largestPart=largestPart
-            )
+            (self.__fitId, self.__fitmol, self.__fitFD) = self.__getMiscFile(ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title, largestPart=largestPart)
 
         if self.__verbose:
             logger.debug("Derived fit ID     = %s", self.__fitId)
@@ -422,7 +420,7 @@ class OeAlignUtils(object):
             logger.info("Initialize SS (%r)", self.__searchType)
 
     @timeout(120)
-    def doAlignSs(self, unique=True):
+    def doAlignSs(self, unique=True, maxMatches=20):
         """Test the SS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
         """
@@ -460,6 +458,7 @@ class OeAlignUtils(object):
         #
         # --------
         self.__setupSubStructure(self.__refmol)
+        self.__ss.SetMaxMatches(maxMatches)
         miter = self.__ss.Match(self.__fitmol, unique)
         if miter.IsValid():
             match = miter.Target()

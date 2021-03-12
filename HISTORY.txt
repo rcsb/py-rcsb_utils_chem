@@ -56,3 +56,4 @@
  9-Mar-2021 - V0.65 Add methods to import oeMol directly into OeAlignUtils(), add method to get CIF container object from OeChemCompUtils()
 11-Mar-2021 - V0.66 Add option to skip annotations in OeChemCompUtils()
 11-Mar-2021 - V0.67 Add timeout decorator to method addOeMol() OeChemCompUtils()
+12-Mar-2021 - V0.68 Add constraint on the maximum number of matches for OESubSearch() in OeAlignUtils.
