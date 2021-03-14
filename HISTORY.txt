@@ -58,3 +58,4 @@
 11-Mar-2021 - V0.67 Add timeout decorator to method addOeMol() OeChemCompUtils()
 12-Mar-2021 - V0.68 Add constraint on the maximum number of matches for OESubSearch() in OeAlignUtils.
 12-Mar-2021 - V0.69 Add constraint on the maximum number of substructure matches for OeDepictAlign().
+13-Mar-2021 - V0.70 Change to multiprocess timeout decorator with variable timeout settings.

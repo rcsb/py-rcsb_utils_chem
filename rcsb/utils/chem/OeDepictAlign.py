@@ -22,10 +22,10 @@ import os.path
 
 from openeye import oechem
 from openeye import oedepict
+from wrapt_timeout_decorator import timeout
+
 from rcsb.utils.chem.OeCommonUtils import OeCommonUtils
 from rcsb.utils.chem.OeDepict import OeDepictBase
-from rcsb.utils.io.decorators import TimeoutException
-from rcsb.utils.io.decorators import timeout
 from rcsb.utils.io.FileUtil import FileUtil
 
 logger = logging.getLogger(__name__)
@@ -36,10 +36,11 @@ class OeDepictAlignBase(OeDepictBase):
     object data and common display preferences.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(OeDepictAlignBase, self).__init__()
         #
         #
+        self.timeOut = kwargs.get("timeOut", None)
         self._refId = None
         self._refPath = None
         self._refMol = None
@@ -281,8 +282,8 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
     Output images are rendered in a grid layout that can span multiple pages.
     """
 
-    def __init__(self):
-        super(OeDepictMCSAlignMultiPage, self).__init__()
+    def __init__(self, **kwargs):
+        super(OeDepictMCSAlignMultiPage, self).__init__(**kwargs)
         self.__grid = None
         self.__gridRows = None
         self.__gridCols = None
@@ -296,7 +297,7 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
         self._params["gridCols"] = 2
         try:
             aM = self.__alignListMultiWorker(imagePath=imagePath, layout="pairs")
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -307,7 +308,7 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListMultiWorker(imagePath=imagePath, layout="list")
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -341,7 +342,7 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
         self._assignDisplayOptions()
         self.__citer = self.__grid.GetCells()
 
-    @timeout(500)
+    @timeout("instance.timeOut", use_signals=False, dec_allow_eval=True)
     def __alignListMultiWorker(self, imagePath="multi.pdf", layout="pairs"):
         """Working method comparing a reference molecule with a list of fit molecules.
 
@@ -433,8 +434,8 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
     Output images are rendered to a single page image with grid layout.
     """
 
-    def __init__(self):
-        super(OeDepictMCSAlignPage, self).__init__()
+    def __init__(self, **kwargs):
+        super(OeDepictMCSAlignPage, self).__init__(**kwargs)
         self.__grid = None
         # self.__gridRows = None
         # self.__gridCols = None
@@ -471,7 +472,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, None, self._fitId, self._fitMol, self._fitTitle, None))
         try:
             aM = self.__alignListWorker(imagePath=imagePath, layout="pairs")
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -482,7 +483,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         self._params["gridCols"] = 2
         try:
             aM = self.__alignListWorker(imagePath=imagePath, layout="pairs")
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -492,13 +493,13 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(imagePath=imagePath, layout="list")
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
-    # @timeout(15)
+    @timeout("instance.timeOut", use_signals=False, dec_allow_eval=True)
     def __alignListWorker(self, imagePath="single.pdf", layout="pairs"):
         """Working method comparing a reference molecule with a list of fit molecules.
 
@@ -585,8 +586,8 @@ class OeDepictMCSAlign(OeDepictAlignBase):
     Outputs are separate image files with a single diagram per file.
     """
 
-    def __init__(self):
-        super(OeDepictMCSAlign, self).__init__()
+    def __init__(self, **kwargs):
+        super(OeDepictMCSAlign, self).__init__(**kwargs)
         #
         self.__imageRef = None
         self.__imageFit = None
@@ -609,7 +610,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
         try:
             aM = self.__alignListWorker(layout="pairs")
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -619,7 +620,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(layout="pairs")
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -629,13 +630,13 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(layout="list")
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
-    @timeout(15)
+    @timeout("instance.timeOut", use_signals=False, dec_allow_eval=True)
     def __alignListWorker(self, layout="pairs"):
         """Working method comparing a reference molecule with a list of fit molecules.
 
@@ -705,10 +706,10 @@ class OeMCSAlignUtil(OeDepictAlignBase):
     lists, and pair lists of molecule object instances.
     """
 
-    def __init__(self, maxMatches=2048):
-        super(OeMCSAlignUtil, self).__init__()
+    def __init__(self, **kwargs):
+        super(OeMCSAlignUtil, self).__init__(**kwargs)
         #
-        self.__maxMatches = maxMatches
+        self.__maxMatches = kwargs.get("maxMatches", 2048)
 
     def doAlign(self):
         """Test the MCSS comparison between the current reference and fit molecules -
@@ -906,11 +907,11 @@ class OeSubStructureAlignUtil(OeDepictAlignBase):
     lists, and pair lists of molecule object instances.
     """
 
-    def __init__(self, unique=True, maxMatches=10):
-        super(OeSubStructureAlignUtil, self).__init__()
+    def __init__(self, **kwargs):
+        super(OeSubStructureAlignUtil, self).__init__(**kwargs)
         #
-        self.__unique = unique
-        self.__maxMatches = maxMatches
+        self.__unique = kwargs.get("unique", True)
+        self.__maxMatches = kwargs.get("maxMatches", 2048)
 
     def doAlign(self):
         """Test the MCSS comparison between the current reference and fit molecules -
@@ -961,8 +962,8 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
     Outputs are separate image files with a single diagram per file.
     """
 
-    def __init__(self):
-        super(OeDepictSubStructureAlign, self).__init__()
+    def __init__(self, **kwargs):
+        super(OeDepictSubStructureAlign, self).__init__(**kwargs)
         #
         self.__imageRef = None
         self.__imageFit = None
@@ -985,7 +986,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
         try:
             aM = self.__alignListWorker(layout="pairs", maxMatches=maxMatches)
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -995,7 +996,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(layout="pairs", maxMatches=maxMatches)
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -1005,13 +1006,13 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(layout="list", maxMatches=maxMatches)
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
-    @timeout(15)
+    @timeout("instance.timeOut", use_signals=False, dec_allow_eval=True)
     def __alignListWorker(self, layout="pairs", maxMatches=10):
         """Working method comparing a reference molecule with a list of fit molecules.
 
@@ -1084,8 +1085,8 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
     Output images are rendered in a grid layout that can span multiple pages.
     """
 
-    def __init__(self):
-        super(OeDepictSubStructureAlignMultiPage, self).__init__()
+    def __init__(self, **kwargs):
+        super(OeDepictSubStructureAlignMultiPage, self).__init__(**kwargs)
         self.__grid = None
         self.__gridRows = None
         self.__gridCols = None
@@ -1093,13 +1094,14 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
         self.__image = None
         self.__citer = None
         #
+        #
 
     def alignPairListMulti(self, imagePath="multi.pdf", maxMatches=10):
         aM = []
         self._params["gridCols"] = 2
         try:
             aM = self.__alignListMultiWorker(imagePath=imagePath, layout="pairs", maxMatches=maxMatches)
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -1110,7 +1112,7 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListMultiWorker(imagePath=imagePath, layout="list", maxMatches=maxMatches)
-        except TimeoutException:
+        except TimeoutError:
             logger.info("Timeout exception")
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -1144,7 +1146,7 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
         self._assignDisplayOptions()
         self.__citer = self.__grid.GetCells()
 
-    @timeout(500)
+    @timeout("instance.timeOut", use_signals=False, dec_allow_eval=True)
     def __alignListMultiWorker(self, imagePath="multi.pdf", layout="pairs", maxMatches=10):
         """Working method comparing a reference molecule with a list of fit molecules.
 

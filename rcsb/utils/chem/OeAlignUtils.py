@@ -22,11 +22,11 @@ import os
 from collections import namedtuple
 
 from openeye import oechem
+from wrapt_timeout_decorator import timeout
 
 from rcsb.utils.chem.OeCommonUtils import OeCommonUtils
 from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
-from rcsb.utils.io.decorators import timeout
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class OeAlignUtils(object):
 
     """
 
-    def __init__(self, workPath=None, verbose=True):
+    def __init__(self, workPath=None, verbose=True, timeOut=None):
         #
         self.__verbose = verbose
         #
@@ -67,6 +67,7 @@ class OeAlignUtils(object):
         self.__refPath = None
         self.__fitPath = None
         self.__workPath = workPath if workPath else "."
+        self.timeOut = timeOut
 
     def setSearchType(self, sType="relaxed"):
         self.__searchType = sType
@@ -185,7 +186,9 @@ class OeAlignUtils(object):
         if fType in ["CC"]:
             (self.__fitId, self.__fitmol, self.__fitFD) = self.getCCDefFile(ccPath, molBuildType=molBuildType, suppressHydrogens=suppressHydrogens)
         else:
-            (self.__fitId, self.__fitmol, self.__fitFD) = self.__getMiscFile(ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title, largestPart=largestPart)
+            (self.__fitId, self.__fitmol, self.__fitFD) = self.__getMiscFile(
+                ccPath, suppressHydrogens=suppressHydrogens, importType=importType, title=title, largestPart=largestPart
+            )
 
         if self.__verbose:
             logger.debug("Derived fit ID     = %s", self.__fitId)
@@ -419,7 +422,7 @@ class OeAlignUtils(object):
         if self.__verbose:
             logger.info("Initialize SS (%r)", self.__searchType)
 
-    @timeout(120)
+    @timeout("instance.timeOut", use_signals=False, dec_allow_eval=True)
     def doAlignSs(self, unique=True, maxMatches=20):
         """Test the SS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.
@@ -480,7 +483,7 @@ class OeAlignUtils(object):
         fitAtomUnMappedL = list(fitAtD.values())
         return (nAtomsRef, self.__refFD, nAtomsFit, self.__fitFD, atomMapL, fitAtomUnMappedL)
 
-    @timeout(120)
+    @timeout("instance.timeOut", use_signals=False, dec_allow_eval=True)
     def doAlignMcss(self, unique=True, minFrac=1.0, useExhaustive=True):
         """Test the MCSS comparison between current reference and fit molecules -
         Return list of corresponding atoms on success or an empty list otherwise.

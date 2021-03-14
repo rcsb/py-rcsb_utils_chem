@@ -24,11 +24,11 @@ import time
 
 from openeye import oechem
 from openeye import oeiupac
+from wrapt_timeout_decorator import timeout
 
 from mmcif.api.DataCategory import DataCategory
 from mmcif.api.PdbxContainers import DataContainer
 from rcsb.utils.io.MarshalUtil import MarshalUtil
-from rcsb.utils.io.decorators import timeout, TimeoutException
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 class OeChemCompUtils(object):
     """Build chemical component definitions from OE molecule objects."""
 
-    def __init__(self):
-
+    def __init__(self, **kwargs):
+        self.timeOut = kwargs.get("timeOut", None)
         self.__oeVersion = oechem.OEToolkitsGetRelease()
         self.__containerList = []
 
@@ -61,7 +61,7 @@ class OeChemCompUtils(object):
     def getContainerList(self):
         return self.__containerList
 
-    @timeout(10)
+    @timeout("instance.timeOut", use_signals=False, dec_allow_eval=True)
     def addOeMol(self, ccId, oeMol, missingModelXyz=True, writeIdealXyz=False, skipAnnotations=False):
         """Add the input oeMol to the current PDBx data container as a chemical component definition.
 
@@ -75,44 +75,37 @@ class OeChemCompUtils(object):
         Returns:
             (bool): True for success and False otherwise
         """
-        try:
-            ccIdU = str(ccId).strip().upper()
-            curContainer = DataContainer(ccIdU)
-            #
-            rowD = self.__makeChemCompCategory(ccIdU, oeMol, site="RCSB", missingModelXyz=missingModelXyz, skipAnnotations=skipAnnotations)
-            aCat = DataCategory("chem_comp", list(rowD.keys()), [rowD])
+        ccIdU = str(ccId).strip().upper()
+        curContainer = DataContainer(ccIdU)
+        #
+        rowD = self.__makeChemCompCategory(ccIdU, oeMol, site="RCSB", missingModelXyz=missingModelXyz, skipAnnotations=skipAnnotations)
+        aCat = DataCategory("chem_comp", list(rowD.keys()), [rowD])
+        curContainer.append(aCat)
+        #
+        rowDL = self.__makeChemCompAtomCategory(ccIdU, oeMol, writeIdealXyz=writeIdealXyz)
+        aCat = DataCategory("chem_comp_atom", list(rowDL[0].keys()), rowDL)
+        curContainer.append(aCat)
+        #
+        rowDL = self.__makeChemCompBondCategory(ccIdU, oeMol)
+        if rowDL:
+            aCat = DataCategory("chem_comp_bond", list(rowDL[0].keys()), rowDL)
+            curContainer.append(aCat)
+        #
+        if not skipAnnotations:
+            rowDL = self.__makeChemCompDescriptorCategory(ccIdU, oeMol)
+            aCat = DataCategory("pdbx_chem_comp_descriptor", list(rowDL[0].keys()), rowDL)
             curContainer.append(aCat)
             #
-            rowDL = self.__makeChemCompAtomCategory(ccIdU, oeMol, writeIdealXyz=writeIdealXyz)
-            aCat = DataCategory("chem_comp_atom", list(rowDL[0].keys()), rowDL)
+            rowDL = self.__makeChemCompIdentifierCategory(ccIdU, oeMol)
+            aCat = DataCategory("pdbx_chem_comp_identifier", list(rowDL[0].keys()), rowDL)
             curContainer.append(aCat)
-            #
-            rowDL = self.__makeChemCompBondCategory(ccIdU, oeMol)
-            if rowDL:
-                aCat = DataCategory("chem_comp_bond", list(rowDL[0].keys()), rowDL)
-                curContainer.append(aCat)
-            #
-            if not skipAnnotations:
-                rowDL = self.__makeChemCompDescriptorCategory(ccIdU, oeMol)
-                aCat = DataCategory("pdbx_chem_comp_descriptor", list(rowDL[0].keys()), rowDL)
-                curContainer.append(aCat)
-                #
-                rowDL = self.__makeChemCompIdentifierCategory(ccIdU, oeMol)
-                aCat = DataCategory("pdbx_chem_comp_identifier", list(rowDL[0].keys()), rowDL)
-                curContainer.append(aCat)
-            #
-            rowD = self.__makeChemCompAuditRow(ccIdU)
-            aCat = DataCategory("pdbx_chem_comp_audit", list(rowD.keys()), [rowD])
-            curContainer.append(aCat)
-            #
-            self.__containerList.append(curContainer)
-            return True
-        except TimeoutException as e:
-            raise TimeoutException from e
-        except Exception as e:
-            logger.exception("Failing %r with %s", ccId, str(e))
-            #
-        return False
+        #
+        rowD = self.__makeChemCompAuditRow(ccIdU)
+        aCat = DataCategory("pdbx_chem_comp_audit", list(rowD.keys()), [rowD])
+        curContainer.append(aCat)
+        #
+        self.__containerList.append(curContainer)
+        return True
 
     def __getFormalCharge(self, oeMol):
         fCharge = 0
@@ -413,14 +406,11 @@ class OeChemCompUtils(object):
         eD = {}
         if len(eD) == 0:
             # calculate from current oeMol
-            try:
-                eD = {}
-                for atom in oeMol.GetAtoms():
-                    atNo = atom.GetAtomicNum()
-                    if atNo not in eD:
-                        eD[atNo] = 1
-                    else:
-                        eD[atNo] += 1
-            except Exception:
-                pass
+            eD = {}
+            for atom in oeMol.GetAtoms():
+                atNo = atom.GetAtomicNum()
+                if atNo not in eD:
+                    eD[atNo] = 1
+                else:
+                    eD[atNo] += 1
         return eD

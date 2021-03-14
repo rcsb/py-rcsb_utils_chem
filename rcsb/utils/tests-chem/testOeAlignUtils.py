@@ -56,7 +56,7 @@ class OeAlignUtilsTests(unittest.TestCase):
         try:
             refPath = os.path.join(self.__dataPath, "001.cif")
             fitPath = os.path.join(self.__dataPath, "001.cif")
-            oed = OeAlignUtils(workPath=self.__workPath, verbose=self.__verbose)
+            oed = OeAlignUtils(workPath=self.__workPath, verbose=self.__verbose, timeOut=120.0)
             oed.setSearchType(sType="relaxed")
             oed.setRefPath(refPath)
             logger.info("Ref path %s", refPath)
@@ -73,6 +73,21 @@ class OeAlignUtilsTests(unittest.TestCase):
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
+
+    def testMCSSAlignCCPairFail(self):
+        """Test case -  Timeout """
+        try:
+            refPath = os.path.join(self.__dataPath, "001.cif")
+            fitPath = os.path.join(self.__dataPath, "001.cif")
+            oed = OeAlignUtils(workPath=self.__workPath, verbose=self.__verbose, timeOut=1.0)
+            oed.setSearchType(sType="relaxed")
+            oed.setRefPath(refPath)
+            logger.info("Ref path %s", refPath)
+            oed.setFitPath(fitPath)
+            logger.info("Fit path %s", fitPath)
+            oed.doAlignMcss(minFrac=0.9)
+        except TimeoutError as e:
+            logger.info("Caught timeout with %s", str(e))
 
     def testMCSSAlignMixedPair(self):
         """Test case -  Simple pairwise MCSS alignment   (sdf/cif) """
@@ -102,22 +117,48 @@ class OeAlignUtilsTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
-    def testSSAlignMixedPair(self):
+    def testSSAlignMixedPair2D(self):
         """Test case -  Simple pairwise SS alignment   (sdf/cif) """
         try:
-            for ccId in ["MAN", "001"]:
+            for ccId in ["MAN", "001", "CBO"]:
                 refPath = os.path.join(self.__dataPath, "%s.cif" % ccId)
                 fitPath = os.path.join(self.__dataPath, "%s.sdf" % ccId)
 
                 oed = OeAlignUtils(workPath=self.__workPath, verbose=self.__verbose)
                 oed.setSearchType(sType="strict")
-                logger.info("Ref path %s", fitPath)
+                logger.info("Ref path %s", refPath)
                 oed.setRefPath(refPath)
                 #
-                logger.info("Fit path %s", refPath)
-                oed.setFitPath(fitPath, title=None, suppressHydrogens=False, fType="sdf", importType="2D")
+                logger.info("Fit path %s", fitPath)
+                oed.setFitPath(fitPath, title=None, suppressHydrogens=False, fType="sdf")
                 #
-                (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL, _) = oed.doAlignSs(unique=True)
+                (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL, _) = oed.doAlignSs(unique=True, maxMatches=1)
+                self.assertEqual(nAtomsRef, nAtomsFit)
+                self.assertEqual(nAtomsRef, len(atomMapL))
+                self.assertEqual(refFD["SMILES"], fitFD["SMILES"])
+                if len(atomMapL) > 0:
+                    for alm in atomMapL:
+                        logger.debug("%5s %5s %5s %-5s %5s %5s %5s %-5s", alm.refId, alm.refAtIdx, alm.refAtNo, alm.refAtName, alm.fitId, alm.fitAtIdx, alm.fitAtNo, alm.fitAtName)
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
+    def testSSAlignMixedPair3D(self):
+        """Test case -  Simple pairwise SS alignment   (sdf/cif) """
+        try:
+            for ccId in ["CBO"]:
+                refPath = os.path.join(self.__dataPath, "%s.cif" % ccId)
+                fitPath = os.path.join(self.__dataPath, "%s.sdf" % ccId)
+
+                oed = OeAlignUtils(workPath=self.__workPath, verbose=self.__verbose)
+                oed.setSearchType(sType="strict")
+                logger.info("Ref path %s", refPath)
+                oed.setRefPath(refPath)
+                #
+                logger.info("Fit path %s", fitPath)
+                oed.setFitPath(fitPath, title=None, suppressHydrogens=False, fType="sdf", importType="3D", largestPart=True)
+                #
+                (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL, _) = oed.doAlignSs(unique=True, maxMatches=1)
                 self.assertEqual(nAtomsRef, nAtomsFit)
                 self.assertEqual(nAtomsRef, len(atomMapL))
                 self.assertEqual(refFD["SMILES"], fitFD["SMILES"])
