@@ -120,7 +120,7 @@ class OeAlignUtilsTests(unittest.TestCase):
     def testSSAlignMixedPair2D(self):
         """Test case -  Simple pairwise SS alignment   (sdf/cif) """
         try:
-            for ccId in ["MAN", "001", "CBO"]:
+            for ccId in ["MAN", "001"]:
                 refPath = os.path.join(self.__dataPath, "%s.cif" % ccId)
                 fitPath = os.path.join(self.__dataPath, "%s.sdf" % ccId)
 
@@ -130,7 +130,7 @@ class OeAlignUtilsTests(unittest.TestCase):
                 oed.setRefPath(refPath)
                 #
                 logger.info("Fit path %s", fitPath)
-                oed.setFitPath(fitPath, title=None, suppressHydrogens=False, fType="sdf")
+                oed.setFitPath(fitPath, title=None, suppressHydrogens=False, fType="sdf", importType="2D", largestPart=True)
                 #
                 (nAtomsRef, refFD, nAtomsFit, fitFD, atomMapL, _) = oed.doAlignSs(unique=True, maxMatches=1)
                 self.assertEqual(nAtomsRef, nAtomsFit)
