@@ -76,7 +76,7 @@ class OeDepictAlignBase(OeDepictBase):
             #
             self._refImagePath = imagePath if imagePath is not None else self._refId + ".svg"
             return True
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
 
         return False
@@ -95,7 +95,7 @@ class OeDepictAlignBase(OeDepictBase):
             #
             self._fitImagePath = imagePath if imagePath is not None else self._fitId + ".svg"
             return True
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return False
 
@@ -120,7 +120,7 @@ class OeDepictAlignBase(OeDepictBase):
                 fitImagePath = os.path.join(imageDirPath, imageFilePrefix + fitId + "-with-ref-" + refId + ".svg")
                 self._pairMolList.append((refId, refMol, refTitle, refImagePath, fitId, fitMol, fitTitle, fitImagePath))
             return True
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
 
         return False
@@ -145,7 +145,7 @@ class OeDepictAlignBase(OeDepictBase):
                 refImagePath = os.path.join(imageDirPath, imageFilePrefix + "pair-fit-" + refId + "-with-ref-" + fitId + ".svg")
                 self._pairMolList.append((refId, refMol, refTitle, refImagePath, fitId, fitMol, fitTitle, fitImagePath))
             return True
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
 
         return False
@@ -297,9 +297,7 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
         self._params["gridCols"] = 2
         try:
             aM = self.__alignListMultiWorker(imagePath=imagePath, layout="pairs")
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
 
         return aM
@@ -308,9 +306,7 @@ class OeDepictMCSAlignMultiPage(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListMultiWorker(imagePath=imagePath, layout="list")
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
 
         return aM
@@ -472,9 +468,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, None, self._fitId, self._fitMol, self._fitTitle, None))
         try:
             aM = self.__alignListWorker(imagePath=imagePath, layout="pairs")
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -483,9 +477,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         self._params["gridCols"] = 2
         try:
             aM = self.__alignListWorker(imagePath=imagePath, layout="pairs")
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -493,9 +485,7 @@ class OeDepictMCSAlignPage(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(imagePath=imagePath, layout="list")
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -610,9 +600,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
         try:
             aM = self.__alignListWorker(layout="pairs")
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -620,9 +608,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(layout="pairs")
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -630,9 +616,7 @@ class OeDepictMCSAlign(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(layout="list")
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -737,7 +721,7 @@ class OeMCSAlignUtil(OeDepictAlignBase):
         try:
             for ii, atom in enumerate(oeMol.GetAtoms()):
                 atD[atom.GetName().strip()] = ii
-        except Exception:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError):
             pass
         return atD
 
@@ -746,7 +730,7 @@ class OeMCSAlignUtil(OeDepictAlignBase):
         try:
             for atom in oeMol.GetAtoms():
                 atD[atom.GetName().strip()] = atom.GetFormalCharge()
-        except Exception:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError):
             pass
         return atD
 
@@ -760,7 +744,7 @@ class OeMCSAlignUtil(OeDepictAlignBase):
                     for nbr in atom.GetAtoms():
                         tL.append(nbr.GetName())
                         nL.append((aN, tL))
-        except Exception:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError):
             pass
         return nL
 
@@ -986,9 +970,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         self._pairMolList.append((self._refId, self._refMol, self._refTitle, self._refImagePath, self._fitId, self._fitMol, self._fitTitle, self._fitImagePath))
         try:
             aM = self.__alignListWorker(layout="pairs", maxMatches=maxMatches)
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -996,9 +978,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(layout="pairs", maxMatches=maxMatches)
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -1006,9 +986,7 @@ class OeDepictSubStructureAlign(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListWorker(layout="list", maxMatches=maxMatches)
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
         return aM
 
@@ -1101,9 +1079,7 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
         self._params["gridCols"] = 2
         try:
             aM = self.__alignListMultiWorker(imagePath=imagePath, layout="pairs", maxMatches=maxMatches)
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
 
         return aM
@@ -1112,9 +1088,7 @@ class OeDepictSubStructureAlignMultiPage(OeDepictAlignBase):
         aM = []
         try:
             aM = self.__alignListMultiWorker(imagePath=imagePath, layout="list", maxMatches=maxMatches)
-        except TimeoutError:
-            logger.info("Timeout exception")
-        except Exception as e:
+        except (IndexError, ValueError, AttributeError, TypeError, RuntimeError) as e:
             logger.exception("Failing with %s", str(e))
 
         return aM
