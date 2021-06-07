@@ -49,7 +49,8 @@ class ChemCompSearchWrapperTests(unittest.TestCase):
         #
         self.__mU = MarshalUtil(workPath=self.__cachePath)
         # Set the external environment for the wrapper class-
-        self.__testFlagFull = False
+        self.__testFlagFull = True
+        self.__testStash = False
         if self.__testFlagFull:
             os.environ["CHEM_SEARCH_CACHE_PATH"] = os.path.join(self.__cachePath)
             os.environ["CHEM_SEARCH_CC_PREFIX"] = "cc-full"
@@ -102,24 +103,25 @@ class ChemCompSearchWrapperTests(unittest.TestCase):
             ok = ccsw.buildDependenices(ccUrlTarget=ccUrlTarget, birdUrlTarget=birdUrlTarget)
             self.assertTrue(ok)
             #
-            url = "sftp://bl-east.rcsb.org"
-            userName = ""
-            pw = ""
-            dirPath = "4-coastal"
-            ok = ccsw.stashDependencies(url, dirPath, userName=userName, pw=pw)
-            self.assertTrue(ok)
-            #
-            fileU = FileUtil()
-            fileU.remove(self.__cachePath)
-            #
-            url = "http://bl-east.rcsb.org"
-            ok = ccsw.restoreDependencies(url, dirPath)
-            #
-            fileU.remove(self.__cachePath)
-            #
-            url = "sftp://bl-east.rcsb.org"
-            ok = ccsw.restoreDependencies(url, dirPath, userName=userName, pw=pw)
-            self.assertTrue(ok)
+            if self.__testStash:
+                url = "sftp://bl-east.rcsb.org"
+                userName = ""
+                pw = ""
+                dirPath = "4-coastal"
+                ok = ccsw.stashDependencies(url, dirPath, userName=userName, pw=pw)
+                self.assertTrue(ok)
+                #
+                fileU = FileUtil()
+                fileU.remove(self.__cachePath)
+                #
+                url = "http://bl-east.rcsb.org"
+                ok = ccsw.restoreDependencies(url, dirPath)
+                #
+                fileU.remove(self.__cachePath)
+                #
+                url = "sftp://bl-east.rcsb.org"
+                ok = ccsw.restoreDependencies(url, dirPath, userName=userName, pw=pw)
+                self.assertTrue(ok)
 
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -303,6 +305,45 @@ class ChemCompSearchWrapperTests(unittest.TestCase):
                     mOk and retStatus == 0,
                     time.time() - startTime,
                 )
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
+    @unittest.skip("Private test")
+    def testZoomFingerprintRepeat(self):
+        """Test substructure search"""
+        try:
+            ccsw = ChemCompSearchWrapper()
+            ok = ccsw.readConfig()
+            self.assertTrue(ok)
+            ok = ccsw.updateChemCompIndex(useCache=True)
+            self.assertTrue(ok)
+            ccIdx = ccsw.getChemCompIndex()
+            ok = ccsw.updateSearchIndex(useCache=True)
+            self.assertTrue(ok)
+            ok = ccsw.reloadSearchDatabase()
+            self.assertTrue(ok)
+            #
+            logger.debug("ccIdx (%d)", len(ccIdx))
+            #
+            fpL = []
+            descr = "InChI=1S/C9H15N5O3/c1-3(15)6(16)4-2-11-7-5(12-4)8(17)14-9(10)13-7/h3-4,6,12,15-16H,2H2,1H3,(H4,10,11,13,14,17)/t3-,4-,6-/m1/s1"
+            for ii in range(100):
+                startTime = time.time()
+                retStatus, _, fpL = ccsw.searchByDescriptor(descr, "InChI", matchOpts="fingerprint-similarity")
+                if retStatus == -100:
+                    logger.warning("Descriptor error continuing...")
+                    continue
+                rD = {}
+                for mr in fpL:
+                    ccId = mr.ccId.split("|")[0]
+                    rD[ccId] = max(rD[ccId], mr.fpScore) if ccId in rD else mr.fpScore
+                rTupL = sorted(rD.items(), key=lambda kv: kv[1], reverse=True)
+                rL = [rTup[0] for rTup in rTupL]
+                scoreL = [rTup[1] for rTup in rTupL]
+                logger.info("%4d (%3d) %r (%.4f secs)", ii, len(rL), retStatus == 0, time.time() - startTime)
+            logger.info("rL %r", rL)
+            logger.info("scoreL %r", scoreL)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()

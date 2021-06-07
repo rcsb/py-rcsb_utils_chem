@@ -98,7 +98,7 @@ class OeSearchUtilsTests(unittest.TestCase):
             # self.assertGreaterEqual(len(mL), 1)
             # ----
 
-    @unittest.skipIf(skipFlag, "deprecated test")
+    # unittest.skipIf(skipFlag, "deprecated test")
     def testFingerPrintSearch(self):
         oemp = OeMoleculeProvider(**self.__myKwargs)
         # This will reload the oe binary cache.
@@ -389,9 +389,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         #
         oed = OeDepictMCSAlignPage()
         oed.setSearchType(sType="graph-relaxed", minAtomMatchFraction=0.50)
-        oed.setDisplayOptions(
-            labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, highlightStyleFit="ballAndStickInverse", bondDisplayWidth=0.5
-        )
+        oed.setDisplayOptions(labelAtomName=True, labelAtomCIPStereo=True, labelAtomIndex=False, labelBondIndex=False, highlightStyleFit="ballAndStickInverse", bondDisplayWidth=0.5)
         oed.setRefMol(oeMolRef, ccId)
         oed.setFitMol(oeMolFit, ccId)
         myTitle = title if title else buildTypeRef + "-" + buildTypeFit
