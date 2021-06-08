@@ -98,7 +98,7 @@ class OeSearchUtilsTests(unittest.TestCase):
             # self.assertGreaterEqual(len(mL), 1)
             # ----
 
-    # unittest.skipIf(skipFlag, "deprecated test")
+    @unittest.skipIf(skipFlag, "deprecated test")
     def testFingerPrintSearch(self):
         oemp = OeMoleculeProvider(**self.__myKwargs)
         # This will reload the oe binary cache.

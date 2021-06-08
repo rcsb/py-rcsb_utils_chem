@@ -49,7 +49,7 @@ class ChemCompSearchWrapperTests(unittest.TestCase):
         #
         self.__mU = MarshalUtil(workPath=self.__cachePath)
         # Set the external environment for the wrapper class-
-        self.__testFlagFull = True
+        self.__testFlagFull = False
         self.__testStash = False
         if self.__testFlagFull:
             os.environ["CHEM_SEARCH_CACHE_PATH"] = os.path.join(self.__cachePath)

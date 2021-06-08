@@ -172,7 +172,7 @@ class OeSearchUtils(object):
         return retStatus, hL
 
     def searchSubStructureAndFingerPrint(self, oeQueryMol, fpTypeCutoffList, maxFpResults, matchOpts="graph-relaxed"):
-        """Return graph match and finger print search results for the input OE molecule using finger print pre-filtering.
+        """Return graph match and finger print search results for the input OE molecule using fingerprint pre-filtering.
 
         Args:
             oeQueryMol (OEmol): OE graph molecule
@@ -209,7 +209,7 @@ class OeSearchUtils(object):
         return ok and retStatus, ssL, fpL
 
     def searchSubStructureWithFingerPrint(self, oeQueryMol, fpType, minFpScore, maxFpResults, matchOpts="graph-relaxed"):
-        """Return graph match search results for the input OE molecule using finger print pre-filtering.
+        """Return graph match search results for the input OE molecule using fingerprint pre-filtering.
 
         Args:
             oeQueryMol (OEmol): OE graph molecule
