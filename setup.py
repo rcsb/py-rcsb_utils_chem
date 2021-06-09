@@ -15,6 +15,14 @@ thisPackage = "rcsb.utils.chem"
 with open("rcsb/utils/chem/__init__.py", "r") as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE).group(1)
 
+
+# Load packages from requirements*.txt
+with open("requirements.txt", "r") as ifh:
+    packagesRequired = [ln.strip() for ln in ifh.readlines()]
+
+with open("README.md", "r") as ifh:
+    longDescription = ifh.read()
+
 if not version:
     raise RuntimeError("Cannot find version information")
 
@@ -22,7 +30,8 @@ setup(
     name=thisPackage,
     version=version,
     description="RCSB Python Chemical Utility Classes",
-    long_description="See:  README.md",
+    long_description_content_type="text/markdown",
+    long_description=longDescription,
     author="John Westbrook",
     author_email="john.westbrook@rcsb.org",
     url="https://github.com/rcsb/py-rcsb_utils_chem",
@@ -40,8 +49,8 @@ setup(
     ),
     entry_points={"console_scripts": ["cactvs_annotate_mol=rcsb.utils.chem.cactvsAnnotateMol:main"]},
     #  The following is somewhat flakey --
-    dependency_links=["https://pypi.anaconda.org/OpenEye/simple#egg=OpenEye-toolkits-2020.2.0"],
-    install_requires=["mmcif >= 0.67", "rcsb.utils.io >= 1.00", "rcsb.utils.multiproc >= 0.18", "wrapt_timeout_decorator >= 1.3.1", "OpenEye-toolkits>=2020.2.2"],
+    # dependency_links=["https://pypi.anaconda.org/OpenEye/simple#egg=OpenEye-toolkits-2020.2.2"],
+    install_requires=packagesRequired[1:],
     packages=find_packages(exclude=["rcsb.mock-data", "rcsb.utils.tests-chem", "rcsb.utils.tests-*", "tests.*"]),
     package_data={
         # If any package contains *.md or *.rst ...  files, include them:

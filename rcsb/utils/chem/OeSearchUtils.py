@@ -189,6 +189,7 @@ class OeSearchUtils(object):
         try:
             for fpType, fpCutoff in fpTypeCutoffList:
                 ok, tL = self.getFingerPrintScores(oeQueryMol, fpType, fpCutoff, maxFpResults)
+                logger.info("fingerprint %r cutoff %r maxfp %r (%d)", fpType, fpCutoff, maxFpResults, len(tL) if tL else 0)
                 fpL.extend(tL)
             fpL = list(set(fpL))
             fpL = sorted(fpL, key=lambda nTup: nTup.fpScore, reverse=True)
