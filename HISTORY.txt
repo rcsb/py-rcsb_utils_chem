@@ -62,3 +62,4 @@
  5-May-2021 - V0.71 Update dependencies
  9-Jun-2021 - V0.72 Update installation tools and add diagnostic output for fingerprint score results
  9-Jun-2021 - V0.73 Update manifest files
+22-Aug-2021 - V0.74 Add ChemAxonDescriptorProvider and associated tests.  Add ChemAxon smiles to search index build.

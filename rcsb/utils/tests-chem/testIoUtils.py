@@ -60,7 +60,7 @@ class IoUtilsTests(unittest.TestCase):
                 continue
             if self.__exportFlag:
                 fp = os.path.join(self.__workPath, rdCcObj.getName() + ".sdf")
-                with open(fp, "w") as ofh:
+                with open(fp, "w", encoding="utf-8") as ofh:
                     ofh.write("%s" % sdfS)
             sdfL.append(sdfS)
         #
@@ -78,7 +78,7 @@ class IoUtilsTests(unittest.TestCase):
             sdfL.append(sdfS)
         #
         fp = os.path.join(self.__workPath, "components.sdf")
-        with open(fp, "w") as ofh:
+        with open(fp, "w", encoding="utf-8") as ofh:
             ofh.write("%s" % "\n".join(sdfL))
 
 

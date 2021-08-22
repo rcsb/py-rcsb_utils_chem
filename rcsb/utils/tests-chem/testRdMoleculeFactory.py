@@ -62,7 +62,7 @@ class RdMolecularFactoryTests(unittest.TestCase):
             _, sdfS, atomIdxD = ioU.makeSdf(rdCcObj)
             if self.__exportFlag:
                 fp = os.path.join(self.__workPath, rdCcObj.getName() + ".sdf")
-                with open(fp, "w") as ofh:
+                with open(fp, "w", encoding="utf-8") as ofh:
                     ofh.write("%s" % sdfS)
                 rdmf.setFile(ccId, fp, atomIdxD=atomIdxD)
                 rdmf.updateProperties()

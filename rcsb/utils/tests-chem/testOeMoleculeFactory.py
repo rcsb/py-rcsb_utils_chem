@@ -19,25 +19,39 @@ __license__ = "Apache 2.0"
 
 import logging
 import os
+import platform
+import resource
+import time
 import unittest
 
+from rcsb.utils.chem.ChemAxonDescriptorProvider import ChemAxonDescriptorProvider
 from rcsb.utils.chem.ChemCompMoleculeProvider import ChemCompMoleculeProvider
 from rcsb.utils.chem.MoleculeAnnotationsCompare import MoleculeAnnotationsCompare
 from rcsb.utils.chem.OeDepictAlign import OeDepictMCSAlignPage
 from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
 from rcsb.utils.chem.PdbxChemComp import PdbxChemCompIt
 
+logging_level = logging.INFO
+logging_fmt = "%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s"
+try:
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging_level)
+    root_handler = root_logger.handlers[0]
+    root_handler.setFormatter(logging.Formatter(logging_fmt))
+except IndexError:
+    logging.basicConfig(level=logging_level, format=logging_fmt)
+
+logger = logging.getLogger()
+
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s")
-logger = logging.getLogger()
 
 
 class OeMolecularFactoryTests(unittest.TestCase):
     skipFlag = True
 
     def setUp(self):
+        self.__startTime = time.time()
         #
         self.__workPath = os.path.join(HERE, "test-output")
         self.__dataPath = os.path.join(HERE, "test-data")
@@ -45,13 +59,21 @@ class OeMolecularFactoryTests(unittest.TestCase):
         self.__ccUrlTarget = os.path.join(self.__dataPath, "components-abbrev.cif")
         self.__birdUrlTarget = os.path.join(self.__dataPath, "prdcc-abbrev.cif")
         self.__molLimit = None
+        logger.info("Setup completed")
+        print("log level %r (logging.INFO %r)" % (logger.level, logging.INFO))
+        logger.info("Starting %s at %s", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()))
 
     def tearDown(self):
-        pass
+        unitS = "MB" if platform.system() == "Darwin" else "GB"
+        rusageMax = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        logger.info("Maximum resident memory size %.4f %s", rusageMax / 10 ** 6, unitS)
+        endTime = time.time()
+        logger.info("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
     def __getChemCompDefs(self, molLimit=None):
         ccMolD = {}
         try:
+            logger.info("Building molecule cache")
             useCache = True
             ccFileNamePrefix = "cc-abbrev"
             ccmP = ChemCompMoleculeProvider(
@@ -64,25 +86,62 @@ class OeMolecularFactoryTests(unittest.TestCase):
             )
             ok = ccmP.testCache(minCount=molLimit)
             self.assertTrue(ok)
+            logger.info("Build molecule cache (%r)", ok)
             ccMolD = ccmP.getMolD()
+            logger.info("ccMolD (%d)", len(ccMolD))
         except Exception as e:
             logger.exception("Failing with %s", str(e))
         return ccMolD
 
     def testBuildRelated(self):
-        """Compare constructed molecule with underlying chemical definitions -"""
+        """Test build molecules chemical definitions -"""
         try:
+            logger.info("Starting")
             ccMolD = self.__getChemCompDefs()
-            oemf = OeMoleculeFactory()
-            for ccId, ccObj in list(ccMolD.items())[:10]:
+            oemf = OeMoleculeFactory(quietMode=True)
+            relD = {}
+            for ccId, ccObj in list(ccMolD.items())[:100]:
                 # ----
                 tId = oemf.setChemCompDef(ccObj)
                 self.assertEqual(tId, ccId)
-                smiD = oemf.buildRelated(limitPerceptions=False)
-                logger.info("%s related molecular forms %d", ccId, len(smiD))
-                # logger.debug("%s related molecular forms %r", ccId, smiD)
+                tD = oemf.buildRelated(limitPerceptions=False)
+                logger.info("%s related molecular forms %d", ccId, len(tD))
+                relD.update(tD)
+            logger.info("Total molecular forms (%d)", len(relD))
+            # ----
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
 
+    def testBuildRelatedExtra(self):
+        """Test build molecules chemical definitions including extra chemaxon descriptors"""
+
+        try:
+            caxP = ChemAxonDescriptorProvider(
+                ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, cachePath=self.__cachePath, useCache=True, ccFileNamePrefix="cc-abbrev"
+            )
+            ok = caxP.testCache()
+            self.assertTrue(ok)
+            descrD = caxP.getDescriptorIndex()
+            #
+            ccMolD = self.__getChemCompDefs()
+            oemf = OeMoleculeFactory(quietMode=True)
+            relD = {}
+            for ccId, ccObj in list(ccMolD.items())[:100]:
                 # ----
+                tId = oemf.setChemCompDef(ccObj)
+                self.assertEqual(tId, ccId)
+                #
+                oemf.clearExternalDescriptors()
+                for smi in descrD[ccId] if ccId in descrD else []:
+                    oemf.addExternalDescriptor("smiles", smi, "chemaxon-smiles")
+                #
+                tD = oemf.buildRelated(limitPerceptions=False)
+                logger.info("%s related molecular forms %d", ccId, len(tD))
+                relD.update(tD)
+            logger.info("Total molecular forms (%d)", len(relD))
+
+            # ----
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
@@ -240,14 +299,14 @@ class OeMolecularFactoryTests(unittest.TestCase):
             self.fail()
 
 
-def suiteCompareDescriptorsTests():
+def suiteOeMoleculeFactoryTests():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(OeMolecularFactoryTests("testCompareDescriptors"))
+    suiteSelect.addTest(OeMolecularFactoryTests("testBuildRelated"))
     return suiteSelect
 
 
 if __name__ == "__main__":
     #
-    mySuite1 = suiteCompareDescriptorsTests()
+    mySuite1 = suiteOeMoleculeFactoryTests()
     unittest.TextTestRunner(verbosity=2).run(mySuite1)
     #

@@ -97,7 +97,7 @@ class ChemCompIndexProvider(object):
         return rL
 
     def filterMinimumMolecularFormula(self, typeCountD):
-        """Find molecules with the minumum formula composition for the input atom type range query (evaluates min <= ff).
+        """Find molecules with the minimum formula composition for the input atom type range query (evaluates min <= ff).
 
         Args:
             typeCountD (dict): dictionary of element minimum values {'<element_name>: #}
@@ -132,7 +132,7 @@ class ChemCompIndexProvider(object):
         return rL
 
     def filterMinimumFormulaAndFeatures(self, typeCountD, featureCountD):
-        """Find molecules with the minumum formula and feature composition.
+        """Find molecules with the minimum formula and feature composition.
 
         Args:
             typeCountD (dict): dictionary of element minimum values {'<element_name>: #}
@@ -187,12 +187,28 @@ class ChemCompIndexProvider(object):
     def getIndex(self):
         return self.__ccIdxD
 
+    def getIdList(self):
+        return list(self.__ccIdxD.keys()) if self.__ccIdxD else []
+
     def getMol(self, ccId):
         try:
             return self.__ccIdxD[ccId]
         except Exception as e:
             logger.debug("Get molecule %r failing with %s", ccId, str(e))
         return None
+
+    def getSMILES(self, ccId, smiTypeList=None):
+
+        smiTypeList = smiTypeList if smiTypeList else ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles"]
+        try:
+            sL = []
+            for smilesType in smiTypeList:
+                if smilesType in self.__ccIdxD[ccId]:
+                    sL.append(self.__ccIdxD[ccId][smilesType])
+            return sL
+        except Exception as e:
+            logger.debug("Get SMILES for %r failing with %s", ccId, str(e))
+        return []
 
     def __reload(self, **kwargs):
         """Reload or created index of PDB chemical components.

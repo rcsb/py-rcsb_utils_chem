@@ -45,9 +45,10 @@ ComponentAtomDetails = namedtuple("ComponentAtomDetails", "atIdx atNo atName atT
 class OeMoleculeFactory(object):
     """Utility methods for constructing OEGraphMols from chemical component definition objects."""
 
-    def __init__(self, verbose=False):
+    def __init__(self, quietMode=False, verbose=False):
         self.__verbose = verbose
-        self.__quietMode = False
+        self.__quietMode = quietMode
+
         self.__oeErrorLevel = oechem.OEErrorLevel_Info
         self.__ccId = None
         self.__oeMol = None
@@ -59,6 +60,9 @@ class OeMoleculeFactory(object):
         self.__descriptor = None
         #
         self.__isDefinitionSet = False
+        self.__externalDescriptorTupList = []
+        if self.__quietMode:
+            self.setQuiet()
         #
 
     def __oeClear(self):
@@ -293,15 +297,15 @@ class OeMoleculeFactory(object):
         return oechem.OEGraphMol(self.__oeMol) if self.__oeMol else None
 
     def getCanSMILES(self):
-        """Return the cannonical SMILES string derived from the current OD molecule."""
+        """Return the canonical SMILES string derived from the current OD molecule."""
         return oechem.OECreateCanSmiString(self.__oeMol) if self.__oeMol else None
 
     def getIsoSMILES(self):
-        """Return the cannonical stereo SMILES string derived from the current OE molecule."""
+        """Return the canonical stereo SMILES string derived from the current OE molecule."""
         return oechem.OECreateIsoSmiString(self.__oeMol) if self.__oeMol else None
 
     def getFormula(self):
-        """Return the Hill order formulat  derived from the current OE molecule."""
+        """Return the Hill order formula  derived from the current OE molecule."""
         return oechem.OEMolecularFormula(self.__oeMol) if self.__oeMol else None
 
     def getFormalCharge(self):
@@ -359,7 +363,7 @@ class OeMoleculeFactory(object):
         if self.__oeMol:
             if addExplicitHydrogens:
                 if not oechem.OEAddExplicitHydrogens(self.__oeMol):
-                    logger.warning("%s explict hydrogen addition fails", self.__ccId)
+                    logger.warning("%s explicit hydrogen addition fails", self.__ccId)
             # calculate from current oeMol
             try:
                 eD = {}
@@ -384,7 +388,7 @@ class OeMoleculeFactory(object):
             try:
                 if addExplicitHydrogens:
                     if not oechem.OEAddExplicitHydrogens(self.__oeMol):
-                        logger.warning("%s explict hydrogen addition fails", self.__ccId)
+                        logger.warning("%s explicit hydrogen addition fails", self.__ccId)
                 #
                 tV, _ = oechem.OEDetermineAromaticRingSystems(self.__oeMol)
                 if tV > 0:
@@ -495,7 +499,7 @@ class OeMoleculeFactory(object):
 
     # ----
     def buildRelated(self, limitPerceptions=False, buildTypeList=None):
-        """Build the most "authorative" molecule from the chemical component definition and
+        """Build the most "authoritative" molecule from the chemical component definition and
         use this as a basis for reference descriptors and related protomeric and tautomeric forms.
         This collection is designed to capture the chemical diversity within the component defintion
         as well as other reasonable chemical forms for search purposes.  The collection is returned
@@ -522,6 +526,7 @@ class OeMoleculeFactory(object):
                     if ok:
                         # name = self.__ccId + "|" + "ref" if buildType == "model-xyz" else self.__ccId + "|" + buildType
                         inchiKey = self.getInChIKey()
+                        # JDW these are the stereo cases
                         smiles = self.getIsoSMILES()
                         qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
                         name = self.__ccId if buildType == "model-xyz" else self.__ccId + "|" + qualifier
@@ -546,6 +551,7 @@ class OeMoleculeFactory(object):
                     ok = self.build(molBuildType=buildType, setTitle=True, limitPerceptions=limitPerceptions)
                     if ok:
                         inchiKey = self.getInChIKey()
+                        # JDW only using the canonical smiles for these cases
                         smiles = self.getCanSMILES()
                         qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
                         name = self.__ccId + "|" + qualifier
@@ -627,7 +633,34 @@ class OeMoleculeFactory(object):
                                     "program": oeVersionString,
                                     "feature-counts": fCountD,
                                 }
-
+            #
+            otherMolTupList = self.__buildFromExternalDescriptors(self.__ccId, limitPerceptions=limitPerceptions)
+            for tMol, label in otherMolTupList:
+                self.__oeMol = tMol
+                smiles = self.getIsoSMILES()
+                inchiKey = self.getInChIKey()
+                qualifier = hashlib.sha256(smiles.encode("utf-8")).hexdigest()
+                label = "other|" + label
+                name = self.__ccId + "|" + qualifier
+                formula = self.getFormula()
+                fCharge = self.getFormalCharge()
+                eleD = self.getElementCounts(addExplicitHydrogens=True, useSymbol=True)
+                fCountD = self.getFeatureCounts()
+                if smiles and inchiKey and smiles not in uniqSmilesD:
+                    uniqSmilesD[smiles] = True
+                    retD[name] = {
+                        "name": name,
+                        "build-type": label,
+                        "smiles": smiles,
+                        "inchi-key": inchiKey,
+                        "formula": formula,
+                        "fcharge": fCharge,
+                        "type-counts": eleD,
+                        "program": oeVersionString,
+                        "feature-counts": fCountD,
+                    }
+                else:
+                    logger.debug("Skipping non-unique molecule from extra descriptor %r", name)
         except Exception as e:
             logger.info("Failing for %r with %s", self.__ccId, str(e))
 
@@ -642,7 +675,7 @@ class OeMoleculeFactory(object):
             elif molBuildType in ["connection-table"]:
                 oeMol = self.__build2D(setTitle=setTitle)
             elif molBuildType in ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]:
-                oeMol = self.__buildFromDescriptor(self.__ccId, molBuildType, limitPerceptions=limitPerceptions, fallBackBuildType=fallBackBuildType)
+                oeMol = self.__buildFromInternalDescriptor(self.__ccId, molBuildType, limitPerceptions=limitPerceptions, fallBackBuildType=fallBackBuildType)
             #
             if oeMol:
                 numparts, _ = oechem.OEDetermineComponents(oeMol)
@@ -659,13 +692,83 @@ class OeMoleculeFactory(object):
             logger.info("%s failing with %s", self.__ccId, str(e))
         return False
 
-    def __buildFromDescriptor(self, ccId, molBuildType, setTitle=True, limitPerceptions=False, fallBackBuildType="model-xyz", rebuildOnFailure=False):
-        """Parse the input descriptor string and return a molecule object (OeGraphMol).
+    def __smilesToMol(self, ccId, smiles, limitPerceptions=False):
+        if not smiles:
+            return None
+        oeMol = oechem.OEGraphMol()
+        if limitPerceptions:
+            # convert the descriptor string into a molecule
+            if not oechem.OEParseSmiles(oeMol, smiles, False, False):
+                if not self.__quietMode:
+                    logger.warning("%r parsing input failed for SMILES %r", ccId, smiles)
+                oeMol = None
+        else:
+            if not oechem.OESmilesToMol(oeMol, smiles):
+                if not self.__quietMode:
+                    logger.warning("%r converting input failed for SMILES %r", ccId, smiles)
+                oeMol = None
+        if oeMol:
+            oeMol.SetTitle(ccId)
+            oechem.OETriposAtomNames(oeMol)
+            ok = self.__testDescriptorBuild(oeMol)
+            if not ok:
+                oeMol = None
+        #
+        return oeMol
+
+    def __inchiToMol(self, ccId, inchi, limitPerceptions=False):
+        if not inchi:
+            return None
+        oeMol = oechem.OEGraphMol()
+
+        if limitPerceptions:
+            # convert the InChI string into a molecule
+            if not oechem.OEParseInChI(oeMol, inchi):
+                if not self.__quietMode:
+                    logger.warning("%r parsing input failed for InChI string", ccId)
+                oeMol = None
+        else:
+            if not oechem.OEInChIToMol(oeMol, inchi):
+                if not self.__quietMode:
+                    logger.warning("%r converting input failed for InChI string", ccId)
+                oeMol = None
+        if oeMol:
+            oeMol.SetTitle(ccId)
+            oechem.OETriposAtomNames(oeMol)
+            ok = self.__testDescriptorBuild(oeMol)
+            if not ok:
+                oeMol = None
+        #
+        return oeMol
+
+    def clearExternalDescriptors(self):
+        self.__externalDescriptorTupList = []
+
+    def addExternalDescriptor(self, descrType, descriptor, label=None):
+        self.__externalDescriptorTupList.append((descrType, descriptor, label))
+
+    def __buildFromExternalDescriptors(self, ccId, limitPerceptions=False):
+        oeMolTupList = []
+        if not self.__externalDescriptorTupList:
+            return oeMolTupList
+
+        for descrType, descriptor, label in self.__externalDescriptorTupList:
+            if "inchi" in descrType.lower():
+                oeMol = self.__inchiToMol(ccId, descriptor, limitPerceptions=limitPerceptions)
+            elif "smiles" in descrType.lower():
+                oeMol = self.__smilesToMol(ccId, descriptor, limitPerceptions=limitPerceptions)
+            if oeMol:
+                oeMolTupList.append((oeMol, label))
+        logger.debug("Extra descriptor molecule count (%d)", len(oeMolTupList))
+        return oeMolTupList
+
+    def __buildFromInternalDescriptor(self, ccId, molBuildType, limitPerceptions=False, fallBackBuildType="model-xyz"):
+        """Extract the input descriptor type from the current chemical component definition, parse the descriptor,
+           and return a molecule object (OeGraphMol).
 
         Args:
             ccId (str): chemical component identifier
             molBuildType (str):  source data used to build molecule
-            setTitle (bool): make chemical component identifer the molecular title
             limitPerceptions (bool): flag to limit the perceptions/transformations of input SMILES
             fallBackBuildType (str): fallback build type for missing descriptors  (Default:"model-xyz")
 
@@ -678,79 +781,21 @@ class OeMoleculeFactory(object):
                 logger.error("%s unexpected molBuildType %r", ccId, molBuildType)
                 return None
             #
-            ccId = self.__ccId
-            #
             descr = self.__getDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
             if not descr:
                 if not self.__quietMode:
                     logger.warning("%r molBuildType %r missing descriptor", ccId, molBuildType)
                 return None
             #
-            oeMol = oechem.OEGraphMol()
-            ok = True
+            logger.debug("Building with molBuildType %r descr %r ", molBuildType, descr)
             if molBuildType in ["oe-smiles", "oe-iso-smiles", "acdlabs-smiles", "cactvs-smiles", "cactvs-iso-smiles"]:
-                smiles = descr
-                if limitPerceptions:
-                    # convert the descriptor string into a molecule
-                    if not oechem.OEParseSmiles(oeMol, smiles, False, False):
-                        if not self.__quietMode:
-                            logger.warning("%r parsing input failed for %r string", ccId, molBuildType)
-                        ok = False
-                        if self.__isDefinitionSet and rebuildOnFailure:
-                            # Try again with a descriptor rebuild
-                            smiles = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
-                            ok = oechem.OEParseSmiles(oeMol, smiles, False, False)
-                            if not ok:
-                                logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
-                else:
-                    logger.debug("Building with %s", smiles)
-                    if not oechem.OESmilesToMol(oeMol, smiles):
-                        if not self.__quietMode:
-                            logger.warning("%r converting input failed for %r string", ccId, molBuildType)
-                        ok = False
-                        if self.__isDefinitionSet and rebuildOnFailure:
-                            # Try again with a descriptor rebuild
-                            smiles = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
-                            ok = oechem.OESmilesToMol(oeMol, smiles)
-                            if not ok:
-                                logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
-
+                oeMol = self.__smilesToMol(ccId, descr, limitPerceptions=limitPerceptions)
             elif molBuildType in ["inchi"]:
-                inchi = descr
-                logger.debug("Building with molBuildType %r descr %r ", molBuildType, descr)
-                if limitPerceptions:
-                    # convert the InChI string into a molecule
-                    if not oechem.OEParseInChI(oeMol, inchi):
-                        if not self.__quietMode:
-                            logger.warning("%r parsing input failed for InChI string", ccId)
-                        ok = False
-                        if self.__isDefinitionSet and rebuildOnFailure:
-                            # Try again with a descriptor rebuild
-                            inchi = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
-                            ok = oechem.OEParseInChI(oeMol, inchi)
-                            if not ok:
-                                logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
-                else:
-                    if not oechem.OEInChIToMol(oeMol, inchi):
-                        if not self.__quietMode:
-                            logger.warning("%r converting input failed for InChI string", ccId)
-                        ok = False
-                        if self.__isDefinitionSet and rebuildOnFailure:
-                            # Try again with a descriptor rebuild
-                            inchi = self.__rebuildDescriptor(ccId, molBuildType, fallBackBuildType=fallBackBuildType)
-                            ok = oechem.OEInChIToMol(oeMol, inchi)
-                            if not ok:
-                                logger.warning("%s regenerating %r failed from fallback build %r", ccId, molBuildType, fallBackBuildType)
-            okT = True
-            if ok:
-                if setTitle:
-                    oeMol.SetTitle(self.__ccId)
-                oechem.OETriposAtomNames(oeMol)
-                okT = self.__testDescriptorBuild(oeMol)
+                oeMol = self.__inchiToMol(ccId, descr, limitPerceptions=limitPerceptions)
             #
-            return oeMol if ok and okT else None
+            return oeMol
         except Exception as e:
-            logger.exception("%r failing with %s", self.__ccId, str(e))
+            logger.exception("%r failing with %s", ccId, str(e))
         return None
 
     def __testDescriptorBuild(self, oeMol):

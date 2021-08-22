@@ -694,10 +694,10 @@ class OeIoUtils(object):
             # If this is a mol2 file, we need to replace the resname
             if fmt.startswith("mol2"):
                 # If this is a mol2/mol2h substitute the default substructure id
-                with open(filePath, "r") as ifh:
+                with open(filePath, "r", encoding="utf-8") as ifh:
                     lines = ifh.readlines()
                 lines = [line.replace("<0>", molId) for line in lines]
-                with open(filePath, "w") as ofh:
+                with open(filePath, "w", encoding="utf-8") as ofh:
                     ofh.writelines(lines)
             return True
         except Exception as e:
