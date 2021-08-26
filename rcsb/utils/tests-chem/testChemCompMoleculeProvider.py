@@ -60,7 +60,7 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
 
     def testBuildMoleculeCacheFilesAbbrev(self):
         """Test construction of abbreviated of chemical component definitions from alternate source paths"""
-        self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, ccFileNamePrefix="cc-abbrev")
+        self.__testBuildMoleculeCacheFiles(ccUrlTarget=self.__ccUrlTarget, birdUrlTarget=self.__birdUrlTarget, ccFileNamePrefix="cc-abbrev", skipObsolete=True)
 
     @unittest.skipIf(skipFlag, "Long test")
     def testBuildMoleculeCacheFilesSubset(self):
@@ -97,6 +97,7 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
             useCache = kwargs.get("useCache", False)
             logSizes = kwargs.get("logSizes", False)
             filterIdD = kwargs.get("filterIdD", None)
+            skipObsolete = kwargs.get("skipObsolete", True)
             ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
             #
             if ccUrlTarget and birdUrlTarget:
@@ -108,6 +109,7 @@ class ChemCompMoleculeProviderTests(unittest.TestCase):
                     useCache=useCache,
                     molLimit=molLimit,
                     filterIdD=filterIdD,
+                    skipObsolete=skipObsolete,
                 )
                 ok = ccmP.testCache(minCount=molLimit, logSizes=logSizes)
                 self.assertTrue(ok)

@@ -155,6 +155,7 @@ class ChemCompSearchIndexProvider(object):
         maxChunkSize = kwargs.get("maxChunkSize", 20)
         limitPerceptions = kwargs.get("limitPerceptions", True)
         quietFlag = kwargs.get("quietFlag", True)
+        skipObsolete = kwargs.get("skipObsolete", True)
         searchIdxFilePath = self.getIndexFilePath()
         #
         if useCache and self.__mU.exists(searchIdxFilePath):
@@ -164,7 +165,7 @@ class ChemCompSearchIndexProvider(object):
             searchIdxD = {k: rdCcIdxD[k] for k in sorted(rdCcIdxD.keys())[:molLimit]} if molLimit else rdCcIdxD
         else:
             cmpKwargs = {k: v for k, v in kwargs.items() if k not in ["cachePath", "useCache", "molLimit"]}
-            ccmP = ChemCompMoleculeProvider(cachePath=self.__cachePath, useCache=True, molLimit=molLimit, **cmpKwargs)
+            ccmP = ChemCompMoleculeProvider(cachePath=self.__cachePath, useCache=True, molLimit=molLimit, skipObsolete=skipObsolete, **cmpKwargs)
             ok1 = ccmP.testCache(minCount=molLimit, logSizes=True)
             #
             descrD = {}

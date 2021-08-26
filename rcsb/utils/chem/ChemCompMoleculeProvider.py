@@ -4,7 +4,7 @@
 # Date:    16-Feb-2020
 #
 # Updates:
-#
+#  26-Aug-2021 jdw add file for obsolete component definitions
 ##
 """
 Utilities to read and serialize the dictionary of PDBx/mmCIF chemical component definitions.
@@ -43,11 +43,14 @@ class ChemCompMoleculeProvider(object):
         dirPath = os.path.join(cachePath, "chem_comp")
         useCache = kwargs.get("useCache", True)
         molLimit = kwargs.get("molLimit", 0)
+        skipObsolete = kwargs.get("skipObsolete", False)
         # Optional id dictionary filter
         filterIdD = kwargs.get("filterIdD", None)
         #
         self.__mU = MarshalUtil(workPath=dirPath)
-        self.__ccMolD = self.__reload(self.__ccUrlTarget, self.__birdUrlTarget, ccFileNamePrefix, dirPath, useCache=useCache, molLimit=molLimit, filterIdD=filterIdD)
+        self.__ccMolD = self.__reload(
+            self.__ccUrlTarget, self.__birdUrlTarget, ccFileNamePrefix, dirPath, useCache=useCache, molLimit=molLimit, filterIdD=filterIdD, skipObsolete=skipObsolete
+        )
 
     def testCache(self, minCount=None, logSizes=False):
         if logSizes and self.__ccMolD:
@@ -65,7 +68,16 @@ class ChemCompMoleculeProvider(object):
             logger.debug("Get molecule %r failing with %s", ccId, str(e))
         return None
 
-    def __reload(self, ccUrlTarget, birdUrlTarget, ccFileNamePrefix, dirPath, useCache=False, molLimit=None, filterIdD=None):
+    def getReleaseStatus(self, ccId):
+        try:
+            ccIt = iter(PdbxChemCompIt(self.__ccMolD[ccId]))
+            ccIt = next(ccIt, None)
+            return ccIt.getReleaseStatus() if ccIt else None
+        except Exception as e:
+            logger.exception("Failing for ccId %r with %s", ccId, str(e))
+        return None
+
+    def __reload(self, ccUrlTarget, birdUrlTarget, ccFileNamePrefix, dirPath, useCache=False, molLimit=None, filterIdD=None, skipObsolete=False):
         """Reload or create serialized data dictionary of chemical components.
 
         Args:
@@ -75,6 +87,7 @@ class ChemCompMoleculeProvider(object):
             useCache (bool):
             molLimit (int): maximum number of definitions to process
             filterIdD (dict): dictionary of selected chemical component identifier codes
+            skipObsolete (bool): skip obsolete definitions
 
          Returns:
             (list): chemical component data containers
@@ -89,11 +102,21 @@ class ChemCompMoleculeProvider(object):
         if useCache and self.__mU.exists(ccDataFilePath):
             rdCcObjD = self.__mU.doImport(ccDataFilePath, fmt=ccDataFormat)
             ccObjD = {k: rdCcObjD[k] for k in sorted(rdCcObjD.keys())[:molLimit]} if molLimit else rdCcObjD
+            if skipObsolete:
+                tD = {}
+                for ccId in ccObjD:
+                    ccIt = iter(PdbxChemCompIt(ccObjD[ccId]))
+                    ccIt = next(ccIt, None)
+                    if ccIt.getReleaseStatus() not in ["REL", "REF_ONLY"]:
+                        continue
+                    tD[ccId] = ccObjD[ccId]
+                ccObjD = tD
+
         else:
             # Source component data files ...
             ccdFilePath = self.__fetchUrl(ccUrlTarget, dirPath, useCache=useCache)
             birdFilePath = self.__fetchUrl(birdUrlTarget, dirPath, useCache=useCache)
-            rdCcObjD = self.__readComponentDefinitions(ccdFilePath, birdFilePath, molLimit=molLimit)
+            rdCcObjD = self.__readComponentDefinitions(ccdFilePath, birdFilePath, molLimit=molLimit, skipObsolete=skipObsolete)
             ccObjD = {ccId: ccObj for ccId, ccObj in rdCcObjD.items() if ccId in filterIdD} if filterIdD else rdCcObjD
             ok = self.__mU.doExport(ccDataFilePath, ccObjD, fmt=ccDataFormat)
             logger.info("Storing %d definitions (status=%r) path: %s ", len(ccObjD), ok, ccDataFilePath)
@@ -117,7 +140,7 @@ class ChemCompMoleculeProvider(object):
         #
         return filePath
 
-    def __readComponentDefinitions(self, ccdFilePath, birdFilePath=None, molLimit=None):
+    def __readComponentDefinitions(self, ccdFilePath, birdFilePath=None, molLimit=None, skipObsolete=False):
         ccObjD = {}
         try:
             startTime = time.time()
@@ -140,6 +163,8 @@ class ChemCompMoleculeProvider(object):
                 ccIt = iter(PdbxChemCompIt(ccObj))
                 ccIt = next(ccIt, None)
                 ccId = ccIt.getId() if ccIt else ccObj.getName()
+                if skipObsolete and ccIt.getReleaseStatus() not in ["REL", "REF_ONLY"]:
+                    continue
                 ccObjD[ccId] = ccObj
             endTime = time.time()
             logger.info("Processed %d definitions (%.4f seconds)", len(ccObjD), endTime - startTime)
