@@ -43,7 +43,7 @@ class ChemCompMoleculeProvider(object):
         dirPath = os.path.join(cachePath, "chem_comp")
         useCache = kwargs.get("useCache", True)
         molLimit = kwargs.get("molLimit", 0)
-        skipObsolete = kwargs.get("skipObsolete", False)
+        skipObsolete = kwargs.get("skipObsolete", True)
         # Optional id dictionary filter
         filterIdD = kwargs.get("filterIdD", None)
         #
@@ -77,7 +77,7 @@ class ChemCompMoleculeProvider(object):
             logger.exception("Failing for ccId %r with %s", ccId, str(e))
         return None
 
-    def __reload(self, ccUrlTarget, birdUrlTarget, ccFileNamePrefix, dirPath, useCache=False, molLimit=None, filterIdD=None, skipObsolete=False):
+    def __reload(self, ccUrlTarget, birdUrlTarget, ccFileNamePrefix, dirPath, useCache=False, molLimit=None, filterIdD=None, skipObsolete=True):
         """Reload or create serialized data dictionary of chemical components.
 
         Args:
@@ -140,7 +140,7 @@ class ChemCompMoleculeProvider(object):
         #
         return filePath
 
-    def __readComponentDefinitions(self, ccdFilePath, birdFilePath=None, molLimit=None, skipObsolete=False):
+    def __readComponentDefinitions(self, ccdFilePath, birdFilePath=None, molLimit=None, skipObsolete=True):
         ccObjD = {}
         try:
             startTime = time.time()
