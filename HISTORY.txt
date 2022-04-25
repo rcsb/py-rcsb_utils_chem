@@ -65,3 +65,4 @@
 22-Aug-2021 - V0.74 Add ChemAxonDescriptorProvider and associated tests.  Add ChemAxon smiles to search index build.
 26-Aug-2021 - V0.75 Add filter for obsolete definitions in ChemCompMoleculeProvider and ChemCompSearchIndexProvider modules
 23-Sep-2021 - V0.76 Set default for skipObsolete to True
+25-Apr-2022 - V0.77 Suppress errors logged for UNL (UNknown Ligand) chemical component
