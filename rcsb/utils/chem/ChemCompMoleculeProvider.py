@@ -34,9 +34,9 @@ class ChemCompMoleculeProvider(object):
     def __init__(self, **kwargs):
         # Default source target locators
         self.__ccUrlTarget = kwargs.get("ccUrlTarget", None)
-        self.__ccUrlTarget = self.__ccUrlTarget if self.__ccUrlTarget else "http://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
+        self.__ccUrlTarget = self.__ccUrlTarget if self.__ccUrlTarget else "http://prerelease.k8s.rcsb.org/pub/pdb/data/monomers/components.cif.gz"
         self.__birdUrlTarget = kwargs.get("birdUrlTarget", None)
-        self.__birdUrlTarget = self.__birdUrlTarget if self.__birdUrlTarget else "http://files.wwpdb.org/pub/pdb/data/bird/prd/prdcc-all.cif.gz"
+        self.__birdUrlTarget = self.__birdUrlTarget if self.__birdUrlTarget else "http://prerelease.k8s.rcsb.org/pub/pdb/data/bird/prd/prdcc-all.cif.gz"
         #
         ccFileNamePrefix = kwargs.get("ccFileNamePrefix", "cc")
         cachePath = kwargs.get("cachePath", ".")
