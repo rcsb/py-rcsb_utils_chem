@@ -66,3 +66,4 @@
 26-Aug-2021 - V0.75 Add filter for obsolete definitions in ChemCompMoleculeProvider and ChemCompSearchIndexProvider modules
 23-Sep-2021 - V0.76 Set default for skipObsolete to True
  9-Jan-2023 - V0.77 Configuration changes to support tox 4
+19-May-2023 - V0.78 Update DNS to PDB archive
