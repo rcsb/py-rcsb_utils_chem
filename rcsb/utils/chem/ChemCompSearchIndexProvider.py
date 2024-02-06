@@ -245,7 +245,7 @@ class ChemCompSearchIndexProvider(object):
         optD = {"maxChunkSize": maxChunkSize, "limitPerceptions": limitPerceptions, "quietFlag": quietFlag, "descrD": descrD}
         mpu.setOptions(optD)
         mpu.set(workerObj=rWorker, workerMethod="buildRelatedList")
-        ok, failList, resultList, _ = mpu.runMulti(dataList=ccIdList, numProc=numProc, numResults=1, chunkSize=maxChunkSize)
+        ok, failList, resultList, _ = mpu.runMulti(dataList=ccIdList, numProc=2, numResults=1, chunkSize=5)
         if failList:
             logger.info("Index definitions with failures (%d): %r", len(failList), failList)
         logger.info("Multi-proc status %r failures %r result length %r", ok, len(failList), len(resultList[0]))
