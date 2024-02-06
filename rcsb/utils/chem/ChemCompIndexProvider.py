@@ -4,7 +4,7 @@
 # Date:    16-Feb-2020
 #
 # Updates:
-#
+#   6-Feb-2024 dwp Suppress errors logged for UNL (UNknown Ligand) chemical component.
 ##
 """
 Utilities to read and process an index of PDB chemical component definitions.
@@ -309,7 +309,8 @@ class ChemCompIndexProvider(object):
                         oemf.setQuiet()
                     tId = oemf.setChemCompDef(dataContainer)
                     if tId != ccId:
-                        logger.error("%s chemical component definition import error", ccId)
+                        if ccId != "UNL":  # Expecting this to fail for UNL, so only log error if it's not
+                            logger.error("%s chemical component definition import error", ccId)
                         continue
                     ok = oemf.build(molBuildType=molBuildType)
                     if ok:
