@@ -237,20 +237,27 @@ class ChemCompSearchIndexProvider(object):
     def __buildChemCompSearchIndexMulti(self, ccObjD, descrD, limitPerceptions=False, molLimit=None, numProc=2, maxChunkSize=20, quietFlag=False):
         #
         ccIdList = sorted(ccObjD.keys())[:molLimit] if molLimit else sorted(ccObjD.keys())
+        numProc = 1
+        chunkSize = 1
+        maxChunkSize = 1
         logger.info("Input definition length %d numProc %d limitPerceptions %r", len(ccIdList), numProc, limitPerceptions)
         #
+        rL = []
         rWorker = ChemCompSearchIndexWorker(ccObjD)
         # mpu = MultiProcPoolUtil(verbose=True)
         mpu = MultiProcUtil(verbose=True)
-        optD = {"maxChunkSize": maxChunkSize, "limitPerceptions": limitPerceptions, "quietFlag": quietFlag, "descrD": descrD}
-        mpu.setOptions(optD)
-        mpu.set(workerObj=rWorker, workerMethod="buildRelatedList")
-        ok, failList, resultList, _ = mpu.runMulti(dataList=ccIdList, numProc=2, numResults=1, chunkSize=5)
-        if failList:
-            logger.info("Index definitions with failures (%d): %r", len(failList), failList)
-        logger.info("Multi-proc status %r failures %r result length %r", ok, len(failList), len(resultList[0]))
+        for di in ccIdList:
+            optD = {"maxChunkSize": maxChunkSize, "limitPerceptions": limitPerceptions, "quietFlag": quietFlag, "descrD": descrD}
+            mpu.setOptions(optD)
+            mpu.set(workerObj=rWorker, workerMethod="buildRelatedList")
+            ok, failList, resultList, _ = mpu.runMulti(dataList=[di], numProc=numProc, numResults=1, chunkSize=chunkSize)
+            logger.info("Multi-proc status %r failures %r result length %r", ok, len(failList), len(resultList[0]))
+            rL += resultList[0]
+        # if failList:
+        #     logger.info("Index definitions with failures (%d): %r", len(failList), failList)
+        logger.info("Entire Multi-proc status %r result length %r", ok, len(rL))
         # JDW
-        rD = {vD["name"]: vD for vD in resultList[0]}
+        rD = {vD["name"]: vD for vD in rL}
         return rD
 
     def matchMolecularFormulaRange(self, typeRangeD, matchSubset=False):
