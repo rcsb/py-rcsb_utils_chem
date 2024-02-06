@@ -5,6 +5,7 @@
 #
 # Updates:
 #  13-Mar-2020 jdw Add formula index search method.
+#   6-Feb-2024 dwp Suppress errors logged for UNL (UNknown Ligand) chemical component.
 ##
 """
 Utilities to read and process a search index of PDB chemical component definitions.
@@ -87,7 +88,8 @@ class ChemCompSearchIndexWorker(object):
                     oemf.setQuiet()
                 tId = oemf.setChemCompDef(dataContainer)
                 if tId != ccId:
-                    logger.error("%s %s chemical component definition import error", procName, ccId)
+                    if ccId != "UNL":  # Expecting this to fail for UNL, so only log error if it's not
+                        logger.error("%s %s chemical component definition import error", procName, ccId)
                     fL.append(ccId)
                     continue
                 # ----
