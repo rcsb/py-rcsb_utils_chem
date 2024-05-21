@@ -69,3 +69,4 @@
 19-May-2023 - V0.78 Update DNS to PDB archive
  6-Feb-2024 - V0.79 Update Azure testing pipelines to use MacOS 13;
                     Suppress errors logged for UNL (UNknown Ligand) chemical component
+21-May-2024 - V0.80 Fix pylinting
