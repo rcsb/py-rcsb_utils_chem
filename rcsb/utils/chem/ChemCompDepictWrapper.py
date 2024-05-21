@@ -137,6 +137,7 @@ class ChemCompDepictWrapper(SingletonClass):
         """Create depiction from InChI, SMILES descriptors or PDB identifier."""
         try:
             imagePath = imagePath if imagePath else self.__makeImagePath()
+            oeMol = None
             oeio = OeIoUtils()
             if identifierType.lower() in ["smiles"]:
                 oeMol = oeio.smilesToMol(identifier)
@@ -210,6 +211,7 @@ class ChemCompDepictWrapper(SingletonClass):
             oeio = OeIoUtils()
             ccsw = ChemCompSearchWrapper()
             oesmP = ccsw.getSearchMoleculeProvider()
+            oeMolRef = oeMolFit = None
             # ---
             if refIdentifierType.lower() in ["smiles"]:
                 oeMolRef = oeio.smilesToMol(refIdentifier)

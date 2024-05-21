@@ -147,6 +147,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         for ccId, ccD in list(ccIdxD.items())[:numMols]:
             for buildType in ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]:
                 if buildType in ccD:
+                    oeMol = None
                     logger.debug("Search %s %r", ccId, ccD[buildType])
                     if buildType in ["inchi"]:
                         # oeMol = oeioU.inchiToMol(ccD[buildType], limitPerceptions=limitPerceptions)
@@ -229,6 +230,7 @@ class OeSearchUtilsTests(unittest.TestCase):
         for ccId, ccD in list(ccIdxD.items())[:numMols]:
             for buildType in ["oe-iso-smiles", "oe-smiles", "acdlabs-smiles", "cactvs-iso-smiles", "cactvs-smiles", "inchi"]:
                 if buildType in ccD:
+                    oeMol = None
                     logger.debug("Search %s %r", ccId, ccD[buildType])
                     if buildType in ["inchi"]:
                         oemf = OeMoleculeFactory()

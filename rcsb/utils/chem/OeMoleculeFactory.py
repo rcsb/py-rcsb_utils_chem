@@ -753,6 +753,7 @@ class OeMoleculeFactory(object):
             return oeMolTupList
 
         for descrType, descriptor, label in self.__externalDescriptorTupList:
+            oeMol = None
             if "inchi" in descrType.lower():
                 oeMol = self.__inchiToMol(ccId, descriptor, limitPerceptions=limitPerceptions)
             elif "smiles" in descrType.lower():
@@ -788,6 +789,7 @@ class OeMoleculeFactory(object):
                 return None
             #
             logger.debug("Building with molBuildType %r descr %r ", molBuildType, descr)
+            oeMol = None
             if molBuildType in ["oe-smiles", "oe-iso-smiles", "acdlabs-smiles", "cactvs-smiles", "cactvs-iso-smiles"]:
                 oeMol = self.__smilesToMol(ccId, descr, limitPerceptions=limitPerceptions)
             elif molBuildType in ["inchi"]:

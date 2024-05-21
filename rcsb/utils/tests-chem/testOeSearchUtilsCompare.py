@@ -213,6 +213,7 @@ class OeSubStructSearchCompareTests(unittest.TestCase):
                 self.__display(mL, query, queryId, queryType, matchOpts)
 
     def __search(self, oeMol, matchOpts, numProc):
+        fpL = mL = None
         if matchOpts.startswith("sub-struct-"):
             retStatus, mL = self.__subStructureSearch(oeMol, matchOpts=matchOpts, numProc=numProc)
         else:
