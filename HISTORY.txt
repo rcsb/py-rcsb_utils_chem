@@ -70,3 +70,4 @@
  6-Feb-2024 - V0.79 Update Azure testing pipelines to use MacOS 13;
                     Suppress errors logged for UNL (UNknown Ligand) chemical component
 21-May-2024 - V0.80 Fix pylinting
+11-Feb-2025 - V0.81 Update requirements and update CI/CD to python 3.10
