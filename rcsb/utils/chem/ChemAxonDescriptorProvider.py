@@ -4,6 +4,7 @@
 # Date:    17-Aug-2021
 #
 # Updates:
+#   26-Feb-2025  dwp Adjust ChemAxon API request for SMILES standardization (following changes to their converter API)
 #
 ##
 """
@@ -194,14 +195,14 @@ class ChemAxonDescriptorProvider(StashableBase):
         #
         logger.info("Translating (%d) SMILES for components (%d)", len(smilesD), len(smilesCcIdD))
         # ----
-        smiLL = [list(smilesD.keys())[i : i + chunkSize] for i in range(0, len(smilesD), chunkSize)]
+        smiLL = [list(smilesD.keys())[i: i + chunkSize] for i in range(0, len(smilesD), chunkSize)]
         # ---
         baseUrl = "https://jchem-microservices.chemaxon.com"
         endPoint = "jwsio/rest-v1/molconvert/batch"
         # hL = [("Accept", "application/json"), ("Content-Type", "application/json")]
         hD = {"Accept": "application/json", "Content-Type": "application/json"}
         try:
-            pD = {"errorHandlingMode": "SKIP_ERROR", "inputParams": "smiles", "outputParams": "smiles"}
+            pD = {"errorHandlingMode": "SKIP_ERROR", "inputParams": "", "outputParams": "smiles"}
             #
             iCount = 0
             for smiL in smiLL:
