@@ -71,3 +71,4 @@
                     Suppress errors logged for UNL (UNknown Ligand) chemical component
 21-May-2024 - V0.80 Fix pylinting
 11-Feb-2025 - V0.81 Update requirements and update CI/CD to python 3.10
+26-Feb-2025 - V0.82 Adjust ChemAxon API request for SMILES standardization (following changes to their converter API)
