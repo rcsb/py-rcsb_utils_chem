@@ -72,3 +72,4 @@
 21-May-2024 - V0.80 Fix pylinting
 11-Feb-2025 - V0.81 Update requirements and update CI/CD to python 3.10
 26-Feb-2025 - V0.82 Adjust ChemAxon API request for SMILES standardization (following changes to their converter API)
+31-Jul-2025 - V0.83 Loosen OpenEye requirement from `>= 2024.1.1` to `>= 2022.1`
