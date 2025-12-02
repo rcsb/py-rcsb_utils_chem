@@ -15,9 +15,8 @@ A collection of tests for the OEDepict and related classes.
 """
 __docformat__ = "restructuredtext en"
 __author__ = "John Westbrook"
-__email__ = "jwest@rcsb.rutgers.edu"
+__email__ = "john.westbrook@rcsb.org"
 __license__ = "Creative Commons Attribution 3.0 Unported"
-__version__ = "V0.01"
 
 import logging
 import os

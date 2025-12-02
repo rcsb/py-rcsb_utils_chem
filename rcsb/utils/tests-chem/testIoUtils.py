@@ -12,19 +12,15 @@
 Tests for utilities to read and write chemical component definitions.
 
 """
-
-__docformat__ = "restructuredtext en"
-__author__ = "John Westbrook"
-__email__ = "jwest@rcsb.rutgers.edu"
-__license__ = "Apache 2.0"
-
 import logging
 import os
 import time
 import unittest
 
-from rcsb.utils.chem import __version__
+from importlib.metadata import version as get_package_version
 from rcsb.utils.chem.IoUtils import IoUtils
+
+__version__ = get_package_version("rcsb.utils.chem")
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))

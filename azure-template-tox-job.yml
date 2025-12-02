@@ -14,137 +14,122 @@ parameters:
   fixtures: ""
 
 jobs:
-- job: ${{ format('build_test_{0}_{1}', parameters.tox, parameters.os) }}
-  timeoutInMinutes: 0
-  pool:
-    ${{ if eq(parameters.os, 'macos') }}:
-      vmImage: 'macOS-15'
-    ${{ if eq(parameters.os, 'linux') }}:
-      vmImage: 'ubuntu-latest'
+  - job: ${{ format('build_test_{0}_{1}', parameters.tox, parameters.os) }}
+    pool:
+      ${{ if eq(parameters.os, 'macos') }}:
+        vmImage: "macOS-15"
+      ${{ if eq(parameters.os, 'linux') }}:
+        vmImage: "ubuntu-latest"
 
-  variables:
-    - group: py-shared-variables
+    variables:
+      - group: py-shared-variables
 
-  steps:
-    #
-    # ensure the required Python versions are available
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: ${{ parameters.python }}
-        addToPath: true
-      displayName: setup python
-    #
-    - checkout: self
-      submodules: true
-    #
-    - ${{ if startsWith(parameters.os, 'macos') }}:
-      - bash: |
-          set -e
-          ls -la /Applications/Xcode*
-          sudo xcode-select --switch /Applications/Xcode_16.app/Contents/Developer
-          which g++
-          c++ --version
-        displayName: "setup Xcode"
+    steps:
       #
-      - script: which brew
-        displayName: 'Check package manager'
-      - script: brew install flex
-        displayName: 'Install flex'
-      - script: which flex
-        displayName: 'Check flex'
-      - script: brew install bison
-        displayName: 'Install bison'
-      - script: which bison
-        displayName: 'Check bison'
-    # ----------------------------------------------
-    - ${{ if startsWith(parameters.os, 'linux') }}:
-      - script: lsb_release -a
-        displayName: 'Ubuntu kernel version'
-      - script: which apt
-        displayName: 'Installing OS dependencies'
-      - script: apt-cache policy | grep http | awk '{print $2 $3}' | sort -u
-        displayName: 'Checking for repos'
+      # ensure the required Python versions are available
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: ${{ parameters.python }}
+          addToPath: true
+        displayName: setup python
       #
-      - script: sudo apt-get update
-        displayName: 'update apt'
-      #- script: sudo apt-get upgrade
-      #  displayName: 'upgrade apt'
-      #- script: sudo apt-get update
-      #  displayName: 'update apt'
-      - script: sudo apt-get install flex
-        displayName: 'Install flex'
-      - script: sudo apt-get install bison
-        displayName: 'Install bison'
-    #
-    - ${{ if and(contains(parameters.fixtures, 'mongodb'), startsWith(parameters.os, 'linux')) }}:
-      # Mongo install
-      - script: |
-          sudo apt-get install gnupg wget
-          wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
-          # sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
-          sudo apt list --installed | grep mongodb
-          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
-          # echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
-          sudo apt-get update
-          sudo apt-get install -y mongodb-org
-          sudo apt list --installed | grep mongo
-        displayName: "Installing mongodb"
+      - checkout: self
+        submodules: true
+        fetchDepth: 1
       #
-      - script:  |
-          sudo service mongod start
-          sudo ss -tulpn
-        displayName: "Start Mongo service"
-      #
-    #
-    - script: "python -c \"import sys; print(sys.version); print(sys.executable)\""
-      displayName: show python information
-    #
-    - script: python -m pip install --upgrade pip tox
-      displayName: 'Install tools'
-      #
-    - script: pip install -r requirements.txt
-      displayName: 'Install dependencies'
-    #
-    #
-    - task: DownloadSecureFile@1
-      name: oelicense
-      displayName: 'Download OE license file'
-      inputs:
-        secureFile: 'oe_license.txt'
 
-    - ${{ if startsWith(parameters.tox, 'py') }}:
-      - script: |
-          export OE_LICENSE=$(oelicense.secureFilePath)
-          export CONFIG_SUPPORT_TOKEN_ENV=$(VAR_CONFIG_SUPPORT_TOKEN_ENV)
-          ${{ format('python -m tox -e {0}', parameters.tox) }}
-        displayName: 'Running tox task'
-    - ${{ if and(not(startsWith(parameters.tox, 'py')), startsWith(parameters.python, '3.10')) }}:
-      - script: |
-          export OE_LICENSE=$(oelicense.secureFilePath)
-          export CONFIG_SUPPORT_TOKEN_ENV=$(VAR_CONFIG_SUPPORT_TOKEN_ENV)
-          ${{ format('python -m tox -e {0}-py310', parameters.tox) }}
-        displayName: 'Running tox task'
-    #
-    #  Build artifacts if this is a test target (i.e. labeled as py##)
-    #
-    - ${{ if startsWith(parameters.tox, 'py') }}:
-      - script: pip install --upgrade pip twine setuptools wheel
-        displayName: "Acquire build tools"
-      - script: python setup.py  sdist --dist-dir "$(System.DefaultWorkingDirectory)/dist"
-        displayName: "Build source dist"
-      - script: python setup.py  bdist_wheel --dist-dir "$(System.DefaultWorkingDirectory)/dist"
-        displayName: "Build wheel"
-    #
-      - script: python setup.py  sdist --dist-dir "$(System.DefaultWorkingDirectory)/udist"
-        displayName: "Build source dist"
+      - ${{ if startsWith(parameters.os, 'macos') }}:
+          - bash: |
+              set -e
+              ls -la /Applications/Xcode*
+              sudo xcode-select --switch /Applications/Xcode_16.app/Contents/Developer
+              which g++
+              c++ --version
+            displayName: "setup Xcode"
+          #
+          - script: which brew
+            displayName: "Check package manager"
+          - script: brew install flex
+            displayName: "Install flex"
+          - script: which flex
+            displayName: "Check flex"
+          - script: brew install bison
+            displayName: "Install bison"
+          - script: which bison
+            displayName: "Check bison"
+      # ----------------------------------------------
+      - ${{ if startsWith(parameters.os, 'linux') }}:
+          - script: which apt
+            displayName: "Installing OS dependencies"
+          - script: apt-cache policy | grep http | awk '{print $2 $3}' | sort -u
+            displayName: "Checking for repos"
+          - script: sudo apt-get update
+            displayName: 'update apt'
+          - script: sudo apt-get install flex
+            displayName: "Install flex"
+          - script: sudo apt-get install bison
+            displayName: "Install bison"
       #
-      # Check the install artifacts
-      - script: ls -lR "$(System.DefaultWorkingDirectory)/dist" "$(System.DefaultWorkingDirectory)/udist"
-        displayName: "Listing of installed software"
+      - ? ${{ if and(contains(parameters.fixtures, 'mongodb'), startsWith(parameters.os, 'linux')) }}
+        : # Mongo install
+          - script: |
+              sudo apt-get install gnupg curl
+              curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
+              sudo apt list --installed | grep mongodb
+              echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+              sudo apt-get update
+              sudo apt-get install -y mongodb-org
+              sudo apt list --installed | grep mongo
+            displayName: "Installing mongodb"
+          #
+          - script: |
+              sudo service mongod start
+              sudo ss -tulpn
+            displayName: "Start Mongo service"
+        #
       #
-      - publish: $(System.DefaultWorkingDirectory)/dist
-        artifact: ${{ format('sw_{0}_{1}', parameters.tox, parameters.os) }}
+      - script: python -c "import sys; print(sys.version); print(sys.executable)"
+        displayName: show python information
       #
-      - publish: $(System.DefaultWorkingDirectory)/udist
-        artifact: ${{ format('sw_u_{0}_{1}', parameters.tox, parameters.os) }}
+      - script: python -m pip install --upgrade pip
+        displayName: "Upgrade pip"
       #
+      - script: pip install .[tests] --extra-index-url https://pypi.anaconda.org/OpenEye/simple
+        displayName: "Install dependencies"
+      #
+      - task: DownloadSecureFile@1
+        name: oelicense
+        displayName: 'Download OE license file'
+        inputs:
+          secureFile: 'oe_license.txt'
+
+      - ${{ if startsWith(parameters.tox, 'py') }}:
+        - script: |
+            export OE_LICENSE=$(oelicense.secureFilePath)
+            export CONFIG_SUPPORT_TOKEN_ENV=$(VAR_CONFIG_SUPPORT_TOKEN_ENV)
+            export PIP_EXTRA_INDEX_URL="https://pypi.anaconda.org/OpenEye/simple"
+            ${{ format('python -m tox -e {0}', parameters.tox) }}
+          displayName: 'Running tox task'
+      - ${{ if and(not(startsWith(parameters.tox, 'py')), startsWith(parameters.python, '3.12')) }}:
+        - script: |
+            export OE_LICENSE=$(oelicense.secureFilePath)
+            export CONFIG_SUPPORT_TOKEN_ENV=$(VAR_CONFIG_SUPPORT_TOKEN_ENV)
+            export PIP_EXTRA_INDEX_URL="https://pypi.anaconda.org/OpenEye/simple"
+            ${{ format('python -m tox -e {0}-py312', parameters.tox) }}
+          displayName: 'Running tox task'
+      #
+      #  Build artifacts if this is a test target (i.e. labeled as py##)
+      #
+      - ${{ if startsWith(parameters.tox, 'py') }}:
+          - script: pip install --upgrade pip build twine hatch
+            displayName: "Acquire build tools"
+          - script: python -m build --sdist --wheel --outdir "$(System.DefaultWorkingDirectory)/dist"
+            displayName: "Build source and wheel distributions"
+          #
+          # Check the install artifacts
+          - script: ls -lR "$(System.DefaultWorkingDirectory)/dist"
+            displayName: "Listing of installed software"
+          #
+          - publish: $(System.DefaultWorkingDirectory)/dist
+            artifact: ${{ format('sw_{0}_{1}', parameters.tox, parameters.os) }}
+        #

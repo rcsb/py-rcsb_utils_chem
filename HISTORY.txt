@@ -74,3 +74,5 @@
 26-Feb-2025 - V0.82 Adjust ChemAxon API request for SMILES standardization (following changes to their converter API)
 31-Jul-2025 - V0.83 Loosen OpenEye requirement from `>= 2024.1.1` to `>= 2022.1`
 18-Aug-2025 - V0.84 Update OpenEye requirement to be `>= 2022.1.0` (`2022.1` doesn't exist)
+ 2-Dec-2025 - V0.85 Switch from setuptools to hatch build system;
+                    Update pipelines to use python 3.12 (note that latest OpenEye (2025.1.1) only supports up to 3.12)
