@@ -12,12 +12,6 @@
 Tests for search modes using source molecular definitions coming from a search index.
 
 """
-
-__docformat__ = "restructuredtext en"
-__author__ = "John Westbrook"
-__email__ = "jwest@rcsb.rutgers.edu"
-__license__ = "Apache 2.0"
-
 import logging
 import os
 import platform
@@ -25,13 +19,15 @@ import resource
 import time
 import unittest
 
-from rcsb.utils.chem import __version__
+from importlib.metadata import version as get_package_version
 from rcsb.utils.chem.ChemCompIndexProvider import ChemCompIndexProvider
 from rcsb.utils.chem.FailList import FailList
 from rcsb.utils.chem.OeDepictAlign import OeDepictMCSAlignPage
 from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeSearchMoleculeProvider import OeSearchMoleculeProvider
 from rcsb.utils.chem.OeSearchUtils import OeSearchUtils
+
+__version__ = get_package_version("rcsb.utils.chem")
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))

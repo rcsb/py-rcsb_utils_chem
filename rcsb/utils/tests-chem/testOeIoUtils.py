@@ -11,12 +11,6 @@
 A collection of tests for OeIoUtils() operations.
 
 """
-__docformat__ = "restructuredtext en"
-__author__ = "John Westbrook"
-__email__ = "john.westbrook@rcsb.org"
-__license__ = "Apache 2.0"
-
-
 import logging
 import os
 import unittest

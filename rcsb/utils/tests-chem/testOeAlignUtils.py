@@ -9,13 +9,6 @@
 """
 A collection of tests for SS and MCSS comparison operations.
 """
-
-__docformat__ = "restructuredtext en"
-__author__ = "John Westbrook"
-__email__ = "john.westbrook@rcsb.org"
-__license__ = "Apache 2.0"
-
-
 import logging
 import os
 import platform
@@ -23,8 +16,10 @@ import resource
 import time
 import unittest
 
-from rcsb.utils.chem import __version__
+from importlib.metadata import version as get_package_version
 from rcsb.utils.chem.OeAlignUtils import OeAlignUtils
+
+__version__ = get_package_version("rcsb.utils.chem")
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))

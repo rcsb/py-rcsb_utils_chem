@@ -11,12 +11,6 @@
 """
 Utilities to deliver ChemAxon rendered chemical descriptors for chemical component definitions.
 """
-
-__docformat__ = "google en"
-__author__ = "John Westbrook"
-__email__ = "jwest@rcsb.rutgers.edu"
-__license__ = "Apache 2.0"
-
 import logging
 import os
 import platform
@@ -24,9 +18,10 @@ import resource
 import time
 import unittest
 
-
-from rcsb.utils.chem import __version__
+from importlib.metadata import version as get_package_version
 from rcsb.utils.chem.ChemAxonDescriptorProvider import ChemAxonDescriptorProvider
+
+__version__ = get_package_version("rcsb.utils.chem")
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))

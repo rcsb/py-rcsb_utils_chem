@@ -11,18 +11,12 @@
 """
 Match and Substructure search comparison tests on the full data including display.
 """
-
-__docformat__ = "restructuredtext en"
-__author__ = "John Westbrook"
-__email__ = "jwest@rcsb.rutgers.edu"
-__license__ = "Apache 2.0"
-
 import logging
 import os
 import time
 import unittest
 
-from rcsb.utils.chem import __version__
+from importlib.metadata import version as get_package_version
 from rcsb.utils.chem.ChemCompMoleculeProvider import ChemCompMoleculeProvider
 from rcsb.utils.chem.ChemCompSearchIndexProvider import ChemCompSearchIndexProvider
 from rcsb.utils.chem.OeDepictAlign import OeDepictMCSAlignPage, OeDepictMCSAlignMultiPage, OeDepictSubStructureAlignMultiPage
@@ -30,6 +24,8 @@ from rcsb.utils.chem.OeIoUtils import OeIoUtils
 from rcsb.utils.chem.OeSearchMoleculeProvider import OeSearchMoleculeProvider
 from rcsb.utils.chem.OeSearchUtils import OeSearchUtils
 from rcsb.utils.chem.OeSubStructSearchUtils import OeSubStructSearchUtils
+
+__version__ = get_package_version("rcsb.utils.chem")
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))

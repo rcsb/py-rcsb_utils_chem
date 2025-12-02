@@ -12,12 +12,6 @@ A collection of tests for the OEDepictAlign and related classes which perform
 MCSS comparison and aligned depiction.
 
 """
-__docformat__ = "restructuredtext en"
-__author__ = "John Westbrook"
-__email__ = "john.westbrook@rcsb.org"
-__license__ = "Apache 2.0"
-
-
 import logging
 import os
 import unittest

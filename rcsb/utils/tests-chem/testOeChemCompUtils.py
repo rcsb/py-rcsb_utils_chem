@@ -11,12 +11,6 @@
 A collection of tests of OeChemCompUtils.
 
 """
-__docformat__ = "restructuredtext en"
-__author__ = "John Westbrook"
-__email__ = "john.westbrook@rcsb.org"
-__license__ = "Apache 2.0"
-
-
 import logging
 import os
 import unittest
@@ -24,7 +18,6 @@ import unittest
 from rcsb.utils.chem.ChemCompMoleculeProvider import ChemCompMoleculeProvider
 from rcsb.utils.chem.OeChemCompUtils import OeChemCompUtils
 from rcsb.utils.chem.OeMoleculeFactory import OeMoleculeFactory
-
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
