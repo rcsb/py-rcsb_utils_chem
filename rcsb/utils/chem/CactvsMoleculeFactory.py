@@ -5,6 +5,7 @@
 # Version: 0.001
 #
 # Updates:
+#   16-Feb-2026 dwp Replace deprecated pkg_resources with importlib
 #
 ##
 """
@@ -20,8 +21,6 @@ import logging
 import os
 
 from collections import defaultdict, namedtuple
-# from pkg_resources import resource_filename
-# from packaging.requirements import Requirement
 from importlib import resources
 
 
@@ -58,7 +57,6 @@ class CactvsMoleculeFactory(object):
             exU = ExecUtils()
             ok = exU.run(self.__cactvsPythonInterpreterPath, [fp, molFilePath, jsonPath, aroModel])
         return ok
-        # fp = resource_filename(Requirement.parse("rcsb.utils.chem"), "rcsb/utils/chem/cactvsAnnotateMol.py")
 
     def setFile(self, ccId, filePath, molFormat="mol", atomIdxD=None):
         try:
