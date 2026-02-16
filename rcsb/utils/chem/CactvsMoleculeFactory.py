@@ -55,7 +55,7 @@ class CactvsMoleculeFactory(object):
         with resources.as_file(resources.files("rcsb.utils.chem").joinpath("cactvsAnnotateMol.py")) as fp:
             logger.info("script path is %r", fp)
             exU = ExecUtils()
-            ok = exU.run(self.__cactvsPythonInterpreterPath, [fp, molFilePath, jsonPath, aroModel])
+            ok = exU.run(self.__cactvsPythonInterpreterPath, [str(fp), molFilePath, jsonPath, aroModel])
         return ok
 
     def setFile(self, ccId, filePath, molFormat="mol", atomIdxD=None):
