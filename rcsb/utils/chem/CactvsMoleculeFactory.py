@@ -20,7 +20,10 @@ import logging
 import os
 
 from collections import defaultdict, namedtuple
-from pkg_resources import resource_filename, Requirement
+# from pkg_resources import resource_filename
+# from packaging.requirements import Requirement
+from importlib import resources
+
 
 from rcsb.utils.io.ExecUtils import ExecUtils
 from rcsb.utils.io.MarshalUtil import MarshalUtil
@@ -50,11 +53,12 @@ class CactvsMoleculeFactory(object):
         return ok
 
     def __runCactvsPython(self, molFilePath, jsonPath, aroModel="cactvs"):
-        fp = resource_filename(Requirement.parse("rcsb.utils.chem"), "rcsb/utils/chem/cactvsAnnotateMol.py")
-        logger.info("script path is %r", fp)
-        exU = ExecUtils()
-        ok = exU.run(self.__cactvsPythonInterpreterPath, [fp, molFilePath, jsonPath, aroModel])
+        with resources.as_file(resources.files("rcsb.utils.chem").joinpath("cactvsAnnotateMol.py")) as fp:
+            logger.info("script path is %r", fp)
+            exU = ExecUtils()
+            ok = exU.run(self.__cactvsPythonInterpreterPath, [fp, molFilePath, jsonPath, aroModel])
         return ok
+        # fp = resource_filename(Requirement.parse("rcsb.utils.chem"), "rcsb/utils/chem/cactvsAnnotateMol.py")
 
     def setFile(self, ccId, filePath, molFormat="mol", atomIdxD=None):
         try:
