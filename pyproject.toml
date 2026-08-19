@@ -72,6 +72,9 @@ dependencies = ["OpenEye-toolkits>=2022.1.0"]
 [tool.hatch.envs.default.env-vars]
 PIP_EXTRA_INDEX_URL = "https://pypi.anaconda.org/OpenEye/simple"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 # ----------------  test configuration ----------------
 [tool.hatch.envs.hatch-test]
 dependencies = ["tox"]
