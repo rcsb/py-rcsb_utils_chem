@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "rcsb.utils.chem"
 description = "RCSB Python Chemical Utility Classes"
-version = "0.86"
+version = "0.87"
 readme = "README.md"
 authors = [
     { name="John Westbrook", email="john.westbrook@rcsb.org" }

@@ -77,3 +77,4 @@
  2-Dec-2025 - V0.85 Switch from setuptools to hatch build system;
                     Update pipelines to use python 3.12 (note that latest OpenEye (2025.1.1) only supports up to 3.12)
 16-Feb-2026 - V0.86 Update CactvsMoleculeFactory imports
+19-Aug-2026 - V0.87 Add s3 support

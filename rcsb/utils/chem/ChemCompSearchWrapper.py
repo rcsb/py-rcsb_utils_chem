@@ -36,6 +36,7 @@ from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 from rcsb.utils.io.SftpUtil import SftpUtil
 from rcsb.utils.io.SingletonClass import SingletonClass
+from rcsb.utils.io.S3Util import S3Util
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -265,6 +266,9 @@ class ChemCompSearchWrapper(SingletonClass):
                 if ok:
                     remotePath = os.path.join("/", dirPath, fn)
                     ok = sftpU.put(self.__dependTarFilePath, remotePath)
+            elif url and url.startswith(("s3://", "minio://")):
+                s3U = S3Util(url)
+                ok = s3U.storeBundle(self.__dependTarFilePath, dirPath, fn)
             elif not url:
                 fileU = FileUtil()
                 remotePath = os.path.join(dirPath, fn)
@@ -314,6 +318,9 @@ class ChemCompSearchWrapper(SingletonClass):
                 if ok:
                     remotePath = os.path.join(dirPath, fn)
                     ok = sftpU.get(remotePath, self.__dependTarFilePath)
+            elif url and url.startswith(("s3://", "minio://")):
+                s3U = S3Util(url)
+                ok = s3U.fetchBundle(self.__dependTarFilePath, dirPath, fn)
             else:
                 logger.error("Unsupported protocol %r", url)
             if ok:
